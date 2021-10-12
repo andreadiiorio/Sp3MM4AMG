@@ -1,17 +1,25 @@
 CC=gcc
-CFLAGS=-Wall -Wextra -ggdb -O2
+CFLAGS=-Wall -Wextra -ggdb -O2 #-std=c99 #TODO reallocarray
 #libs
 CFLAGS+=-lm
 
 #TODO extra to reduce useless warnings
 CFLAGS+=-Wno-pointer-sign -Wno-unused-parameter -Wno-unused-but-set-variable
+MACROS = -DDEBUGPRINT="if(FALSE)" -DCONSISTENCY_CHECKS="if(TRUE)"
+MACROS+= -DVERBOSE="if(FALSE)"
 
-objs = SpGEMV_OMP.o SpGEMV_CUDA.o test.o
+objs = SpGEMM_OMP.o SpGEMM_CUDA.o test.o
 
 all: $(objs)
 .PHONY: all
 
-SpGEMV_OMP.o: SpGEMV_OMP.c  commons/utils.c lib/parser.c lib/mmio.c
-	$(CC) -fopenmp $(CFLAGS) -I include/ $^ -o $@
+SpGEMM_OMP.o: main_OMP.c SpGEMM_OMP.c commons/*.c lib/parser.c lib/mmio.c include/*
+	$(CC) -fopenmp $(CFLAGS) $(MACROS) -I include/ $(filter-out %.h,$^) -o $@
 clean:
 	rm -i *.o 
+
+
+#MAKEFILE TESTS FEATURES
+headersAll = $(find -name "*.h")
+try: $(headersAll) main_OMP.c include/*
+	@echo ciao $(filter-out %.c, $^)

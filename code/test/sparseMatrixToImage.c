@@ -53,8 +53,8 @@ static void setBlackNZPixel(ppmData* data,int i,int j,ushort unifyNearW){
     for (short ww,w=0;w<unifyNearW;w++){
         for (short zz,z=0;z<unifyNearW;z++){
             //make the highlight unify square centered in (@i,@j)
-            ww = INTDIVCEIL(w,2); 
-            zz = INTDIVCEIL(z,2); 
+            ww = INT_DIV_CEIL(w,2); 
+            zz = INT_DIV_CEIL(z,2); 
             if (!(w % 2))   ww *= -1;
             if (!(z % 2))   zz *= -1;
             _setBlackDotRGB(data->with*CHAN_NUM, data->height, data->data, i+ww,j+zz);

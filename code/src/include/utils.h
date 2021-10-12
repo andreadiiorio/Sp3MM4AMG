@@ -13,6 +13,19 @@ int init_urndfd(); // wrap init urndFd
  */
 //wrap read cycle over @fd
 int read_wrap(int fd,char* dst,size_t count);
+
+//append only list implemented with a reallocated array
+typedef struct{
+    uint* a;
+    uint  size;
+    uint  lastIdx;
+} APPENDARRAY;
+//append @val to @list, reallocating if reached end
+//TODO inline int appendArr(uint val,APPENDARRAY* list);
+
+void sortuint(uint* arr, uint len); //sort uint array @arr of @len elements
+
+
 //return 0 if vectors a and b has elements that differ at most of DOUBLE_DIFF_THREASH 
 int doubleVectorsDiff(double* a, double* b, uint n);
 //fill a random vector in @v long @size doubles

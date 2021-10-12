@@ -3,27 +3,36 @@
 
 
 ///aux macro-functions
-#define	ABS(a)				((a) > 0   ? (a) : -(a))
-#define	MIN(a,b)			((a) < (b) ? (a) : (b))
-//#define MAX(a,b)			((a) > (b) ? (a) : (b))
-#define swap(a,b)           a=a^b;b=b^a;a=a^b
+#define	ABS(a)				        ((a) > 0   ? (a) : -(a))
+#define	MIN(a,b)			        ((a) < (b) ? (a) : (b))
+#define MAX(a,b)			        ((a) > (b) ? (a) : (b))
+#define swap(a,b)                   a=a^b;b=b^a;a=a^b
 #define MAT_IDX_ROWMAJ(r,c,cols)	( r*cols+c )
 //ceil(x/y)
-#define INT_CEIL_DIV(x,y)		( (x-1) / y + 1 )
-#define IDX2D(i,j,nCols)    (j + i*nCols)
+#define INT_DIV_CEIL(x,y)		    ( (x-1) / y + 1 )
+#define IDX2D(i,j,nCols)            (j + i*nCols)
 
-#define ERRPRINT(str)       fprintf(stderr,str)
+#define ERRPRINT(str)               fprintf(stderr,str)
 ///CONSTANTS
-#define DOUBLE_DIFF_THREASH 1e-3
-#define DRNG_DEVFILE        "/dev/urandom"
-#define MAXRND              1996
+#define DOUBLE_DIFF_THREASH         7e-5
+#define DRNG_DEVFILE                "/dev/urandom"
+#define MAXRND                      1996
 ///Smart controls
 //TODO TOGGLE! ADD
-#define FALSE               ( 0 )
-#define TRUE                ( ! FALSE )
-#define DEBUG               if( TRUE )
-#define VERBOSE             if( TRUE )
-#define CONSISTENCY_CHECKS  if( TRUE )
+#define FALSE                       ( 0 )
+#define TRUE                        ( ! FALSE )
+#ifndef DEBUG
+    #define DEBUG                       if( TRUE )
+#endif
+#ifndef DEBUGPRINT
+    #define DEBUGPRINT                  if( TRUE )
+#endif
+#ifndef VERBOSE
+    #define VERBOSE                     if( TRUE )
+#endif
+#ifndef CONSISTENCY_CHECKS
+    #define CONSISTENCY_CHECKS          if( TRUE )
+#endif
 ///aux types
 typedef unsigned short ushort;
 typedef unsigned int   uint;

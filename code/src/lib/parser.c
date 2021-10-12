@@ -216,7 +216,7 @@ spmat* MMtoCSR(char* matPath){
         ERRPRINT("IRP calloc err\n");
         goto err;
     }
-#if ROWLENS
+#ifdef ROWLENS
     if (!(mat->RL = calloc(mat->M,sizeof(*(mat->RL))))){
         ERRPRINT("IRP calloc err\n");
         goto err;
@@ -236,7 +236,7 @@ spmat* MMtoCSR(char* matPath){
     if(mat->IRP)    free(mat->IRP); 
     if(mat->AS)     free(mat->AS); 
     if(mat->JA)     free(mat->JA); 
-#if ROWLENS
+#ifdef ROWLENS
     if(mat->RL)     free(mat->RL); 
 #endif
     free(mat);
