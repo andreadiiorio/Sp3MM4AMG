@@ -37,6 +37,16 @@ SpGEMM_OMP_with_test_CBLAS.elf: $(srcDir)/main_OMP.c $(srcDir)/SpGEMM_OMP.c $(sr
 clean:
 	rm -i *.elf
 
-objs = test_SpGEMM_OMP.o
+sparseMatrixToImage.elf:	sparseMatrixToImage.c $(srcDir)/commons/*.c $(srcDir)/lib/*.c $(srcDir)/include/*.h #TODO wiser selection of includes...
+	$(CC) $(CFLAGS) -I$(srcDir)/include -I. $(filter-out %.h,$^) -o $@ $(MACROS) \
+	-D MAIN_SPMAT_IMG
+	#TODO ADD SELECTION MACRO TO ADD MAIN
+sparseMatrixToImageTest.elf:	sparseMatrixToImage.c $(srcDir)/commons/*.c $(srcDir)/lib/*.c $(srcDir)/include/*.h #TODO wiser selection of includes...
+	$(CC) $(CFLAGS) -I$(srcDir)/include -I. $(filter-out %.h,$^) -o $@ $(MACROS) \
+		-D MAIN_SPMAT_IMG -DTEST -O0 
+	
+	#TODO ADD SELECTION MACRO TO ADD MAIN
+
+objs = test_SpGEMM_OMP.o sparseMatrixToImage.o
 all: $(objs)
 .PHONY: all
