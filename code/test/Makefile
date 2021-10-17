@@ -5,7 +5,7 @@ CFLAGS=-Wall -Wextra -ggdb -O2
 CFLAGS+=-lm
 #TODO extra to reduce useless warnings
 CFLAGS+=-Wno-pointer-sign -Wno-unused-parameter -Wno-unused-but-set-variable
-MACROS = -DDEBUGPRINT="if(FALSE)" -DVERBOSE="if(FALSE)"
+MACROS = -DDEBUGPRINT="if(FALSE)" -DVERBOSE="if(TRUE )"
 
 #bind to source original project
 srcDir=$(realpath ../src)

@@ -5,6 +5,8 @@ CFLAGS+=-lm
 
 #TODO extra to reduce useless warnings
 CFLAGS+=-Wno-pointer-sign -Wno-unused-parameter -Wno-unused-but-set-variable
+CFLAGS+=-Wno-unused-label
+
 MACROS = -DDEBUGPRINT="if(FALSE)" -DCONSISTENCY_CHECKS="if(TRUE)"
 MACROS+= -DVERBOSE="if(FALSE)"
 
@@ -14,7 +16,7 @@ all: $(objs)
 .PHONY: all
 
 SpGEMM_OMP.o: main_OMP.c SpGEMM_OMP.c commons/*.c lib/parser.c lib/mmio.c include/*
-	$(CC) -fopenmp $(CFLAGS) $(MACROS) -I include/ $(filter-out %.h,$^) -o $@
+	$(CC) -fopenmp $(CFLAGS) $(MACROS) -I include/ $(filter-out %.h,$^) -o $@# -O0
 clean:
 	rm -i *.o 
 

@@ -16,13 +16,14 @@ extern void freeSpmat(spmat* mat);
     #include "SpGEMM_OMP_test.h"
 #endif
 
-COMPUTEFUNC spgemmRowsBasic;
+SP3GEMM sp3gemmGustavsonParallel;
 
 #define HELP "usage Matrixes: R_{i+1}, AC_{i}, P_{i+1}," \
     "in MatrixMarket_sparse_matrix_COO, [COMPUTE/PARTITION_MODE: "_ROWS","_SORTED_ROWS","_TILES" ("_ROWS")]\n"
 
 CONFIG Conf = {
     .gridRows  = 8,
+    .gridCols  = 8,
     .threadNum = 8,
 };
 
@@ -38,9 +39,9 @@ int main(int argc, char** argv){
         else if (!(strncmp(argv[4],_TILES,strlen(_TILES))))         cmode=TILES;
         else{   ERRPRINT("INVALID MODE." HELP); return ret; }
     }
-    COMPUTEFUNC_INTERF computeFunc;
+    SP3GEMM_INTERF computeFunc;
     switch (cmode){
-        case ROWS:         computeFunc=&spgemmRowsBasic;break;
+        case ROWS:         computeFunc=&sp3gemmGustavsonParallel;break;
         //TODO OTHERS
         case SORTED_ROWS:  printf("s");break;
         case TILES:  printf("t");break;
@@ -90,7 +91,7 @@ int main(int argc, char** argv){
     DEBUGPRINT {printf("sparse matrix: AC_i\n");printSparseMatrix(out,TRUE);}
 #ifdef DEBUG_TEST_CBLAS
     DEBUG{
-        if ((ret = denseGEMMTripleCheckCBLAS(R,AC,P,out)))
+        if ((ret = GEMMTripleCheckCBLAS(R,AC,P,out)))
             ERRPRINT("LAPACK.CBLAS SERIAL, DENSE GEMM TEST FAILED!!\n");
     }
 #endif

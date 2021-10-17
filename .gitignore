@@ -1,0 +1,3 @@
+data/
+code/**/*.o
+code/**/*.elf

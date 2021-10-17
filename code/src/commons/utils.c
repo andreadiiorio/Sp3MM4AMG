@@ -129,7 +129,7 @@ int doubleVectorsDiff(double* a, double* b, uint n){
         }
         else if (diff > maxDiff)    maxDiff = diff;
     }
-    VERBOSE printf("checked diff between 2 double vector of %u nnz with "
+    VERBOSE printf("checked diff between 2 double vector of %4u nnz with "
         "max diff: %le < threash: %le\n",nnz,maxDiff,DOUBLE_DIFF_THREASH);
     return EXIT_SUCCESS;
 }

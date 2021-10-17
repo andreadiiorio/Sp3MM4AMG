@@ -193,19 +193,19 @@ spmat* MMtoCSR(char* matPath){
     FILE* fp = fopen(matPath, "r");
     if (!fp){
         perror("fopen");
-        goto out;
+        goto err;
     }
     //banner -> parse  matrix specs
     if (mm_read_banner(fp, &mcode) != 0) {
         fprintf(stderr,"mm_read_banner err at:%s\n",matPath);
-        goto out;
+        goto err;
     }
     //assert matrix is compatible with this app scope
     if (MMCheck(mcode))     goto out;
     //alloc sparse matrix components
     if (!(mat = calloc(1,sizeof(*mat)))){
         ERRPRINT(" mat struct alloc errd");
-        goto out;
+        goto err;
     }
     //parse sizes
     if(mm_read_mtx_crd_size(fp, &mat->M, &mat->N, &mat->NZ)){
@@ -233,14 +233,16 @@ spmat* MMtoCSR(char* matPath){
     return mat;
 
     err:
-    if(mat->IRP)    free(mat->IRP); 
-    if(mat->AS)     free(mat->AS); 
-    if(mat->JA)     free(mat->JA); 
+    if (mat){
+        if(mat->IRP)    free(mat->IRP); 
+        if(mat->AS)     free(mat->AS); 
+        if(mat->JA)     free(mat->JA); 
 #ifdef ROWLENS
-    if(mat->RL)     free(mat->RL); 
+        if(mat->RL)     free(mat->RL); 
 #endif
-    free(mat);
-    fclose(fp);
+        free(mat);
+    }
+    if (fp)         fclose(fp);
     return NULL;
 }
 //TODO spmat* MMtoHELL(char* matPath){}

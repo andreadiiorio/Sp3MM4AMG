@@ -1,5 +1,5 @@
-#ifndef SPGEMM
-#define SPGEMM
+#ifndef _SPGEMM
+#define _SPGEMM
 
 #include "macros.h"
 #include "sparseMatrix.h"
@@ -25,8 +25,10 @@ typedef struct{
 
 
 //compute function interface and its pointer definitions
-typedef spmat* ( COMPUTEFUNC       ) (spmat*,spmat*,spmat*,CONFIG*);
-typedef spmat* (*COMPUTEFUNC_INTERF) (spmat*,spmat*,spmat*,CONFIG*);
+typedef spmat* ( SPGEMM        )  (spmat*,spmat*,CONFIG*);
+typedef spmat* (*SPGEMM_INTERF )  (spmat*,spmat*,CONFIG*);
+typedef spmat* ( SP3GEMM       )  (spmat*,spmat*,spmat*,CONFIG*);
+typedef spmat* (*SP3GEMM_INTERF)  (spmat*,spmat*,spmat*,CONFIG*);
 
 //aux struct for sparse vector-scalar product accumualtion
 typedef struct{
@@ -38,28 +40,26 @@ typedef struct{
 
 
 /*
- * scalar-vector multiplication performed over @trgtR row of sparse matrix @mat
- * result accumulated in @auxV, with nonzero values indexes in @auxVNNZeroIdxs
- */
-void scVectMul(double scalar,spmat* mat,uint trgtR, THREAD_AUX_VECT aux);
-
-/*
- * sparsify accumulated vector @accB into sparse matrix row @accRow
- */
-int sparsifyDenseVect(THREAD_AUX_VECT* accV,SPMATROW* accRow);
-
-/*
  * basic spgemm with row partitioning, 1 row per thread in consecutive order
  * statically assigned to threads
  */
-spmat* spgemmRowsBasic(spmat* R,spmat* AC,spmat* P,CONFIG* conf);
+spmat* sp3gemmGustavsonParallel(spmat* R,spmat* AC,spmat* P,CONFIG* conf);
 
 ///SUB FUNCTIONS
 /*
- * basic sparse parallel GEMM implementation 
- * paralelizing Gustavson over @conf->gridRows blocks of rows  
+ * sparse parallel implementation of @A * @B parallelizing Gustavson 
+ * with partitioning of @A in @conf->gridRows blocks of rows  
  * used aux dense vector @_auxDense, long @_auxDenseLen. preallocd outside
  * return resulting product matrix
  */
-spmat* spgemmRowsGustavsonBasic(spmat* A,spmat* B, CONFIG* conf);
+spmat* spgemmGustavsonRowBlocks(spmat* A,spmat* B, CONFIG* conf);
+
+/* 
+ * sparse parallel implementation of @A * @B as Gustavson parallelizzed in 2D
+ * with partitioning of
+ * @A into rows groups, uniform rows division
+ * @B into cols groups, uniform cols division, accessed by aux offsets
+ */
+spmat* spgemmGustavson2DBlocks(spmat* A,spmat* B, CONFIG* conf);
+
 #endif
