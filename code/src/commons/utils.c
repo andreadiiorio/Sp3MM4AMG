@@ -6,6 +6,7 @@
 #include <stddef.h>
 #include <stdlib.h>
 #include <stdio.h>
+#include <string.h>
 #include <math.h>
 #include <errno.h>
 
@@ -131,6 +132,12 @@ int doubleVectorsDiff(double* a, double* b, uint n){
     }
     VERBOSE printf("checked diff between 2 double vector of %4u nnz with "
         "max diff: %le < threash: %le\n",nnz,maxDiff,DOUBLE_DIFF_THREASH);
+    DEBUG{
+        if (!maxDiff){
+            if (!memcpy(a,b,n*sizeof(*a)))
+                printf("exact matching among the 2 double vectors\n!");
+        }
+    }
     return EXIT_SUCCESS;
 }
 

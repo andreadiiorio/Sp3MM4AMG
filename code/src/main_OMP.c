@@ -18,13 +18,24 @@ extern void freeSpmat(spmat* mat);
 
 SP3GEMM sp3gemmGustavsonParallel;
 
+//COMPUTE MODES 
+typedef enum {
+    ROWS,
+    SORTED_ROWS,
+    TILES
+} COMPUTE_MODE;
+#define _ROWS            "ROWS"
+#define _SORTED_ROWS     "SORTED_ROWS"
+#define _TILES           "TILES"
+
 #define HELP "usage Matrixes: R_{i+1}, AC_{i}, P_{i+1}," \
     "in MatrixMarket_sparse_matrix_COO, [COMPUTE/PARTITION_MODE: "_ROWS","_SORTED_ROWS","_TILES" ("_ROWS")]\n"
 
-CONFIG Conf = {
+static CONFIG Conf = {
     .gridRows  = 8,
     .gridCols  = 8,
     .threadNum = 8,
+    .spgemmFunc=NULL
 };
 
 int main(int argc, char** argv){
@@ -41,10 +52,10 @@ int main(int argc, char** argv){
     }
     SP3GEMM_INTERF computeFunc;
     switch (cmode){
-        case ROWS:         computeFunc=&sp3gemmGustavsonParallel;break;
+        case ROWS:          computeFunc=&sp3gemmGustavsonParallel;break;
         //TODO OTHERS
-        case SORTED_ROWS:  printf("s");break;
-        case TILES:  printf("t");break;
+        case SORTED_ROWS:   printf("SORTED_ROWS TODO");break;
+        case TILES:         printf("TODO 2D BLOCKS");break;
     }
     
     spmat *R = NULL, *AC = NULL, *P = NULL, *out = NULL;

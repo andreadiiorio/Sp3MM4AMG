@@ -28,14 +28,17 @@ typedef struct{
     uint*   JA;    //row nnz    colIndexes
 } SPMATROW; 
 
-//free sparse row
-inline void freeSpmat(spmat* mat){
+//free sparse matrix
+inline void freeSpmatInternal(spmat* mat){
     if(mat->AS)    free(mat->AS);  
     if(mat->JA)    free(mat->JA);  
     if(mat->IRP)   free(mat->IRP);  
 #ifdef ROWLENS
     if(mat->RL)    free(mat->RL);
 #endif 
+}
+inline void freeSpmat(spmat* mat){
+    freeSpmatInternal(mat);
     free(mat);
 }
 
@@ -45,28 +48,38 @@ inline void freeSpRow(SPMATROW* r){
     if(r->JA)   free(r->JA);
 }
 
-inline spmat* allocSpMatrix(uint rows, uint cols){
-
-    spmat* out;
-    if (!(out = calloc(1,sizeof(*out)))) { 
-        ERRPRINT("out  calloc failed\n");
-        return NULL;
-    }
-    out -> M = rows;
-    out -> N = cols;
-    if (!(out->IRP=calloc(out->M+1,sizeof(*(out->IRP))))){ //calloc only for 0th
+//alloc&init internal structures only dependent of dimensions @rows,@cols
+inline int allocSpMatrixInternal(uint rows, uint cols, spmat* mat){
+    mat -> M = rows;
+    mat -> N = cols;
+    if (!(mat->IRP=calloc(mat->M+1,sizeof(*(mat->IRP))))){ //calloc only for 0th
         ERRPRINT("IRP calloc err\n");
-        freeSpmat(out);
-        return NULL;
+        freeSpmatInternal(mat);
+        return EXIT_FAILURE;
     }
 #ifdef ROWLENS
-    if (!(out->RL = malloc(out->M*sizeof(*(out->RL))))){
+    if (!(mat->RL = malloc(mat->M*sizeof(*(mat->RL))))){
         ERRPRINT("RL calloc err\n");
-        freeSpmat(out);
-        return NULL;
+        freeSpmatInternal(mat);
+        return EXIT_FAILURE;
     }
 #endif
-    return out;
+    return EXIT_SUCCESS;
+}
+
+//alloc a sparse matrix of @rows rows and @cols cols 
+inline spmat* allocSpMatrix(uint rows, uint cols){
+
+    spmat* mat;
+    if (!(mat = calloc(1,sizeof(*mat)))) { 
+        ERRPRINT("mat  calloc failed\n");
+        return NULL;
+    }
+    if (allocSpMatrixInternal(rows,cols,mat)){
+        free(mat);
+        return NULL;
+    }
+    return mat;
 }
 
 #endif

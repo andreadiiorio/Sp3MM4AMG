@@ -24,9 +24,8 @@ double* readVector(char* fpath,uint* size){
     }
     while (1){
         if (i >= vectorSize ){ //realloc the array
-            if (!(tmp = reallocarray(out,
-                vectorSize+VECTOR_STEP_MALLOC,sizeof(*out)))){
-                ERRPRINT("reallocarray errd\n");
+            if (!(tmp=realloc(out,vectorSize+VECTOR_STEP_MALLOC*sizeof(*out)))){
+                ERRPRINT("realloc errd\n");
                 goto _err;
             }
             out = tmp;
@@ -38,8 +37,8 @@ double* readVector(char* fpath,uint* size){
     }
     //REALLOC THE ARRAY TO THE FINAL SIZE
     *size = --i;
-    if (!(tmp = reallocarray(out,*size,sizeof(*out)))){
-        ERRPRINT("reallocarray errd\n");
+    if (!(tmp = realloc(out,*size*sizeof(*out)))){
+        ERRPRINT("realloc errd\n");
         goto _err;
     }
     VERBOSE printf("readed array rellocd to %u bytes\n",*size);

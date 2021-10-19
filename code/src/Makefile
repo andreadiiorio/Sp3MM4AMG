@@ -15,8 +15,8 @@ objs = SpGEMM_OMP.o SpGEMM_CUDA.o test.o
 all: $(objs)
 .PHONY: all
 
-SpGEMM_OMP.o: main_OMP.c SpGEMM_OMP.c commons/*.c lib/parser.c lib/mmio.c include/*
-	$(CC) -fopenmp $(CFLAGS) $(MACROS) -I include/ $(filter-out %.h,$^) -o $@# -O0
+SpGEMM_OMP.o: main_OMP.c SpGEMM_OMP.c commons/*.c lib/parser.c lib/mmio.c include/*.h
+	$(CC) -fopenmp $(CFLAGS) $(MACROS) -I include/ $(filter-out %.h,$^) -o $@ # -O0
 clean:
 	rm -i *.o 
 
