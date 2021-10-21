@@ -719,7 +719,7 @@ spmat* spgemmTemplate(spmat* A,spmat* B, CONFIG* conf){
 
 spmat* sp3gemmGustavsonParallel(spmat* R,spmat* AC,spmat* P,CONFIG* conf){
     
-    double end,start,elapsed,flops;
+    double end,start,elapsed,partial,flops;
     start = omp_get_wtime();
    
     SPGEMM_INTERF computeSpGEMM = (SPGEMM_INTERF) conf->spgemmFunc;
@@ -740,6 +740,7 @@ spmat* sp3gemmGustavsonParallel(spmat* R,spmat* AC,spmat* P,CONFIG* conf){
 #ifdef DEBUG_TEST_CBLAS
     if(GEMMCheckCBLAS(R,AC,RAC))                goto _free;
 #endif
+    AUDIT_INTERNAL_TIMES    partial = omp_get_wtime() - Start;
     if (!(out = computeSpGEMM(RAC,P,conf)))     goto _free;
 #ifdef DEBUG_TEST_CBLAS
     if(GEMMCheckCBLAS(RAC,P,out))               goto _free;
@@ -752,7 +753,7 @@ spmat* sp3gemmGustavsonParallel(spmat* R,spmat* AC,spmat* P,CONFIG* conf){
       printf("sp3gemmGustavsonParallel of R:%ux%u AC:%ux%u P:%ux%u CSR sp.Mat",
         R->M,R->N,AC->M,AC->N,P->M,P->N);
     VERBOSE
-      printf("elapsed %le - flops %le\tinternalTime: %le",elapsed,flops,end-Start);
+      printf("elapsed %le - flops %le\tinternalTime: %le",elapsed,flops,end-Start+partial);
     
 
     _free:
