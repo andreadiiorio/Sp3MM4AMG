@@ -21,7 +21,7 @@ from re import finditer
 
 MATRIX=namedtuple("MATRIX","levN roleName fullname")
 MATRIX_LEVEL_GROUP=namedtuple("MATRIX_LEVEL_GROUP",\
- "r ac p ac_next levN ancestorDir",defaults=[None,None,None])
+ "r ac p ac_next levN ancestorDir")
 
 DEBUG=bool(environ.get("DEBUG",False))
 ABSPATH=bool(environ.get("ABSPATH",True ))

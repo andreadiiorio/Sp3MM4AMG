@@ -9,10 +9,11 @@
 #include <string.h>
 #include <math.h>
 #include <errno.h>
+#include <limits.h>
 
+#include "macros.h"
 #include "sparseMatrix.h"
 #include "utils.h"
-#include "macros.h"
 
 
 int urndFd; //will point to urandom device file
@@ -78,6 +79,31 @@ int createNewFile(char* const outFpath){
     if (outFd<0)            perror("open outFd failed ");
     return outFd;
 }
+
+int getConfig(CONFIG* conf){
+    int changes=EXIT_FAILURE;
+    char *varVal,*ptr;
+    uint gridRows,gridCols;
+    if ((varVal = getenv(GRID_ROWS))){
+        gridRows=strtoul(varVal,&ptr,10);
+        if (ptr==varVal ||  gridRows == ULONG_MAX){
+            perror("strtol errd");
+        } else {
+            conf->gridRows = gridRows;
+        }
+        changes = EXIT_SUCCESS;
+    }
+    if ((varVal = getenv(GRID_COLS))){
+        gridCols=strtoul(varVal,&ptr,10);
+        if (ptr==varVal ||  gridCols == ULONG_MAX){
+            perror("strtol errd");
+        } else {
+            conf->gridCols = gridCols;
+        }
+        changes = EXIT_SUCCESS;
+    }
+    return changes;
+}
 /////LIB-SORTING -- WRAPPERS
 //comparing functions
 int cmpuint(const void* a, const void*b){
@@ -130,10 +156,10 @@ int doubleVectorsDiff(double* a, double* b, uint n){
         }
         else if (diff > maxDiff)    maxDiff = diff;
     }
-    VERBOSE printf("checked diff between 2 double vector of %4u nnz with "
-        "max diff: %le < threash: %le\n",nnz,maxDiff,DOUBLE_DIFF_THREASH);
     DEBUG{
-        if (!maxDiff){
+        printf("checked diff between 2 double vector of %4u nnz with "
+          "max diff: %le < threash: %le\n",nnz,maxDiff,DOUBLE_DIFF_THREASH);
+        if (!maxDiff){ //self diff check uselss TODO REMOVE
             if (!memcpy(a,b,n*sizeof(*a)))
                 printf("exact matching among the 2 double vectors\n!");
         }

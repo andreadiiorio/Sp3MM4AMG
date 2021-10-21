@@ -4,14 +4,8 @@
 #include "macros.h"
 #include "sparseMatrix.h"
 
-typedef struct{
-    ushort gridRows;
-    ushort gridCols;
-    //TODO FULL CONFIG DOCCED HERE
-    int threadNum;  //thread num to use in an OMP parallel region ...
-    void* spgemmFunc;   //aux spgemm function to use. 
-    //TODO MAKE THIS A CONTAINER OF SUB STRUCT PASSABLE TO SPGEMM FUNCS TO AVOID CAST
-} CONFIG;   
+
+
 
 //compute function interface and its pointer definitions
 typedef spmat* ( SPGEMM        )  (spmat*,spmat*,CONFIG*);

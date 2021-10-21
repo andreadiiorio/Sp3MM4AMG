@@ -23,8 +23,8 @@
 #define DOUBLE_DIFF_THREASH         7e-5
 #define DRNG_DEVFILE                "/dev/urandom"
 #define MAXRND                      1996
+
 ///Smart controls
-//TODO TOGGLE! ADD
 #define FALSE                       ( 0 )
 #define TRUE                        ( ! FALSE )
 //debug checks and tmp stuff
@@ -33,13 +33,16 @@
 #endif
 //long prints
 #ifndef DEBUGPRINT
-    #define DEBUGPRINT                  if( TRUE )
+    #define DEBUGPRINT                  if( FALSE)
 #endif
 //heavy impact debug checks
 #ifndef DEBUGCHECKS
     #define DEBUGCHECKS                 if( TRUE )
 #endif
 //extra print in the normal output
+#ifndef AUDIT_INTERNAL_TIMES
+    #define AUDIT_INTERNAL_TIMES        if( TRUE )
+#endif
 #ifndef VERBOSE
     #define VERBOSE                     if( TRUE )
 #endif
@@ -71,4 +74,17 @@ typedef _DECIMAL_TRGT_PREC	decimal;
 #endif
 
 
+//////TODO CONFIGURATION DEFINITIONS
+extern double Start;
+typedef struct{
+    ushort gridRows;
+    ushort gridCols;
+    //TODO FULL CONFIG DOCCED HERE
+    int threadNum;  //thread num to use in an OMP parallel region ...
+    void* spgemmFunc;   //aux spgemm function to use. 
+    //TODO MAKE THIS A CONTAINER OF SUB STRUCT PASSABLE TO SPGEMM FUNCS TO AVOID CAST
+} CONFIG;  
+///config from ENV
+#define GRID_ROWS   "GRID_ROWS"
+#define GRID_COLS   "GRID_COLS"
 #endif 	//MACROS

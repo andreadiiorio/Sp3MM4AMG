@@ -80,11 +80,11 @@ static int _MMtoCSR(spmat* mat, FILE *fp, MM_typecode mcode){
         mat->NZ *= 2;
     }
     if (!(entries         = malloc(mat->NZ * sizeof(*entries))))  goto _free;
-    CONSISTENCY_CHECKS{
         if (!(rowsNextCol = calloc(mat->M,sizeof(*rowsNextCol)))) goto _free;
+    CONSISTENCY_CHECKS{
+        if (!(_rowsLastCol = malloc(mat->M*sizeof(*rowsNextCol)))) goto _free;
+        memset(_rowsLastCol,-1,mat->M*sizeof(*_rowsLastCol));
     }
-    if (!(_rowsLastCol    = malloc(mat->M*sizeof(*rowsNextCol)))) goto _free;
-    memset(_rowsLastCol,-1,mat->M*sizeof(*_rowsLastCol));
     ///parse MM fp lines
     while (1) { // Reading the fp until EOF
         if          (mm_is_pattern(mcode)){

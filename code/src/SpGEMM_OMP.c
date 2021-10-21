@@ -20,6 +20,9 @@ spmat* allocSpMatrix(uint rows, uint cols);
 int allocSpMatrixInternal(uint rows, uint cols, spmat* mat);
 void freeSpmatInternal(spmat* mat);
 
+//global vars	-	audit
+double Start;
+
 //TODO che guadagno si ha ad utilizzare solo la versione generica delle successive 2 funzioni
 /*
  * Sparse vector part <->scalar multiplication in a dense output
@@ -454,7 +457,8 @@ spmat* spgemmGustavsonRowBlocks(spmat* A,spmat* B, CONFIG* conf){
     }
     //init sparse row accumulators row indexes //TODO usefull in balance - reorder case
     for (uint r=0; r<AB->M; r++)    accRows[r].r = r;
-    
+   
+    AUDIT_INTERNAL_TIMES	Start=omp_get_wtime();
     uint b,startRow,block,err; //omp for aux vars
     #pragma omp parallel for schedule(static) private(startRow,block)
     for (b=0;   b < conf->gridRows; b++){
@@ -531,6 +535,7 @@ spmat* spgemmGustavson2DBlocks(spmat* A,spmat* B, CONFIG* conf){
 
     uint bPartLen,bPartID,bPartOffset;//B partition acces aux vars
     
+    AUDIT_INTERNAL_TIMES	Start=omp_get_wtime();
     uint tileID,t_i,t_j,err=0;    //for aux vars
     #pragma omp parallel for schedule(static) \
       private(accV,accRowPart,rowBlock,colBlock,startRow,startCol,\
@@ -627,6 +632,7 @@ spmat* spgemmGustavson2DBlocksAllocated(spmat* A,spmat* B, CONFIG* conf){
         goto _err;
     }
     
+    AUDIT_INTERNAL_TIMES	Start=omp_get_wtime();
     uint tileID,t_i,t_j,err=0;    //for aux vars
     #pragma omp parallel for schedule(static) \
       private(accV,accRowPart,colPart,rowBlock,colBlock,startRow,startCol,t_i,t_j)
@@ -742,9 +748,12 @@ spmat* sp3gemmGustavsonParallel(spmat* R,spmat* AC,spmat* P,CONFIG* conf){
     end = omp_get_wtime();
     elapsed=end-start;
     flops = ( 2 * R->NZ * P->NZ * AC->NZ )/ ( elapsed );
-    VERBOSE 
-    printf("sp3gemmGustavsonParallel of R:%ux%u AC:%ux%u P:%ux%u CSR sp.Mat, "
-        "elapsed %le - flops %le \n",R->M,R->N,AC->M,AC->N,P->M,P->N,elapsed,flops);
+    DEBUG 
+      printf("sp3gemmGustavsonParallel of R:%ux%u AC:%ux%u P:%ux%u CSR sp.Mat",
+        R->M,R->N,AC->M,AC->N,P->M,P->N);
+    VERBOSE
+      printf("elapsed %le - flops %le\tinternalTime: %le",elapsed,flops,end-Start);
+    
 
     _free:
     if (RAC)    freeSpmat(RAC);

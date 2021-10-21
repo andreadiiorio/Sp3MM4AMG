@@ -109,12 +109,11 @@ int GEMMCheckCBLAS(spmat* A,spmat* B,spmat* AB){
 #define HELP "usage Matrixes: R_{i+1}, AC_{i}, P_{i+1},[AC_{i+1}," TESTTESTS "]" \
 "all matriexes in MatrixMarket_sparse_matrix_COO\n" \
 "giving AC_{i+1} the outputs of the 3SPGEMM will be matched with the given result as an oracle" \
-"\ngiving" TESTTESTS "the tests function output over the given inputs will be used to check if match the given result AC_{i+1}" 
+"\ngiving" TESTTESTS "the tests function output over the given inputs will be used to check if match the given result AC_{i+1}\n" 
 
 static CONFIG Conf = {
-    .gridRows = 8,
-    .gridCols = 8,
-    .threadNum = 8,
+    .gridRows  = 8,
+    .gridCols  = 8,
 };
 
 int main(int argc, char** argv){
@@ -122,6 +121,9 @@ int main(int argc, char** argv){
     if (init_urndfd())  return ret;
     if (argc < 4 )  {ERRPRINT(HELP); return ret;}
     
+    double end,start,elapsed,flops;
+    start = omp_get_wtime();
+
     spmat *R = NULL, *AC = NULL, *P = NULL, *outToCheck = NULL, *oracleOut=NULL;
     double* outCBLAS = NULL; //CBLAS TEST FUNCTION OUTPUT
     ////parse sparse matrixes 
@@ -185,8 +187,12 @@ int main(int argc, char** argv){
     if (!oracleOut){
         if (!(outCBLAS = sp3gemmToDenseCBLAS(R,AC,P)))  goto _free;
     }
-    
-    VERBOSE printf("starting computations");
+  
+    if (!getConfig(&Conf)){
+        VERBOSE printf("configuration changed from env");
+    }
+    end = omp_get_wtime();elapsed = end-start;
+    VERBOSE{printf("preparing time: %le\t",elapsed);print3SPGEMMCore(R,AC,P,&Conf);}
     SP3GEMM_INTERF sp3GEMMcompute=&sp3gemmGustavsonParallel;//TODO ITERATE OVER NEW POSSIBILITIES
     //TODO int maxThreads = omp_get_max_threads();
     SPGEMM_INTERF spgemmFunc;   //TODO ITERATE OVER ALL SPGEMM COMPUTE FUNCTIONS
@@ -194,7 +200,7 @@ int main(int argc, char** argv){
     for (f=0,spgemmFunc=SpgemmFuncs[f]; spgemmFunc; spgemmFunc=SpgemmFuncs[++f]){
         Conf.spgemmFunc = (void*) spgemmFunc; //spgemmFunc used twice in compute
         VERBOSE 
-          printf("\ncomputing Sp3GEMM as pair of SpGEMM with func:\%u at:%p\n",
+          printf("\n@computing Sp3GEMM as pair of SpGEMM with func:\%u at:%p\t",
             f,spgemmFunc);
         if (!(outToCheck = sp3GEMMcompute(R,AC,P,&Conf))){
             fprintf(stderr,"compute func number:%u failed...\n",f);
@@ -213,7 +219,7 @@ int main(int argc, char** argv){
         }
         freeSpmat(outToCheck); outToCheck=NULL;
     }
-    printf("all spgemmFuncs passed the test\n\n\n");
+    printf("\nall spgemmFuncs passed the test\n\n\n");
 
 
     DEBUGPRINT{

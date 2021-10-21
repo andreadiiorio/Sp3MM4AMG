@@ -28,6 +28,10 @@ typedef enum {
 #define _SORTED_ROWS     "SORTED_ROWS"
 #define _TILES           "TILES"
 
+
+//global vars	-	audit
+double Start;
+
 #define HELP "usage Matrixes: R_{i+1}, AC_{i}, P_{i+1}," \
     "in MatrixMarket_sparse_matrix_COO, [COMPUTE/PARTITION_MODE: "_ROWS","_SORTED_ROWS","_TILES" ("_ROWS")]\n"
 
@@ -50,6 +54,10 @@ int main(int argc, char** argv){
         else if (!(strncmp(argv[4],_TILES,strlen(_TILES))))         cmode=TILES;
         else{   ERRPRINT("INVALID MODE." HELP); return ret; }
     }
+    double end,start,elapsed,flops;
+    start = omp_get_wtime();
+
+
     SP3GEMM_INTERF computeFunc;
     switch (cmode){
         case ROWS:          computeFunc=&sp3gemmGustavsonParallel;break;
@@ -93,6 +101,8 @@ int main(int argc, char** argv){
     
     //// PARALLEL COMPUTATION
     ////TODO int maxThreads = omp_get_max_threads();
+    end = omp_get_wtime();elapsed = end-start;
+    VERBOSE{printf("preparing time: %le\n",elapsed);print3SPGEMMCore(R,AC,P,&Conf);}
     if (!(out = computeFunc(R,AC,P,&Conf))){
         ERRPRINT("compute function selected failed...\n");
         goto _free;

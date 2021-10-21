@@ -82,4 +82,6 @@ inline spmat* allocSpMatrix(uint rows, uint cols){
     return mat;
 }
 
+//print useful information about 3SPGEMM about to compute
+void print3SPGEMMCore(spmat* R,spmat* AC,spmat* P,CONFIG* conf);
 #endif

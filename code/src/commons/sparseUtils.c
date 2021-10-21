@@ -33,3 +33,8 @@ void printSparseMatrix(spmat* spMatrix,char justNZMarkers){
     printMatrix(denseMat,spMatrix->M,spMatrix->N,justNZMarkers);
     free(denseMat);
 }
+
+void print3SPGEMMCore(spmat* R,spmat* AC,spmat* P,CONFIG* conf){
+    printf("@COARSENING AC: %ux%u ---> %ux%u\tconf grid: %ux%u,\tNNZ:%u-%u-%u",
+      AC->M,AC->N, R->M,P->N, conf->gridRows,conf->gridCols, R->NZ,AC->NZ,P->NZ);
+}

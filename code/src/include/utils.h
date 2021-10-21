@@ -1,6 +1,8 @@
 #ifndef UTILS
 #define UTILS
 
+#include "macros.h"
+
 extern int urndFd;	//file pointer to DRNG_DEVFILE O_RDONLY opened
 int init_urndfd(); // wrap init urndFd
 /*
@@ -13,6 +15,9 @@ int init_urndfd(); // wrap init urndFd
  */
 //wrap read cycle over @fd
 int read_wrap(int fd,char* dst,size_t count);
+
+//parse configuration from env
+int getConfig(CONFIG* conf);
 
 //append only list implemented with a reallocated array
 typedef struct{
