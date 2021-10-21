@@ -9,6 +9,10 @@ CFLAGS+=-Wno-unused-label
 
 MACROS = -DDEBUGPRINT="if(FALSE)" -DCONSISTENCY_CHECKS="if(TRUE)"
 MACROS+= -DVERBOSE="if(FALSE)"
+#OMP CONFIG
+OMP_CANCELLATION=true
+export OMP_CANCELLATION
+#TODO ALTERNATIVAMENTE CON error severity fatal at execution
 
 objs = SpGEMM_OMP.o SpGEMM_CUDA.o test.o
 
@@ -25,3 +29,4 @@ clean:
 headersAll = $(find -name "*.h")
 try: $(headersAll) main_OMP.c include/*
 	@echo ciao $(filter-out %.c, $^)
+	python3 -c 'from os import environ as env;print(env.get("OMP_CANCELLATION"))'

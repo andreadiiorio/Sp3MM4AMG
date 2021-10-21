@@ -55,7 +55,8 @@ sparseMatrixToImage.elf:	sparseMatrixToImage.c $(srcDir)/commons/*.c $(srcDir)/l
 sparseMatrixToImageTest.elf:	sparseMatrixToImage.c $(srcDir)/commons/*.c $(srcDir)/lib/*.c $(srcDir)/include/*.h #TODO wiser selection of includes...
 	$(CC) $(CFLAGS) -I$(srcDir)/include -I. $(filter-out %.h,$^) -o $@ $(MACROS) \
 		-D MAIN_SPMAT_IMG -DTEST -O0 
-	
+testAll:
+	$(shell cat ../../data/matrixGroups.list | xargs -L 1 sh -c 'echo $0 ${@};./test_CBLAS_SpGEMM_OMP.elf $0 ${@}' ) #TODO FIX
 clean:
 	rm -i *.elf
 
@@ -69,4 +70,4 @@ try:
 
 objs = test_SpGEMM_OMP.o sparseMatrixToImage.o
 all: $(objs)
-.PHONY: all clean
+.PHONY: all clean testAll

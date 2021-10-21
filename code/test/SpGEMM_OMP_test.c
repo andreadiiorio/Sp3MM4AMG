@@ -182,8 +182,11 @@ int main(int argc, char** argv){
         goto _end;
     }
     //// PARALLEL COMPUTATIONs
-    if (!(outCBLAS = sp3gemmToDenseCBLAS(R,AC,P)))  goto _free;
-        
+    if (!oracleOut){
+        if (!(outCBLAS = sp3gemmToDenseCBLAS(R,AC,P)))  goto _free;
+    }
+    
+    VERBOSE printf("starting computations");
     SP3GEMM_INTERF sp3GEMMcompute=&sp3gemmGustavsonParallel;//TODO ITERATE OVER NEW POSSIBILITIES
     //TODO int maxThreads = omp_get_max_threads();
     SPGEMM_INTERF spgemmFunc;   //TODO ITERATE OVER ALL SPGEMM COMPUTE FUNCTIONS
@@ -191,17 +194,28 @@ int main(int argc, char** argv){
     for (f=0,spgemmFunc=SpgemmFuncs[f]; spgemmFunc; spgemmFunc=SpgemmFuncs[++f]){
         Conf.spgemmFunc = (void*) spgemmFunc; //spgemmFunc used twice in compute
         VERBOSE 
-          printf("\n\ncomputing Sp3GEMM as pair of SpGEMM with func:%u at:%p\n",f,spgemmFunc);
+          printf("\ncomputing Sp3GEMM as pair of SpGEMM with func:\%u at:%p\n",
+            f,spgemmFunc);
         if (!(outToCheck = sp3GEMMcompute(R,AC,P,&Conf))){
             fprintf(stderr,"compute func number:%u failed...\n",f);
             goto _free;
         }
-        if (sparseDenseMatrixCmp(outToCheck,outCBLAS)){
-            fprintf(stderr,"compute func number:%u check with CBLAS fail\n",f);
-            goto _free;
+        if (!oracleOut){
+            if (sparseDenseMatrixCmp(outToCheck,outCBLAS)){
+                fprintf(stderr,"compute func number:%u check with CBLAS fail\n",f);
+                goto _free;
+            }
+        } else {
+            if (doubleVectorsDiff(outToCheck->AS,oracleOut->AS,oracleOut->NZ)){
+                fprintf(stderr,"compute func number:%u check with oracle failed\n",f);
+                goto _free;
+            }
         }
         freeSpmat(outToCheck); outToCheck=NULL;
     }
+    printf("all spgemmFuncs passed the test\n\n\n");
+
+
     DEBUGPRINT{
         printf("sparse matrix: AC_i\n");printSparseMatrix(outToCheck,TRUE);
     }

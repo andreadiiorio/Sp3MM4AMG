@@ -432,6 +432,7 @@ static inline int mergeRows(SPMATROW* rows,spmat* mat){
     return EXIT_SUCCESS;
 } 
     
+//////////////////////// COMPUTE CORE /////////////////////////////////////////
 spmat* spgemmGustavsonRowBlocks(spmat* A,spmat* B, CONFIG* conf){
     DEBUG printf("spgemm rowBlocks of A, full B\tM=%u x N=%u\n",A->M,B->N);
     ///thread aux
@@ -454,34 +455,31 @@ spmat* spgemmGustavsonRowBlocks(spmat* A,spmat* B, CONFIG* conf){
     //init sparse row accumulators row indexes //TODO usefull in balance - reorder case
     for (uint r=0; r<AB->M; r++)    accRows[r].r = r;
     
-    //TODO ADD PRIVATE -- REWATCH SHARED; ->  private(b,j,r)
-    //TODO TODO #pragma omp parallel for schedule(static) shared(accRows,accVect,A)
-    for (uint b=0,startRow=0,block=rowBlock+(rowBlockRem?1:0);
-         b < conf->gridRows;
-         startRow += block, block=rowBlock+(++b <rowBlockRem?1:0))//dist.unif.
-    {
-        /*TODO FOR SIMPLIFY -- DIRECT INDEXING
-         *block = rowBlock + ( b < rowBlockRem=1:0 );
-         *startRow = b*rowBlock + MIN(b,rowBlockRem)* (1);//add the extras for the most fair distribution
-         *equivalent - more complex :   startRow = MIN(b,rowBlockRem)* (rowBlock+1) + MAX(b-rowBlock,0)*rowBlock;//direct compute 
-         *startRow += block; // indirect compute -- cumulate
-         */
-        
-        DEBUG   printf("block %u\t%u:%u(%u)\n",b,startRow,startRow+block-1,block);
+    uint b,startRow,block,err; //omp for aux vars
+    #pragma omp parallel for schedule(static) private(startRow,block)
+    for (b=0;   b < conf->gridRows; b++){
+        block      = UNIF_REMINDER_DISTRI(b,rowBlock,rowBlockRem);
+        startRow   = UNIF_REMINDER_DISTRI_STARTIDX(b,rowBlock,rowBlockRem);
+       
+        DEBUG{
+            fflush(NULL);
+            printf("block %u\t%u:%u(%u)\n",b,startRow,startRow+block-1,block);
+            fflush(NULL);
+        }
         //row-by-row formulation in the given row block
         for (uint r=startRow;  r<startRow+block;  r++){
             //iterate over nz entry index c inside current row r
             for (uint c=A->IRP[r]; c<A->IRP[r+1]; c++) //row-by-row formul. accumulation
                 scSparseRowMul(A->AS[c], B, A->JA[c], accVect+b);
             //trasform accumulated dense vector to CSR with using the aux idxs
-            if (sparsifyDenseVect(accVect+b,accRows + r,0)){
+            if ((err=sparsifyDenseVect(accVect+b,accRows + r,0))){
                 fprintf(stderr,"sparsify failed ar row %u.\t aborting.\n",r);
-                //TODO ABORT OPENMP COMPUTATION
-                goto _err;
+                #pragma omp cancel for
             }
             _resetAccVect(accVect+b);   //rezero for the next A row
         }
     }
+    if (err)                      goto _err;
     ///merge sparse row computed before
     if (mergeRows(accRows,AB))    goto _err;
 
@@ -532,9 +530,12 @@ spmat* spgemmGustavson2DBlocks(spmat* A,spmat* B, CONFIG* conf){
     }
 
     uint bPartLen,bPartID,bPartOffset;//B partition acces aux vars
-    //TODO OMP
-    //TODO OMP HOW TO PARALLELIZE 2 FOR
-    for (uint tileID = 0,t_i,t_j; tileID < gridSize; tileID++){
+    
+    uint tileID,t_i,t_j,err=0;    //for aux vars
+    #pragma omp parallel for schedule(static) \
+      private(accV,accRowPart,rowBlock,colBlock,startRow,startCol,\
+      bPartLen,bPartID,bPartOffset,t_i,t_j)
+    for (tileID = 0; tileID < gridSize; tileID++){
         ///get iteration's indexing variables
         //tile index in the 2D grid of AB computation TODO OMP HOW TO PARALLELIZE 2 FOR
         t_i = tileID/conf->gridCols;  //i-th row block
@@ -546,11 +547,15 @@ spmat* spgemmGustavson2DBlocks(spmat* A,spmat* B, CONFIG* conf){
         startCol = UNIF_REMINDER_DISTRI_STARTIDX(t_j,_colBlock,_colBlockRem);
         
         accV = accVectors + tileID; 
-        if (_allocAuxVect(accV,colBlock))  goto _err;
+        if ((err=_allocAuxVect(accV,colBlock))){
+            #pragma omp cancel for
+        }
          
         DEBUG{
+            fflush(NULL);
             printf("rowBlock [%u\t%u:%u(%u)]\t",t_i,startRow,startRow+rowBlock-1,rowBlock);
             printf("colBlock [%u\t%u:%u(%u)]\n",t_j,startCol,startCol+colBlock-1,colBlock);
+            fflush(NULL);
         }
         ///AB[t_i][t_j] block compute
         for (uint r=startRow;  r<startRow+rowBlock;  r++){
@@ -565,17 +570,17 @@ spmat* spgemmGustavson2DBlocks(spmat* A,spmat* B, CONFIG* conf){
 
                 scSparseVectMulPart(A->AS[j],B->AS+bPartOffset,
                   B->JA+bPartOffset,bPartLen,startCol,accV);
-                //TODO SHIFT BACKWARD COLUMN INDEXES TO FIT THE ACCV ALLOCATED SPACE
             }
 
             accRowPart = accRowsParts + IDX2D(r,t_j,conf->gridCols);
-            if (sparsifyDenseVect(accV,accRowPart,startCol)){
+            if ((err=sparsifyDenseVect(accV,accRowPart,startCol))){
                 fprintf(stderr,"err sparsify at block %u,%u\n",t_i,t_j);
-                goto _err;
+                #pragma omp cancel for
             }
             _resetAccVect(accV);
         }
     }
+    if (err)                                        goto _err;
     if (mergeRowsPartitions(accRowsParts,AB,conf))  goto _err;
     goto _free;
 
@@ -621,8 +626,11 @@ spmat* spgemmGustavson2DBlocksAllocated(spmat* A,spmat* B, CONFIG* conf){
         ERRPRINT("accRowsParts calloc errd\n");
         goto _err;
     }
-    //TODO OMP
-    for (uint tileID = 0,t_i,t_j; tileID < gridSize; tileID++){
+    
+    uint tileID,t_i,t_j,err=0;    //for aux vars
+    #pragma omp parallel for schedule(static) \
+      private(accV,accRowPart,colPart,rowBlock,colBlock,startRow,startCol,t_i,t_j)
+    for (tileID = 0; tileID < gridSize; tileID++){
         ///get iteration's indexing variables
         //tile index in the 2D grid of AB computation TODO OMP HOW TO PARALLELIZE 2 FOR
         t_i = tileID/conf->gridCols;  //i-th row block
@@ -635,11 +643,15 @@ spmat* spgemmGustavson2DBlocksAllocated(spmat* A,spmat* B, CONFIG* conf){
         
         colPart = colPartsB + t_j;
         accV = accVectors + tileID; 
-        if (_allocAuxVect(accV,colBlock))  goto _err;
+        if ((err=_allocAuxVect(accV,colBlock))){
+            #pragma omp cancel for
+        }
          
         DEBUG{
+            fflush(NULL);
             printf("rowBlock [%u\t%u:%u(%u)]\t",t_i,startRow,startRow+rowBlock-1,rowBlock);
             printf("colBlock [%u\t%u:%u(%u)]\n",t_j,startCol,startCol+colBlock-1,colBlock);
+            fflush(NULL);
         }
         ///AB[t_i][t_j] block compute
         for (uint r=startRow;  r<startRow+rowBlock;  r++){
@@ -660,13 +672,14 @@ spmat* spgemmGustavson2DBlocksAllocated(spmat* A,spmat* B, CONFIG* conf){
             }
 
             accRowPart = accRowsParts + IDX2D(r,t_j,conf->gridCols);
-            if (sparsifyDenseVect(accV,accRowPart,startCol)){
+            if ((err=sparsifyDenseVect(accV,accRowPart,startCol))){
                 fprintf(stderr,"err sparsify at block %u,%u\n",t_i,t_j);
-                goto _err;
+                #pragma omp cancel for
             }
             _resetAccVect(accV);
         }
     }
+    if (err)                                        goto _err;
     if (mergeRowsPartitions(accRowsParts,AB,conf))  goto _err;
     goto _free;
 
@@ -700,22 +713,21 @@ spmat* spgemmTemplate(spmat* A,spmat* B, CONFIG* conf){
 
 spmat* sp3gemmGustavsonParallel(spmat* R,spmat* AC,spmat* P,CONFIG* conf){
     
-    double end,start;
+    double end,start,elapsed,flops;
     start = omp_get_wtime();
    
     SPGEMM_INTERF computeSpGEMM = (SPGEMM_INTERF) conf->spgemmFunc;
     if (!computeSpGEMM){
         //TODO runtime decide witch spgemm implementation to use if not given
         computeSpGEMM = &spgemmGustavson2DBlocks; 
-        computeSpGEMM = &spgemmGustavson2DBlocksAllocated;//TODO COMPARA CON VERSIONE CHE ALLOCA LE PARTIZIONI DELLE COLONNE
+        //computeSpGEMM = &spgemmGustavson2DBlocksAllocated;//TODO COMPARA CON VERSIONE CHE ALLOCA LE PARTIZIONI DELLE COLONNE
         //TODO ANY CONVENIENZA STORING B.COLPARTITIONS ... ALTRIMENTI:
         //computeSpGEMM = &spgemmGustavsonRowBlocks;
     }
     //alloc dense aux vector, reusable over 3 product 
     uint auxVectSize = MAX(R->N,AC->N);
     auxVectSize      = MAX(auxVectSize,P->N);
-    //TODO PENSA BENE SE AGGIUNGERE RIUSO DI VETTORE DENSO NELLE 2 ALLOCAZIONE CON LA DIMENSIONE MASSIMA TRA LE 2 MATRICI.N........
-    //TODO PRODOTTO IN 2
+    //TODO arrays sovrallocati per poter essere riusati nelle 2 SpGEMM
     
     spmat *RAC = NULL, *out = NULL;
     if (!(RAC = computeSpGEMM(R,AC,conf)))      goto _free;
@@ -728,9 +740,11 @@ spmat* sp3gemmGustavsonParallel(spmat* R,spmat* AC,spmat* P,CONFIG* conf){
 #endif
      
     end = omp_get_wtime();
+    elapsed=end-start;
+    flops = ( 2 * R->NZ * P->NZ * AC->NZ )/ ( elapsed );
     VERBOSE 
     printf("sp3gemmGustavsonParallel of R:%ux%u AC:%ux%u P:%ux%u CSR sp.Mat, "
-        "elapsed %lf\n",    R->M,R->N,AC->M,AC->N,P->M,P->N,end-start);
+        "elapsed %le - flops %le \n",R->M,R->N,AC->M,AC->N,P->M,P->N,elapsed,flops);
 
     _free:
     if (RAC)    freeSpmat(RAC);
