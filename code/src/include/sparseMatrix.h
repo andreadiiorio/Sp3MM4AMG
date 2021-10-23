@@ -28,6 +28,17 @@ typedef struct{
     uint*   JA;    //row nnz    colIndexes
 } SPMATROW; 
 
+/*
+ * return !0 if col @j idx is in row @i of sparse mat @smat
+ */
+inline int IS_NNZ(spmat* smat,uint i,uint j){
+    int out = 0;
+    for (uint x=smat->IRP[i]; x<smat->IRP[i+1] && !out; x++){
+        out = (j == smat->JA[x]); 
+    } 
+    return out;
+}
+////aux functions
 //free sparse matrix
 inline void freeSpmatInternal(spmat* mat){
     if(mat->AS)    free(mat->AS);  

@@ -11,12 +11,14 @@
 #define DFLT_OUTPATH       "/tmp/mat.ppm"
 typedef struct{
     char* data;     //width*height*3 triples of RGB pixel
-    uint  width;
+    ulong width;
 
-    uint  height;
+    ulong height;
     char header[PPM_HEADER_MAX_LEN];
 }   ppmData;
 
+#define NNZ_PIXEL_COLOR  255
+#define Z_PIXEL_COLOR    0
 /*
  * convert dense matrix @mat into ppm RGB triple pixels ( in @data ) 
  * with a black dot per NZ elem 
