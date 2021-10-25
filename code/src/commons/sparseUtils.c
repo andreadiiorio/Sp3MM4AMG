@@ -3,23 +3,27 @@
 #include <math.h>
 #include <errno.h>
 
+#include "macros.h"
 #include "sparseMatrix.h"
 #include "utils.h"
-#include "macros.h"
 
 ///AUX
 double* CSRToDense(spmat* sparseMat){
     double* denseMat;
-    uint i,j,idxNZ;
-    if (!(denseMat = calloc(sparseMat->M*sparseMat->N, sizeof(*denseMat)))){
-        fprintf(stderr,"dense matrix alloc failed\n");
+    ulong i,j,idxNZ,denseSize;
+    if (__builtin_umull_overflow(sparseMat->M,sparseMat->N,&denseSize)){
+        ERRPRINT("overflow in dense allocation\n");
+        return NULL;
+    }
+    if (!(denseMat = calloc(denseSize, sizeof(*denseMat)))){
+        ERRPRINT("dense matrix alloc failed\n");
         return  NULL;
     }
     for (i=0;i<sparseMat->M;i++){
         for (idxNZ=sparseMat->IRP[i]; idxNZ<sparseMat->IRP[i+1]; ++idxNZ){
              j = sparseMat->JA[idxNZ];
              //converting sparse item into dense entry
-             denseMat[IDX2D(i,j,sparseMat->N)] = sparseMat->AS[idxNZ]; 
+             denseMat[(ulong) IDX2D(i,j,sparseMat->N)] = sparseMat->AS[idxNZ]; 
         }
     }
     return denseMat;

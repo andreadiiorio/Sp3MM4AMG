@@ -18,7 +18,8 @@
 #define UNIF_REMINDER_DISTRI_STARTIDX(i,div,rem) \
     ( i * div + MIN(i,rem)*1 )
 
-#define ERRPRINT(str)               fprintf(stderr,str)
+#define _ERRPRINT(str)               fprintf( stderr,str )
+#define ERRPRINT(str)                fprintf( stderr,"\33[31m\33[1m\33[44m" str "\33[0m" )
 ///CONSTANTS
 #define DOUBLE_DIFF_THREASH         7e-5
 #define DRNG_DEVFILE                "/dev/urandom"
@@ -80,7 +81,7 @@ typedef struct{
     ushort gridRows;
     ushort gridCols;
     //TODO FULL CONFIG DOCCED HERE
-    int threadNum;  //thread num to use in an OMP parallel region ...
+    uint threadNum;  //thread num to use in an OMP parallel region ...
     void* spgemmFunc;   //aux spgemm function to use. 
     //TODO MAKE THIS A CONTAINER OF SUB STRUCT PASSABLE TO SPGEMM FUNCS TO AVOID CAST
 } CONFIG;  

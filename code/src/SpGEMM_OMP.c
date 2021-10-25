@@ -345,11 +345,17 @@ static inline int sparsifyDenseVect(THREAD_AUX_VECT* accV,SPMATROW* accSparse,
  */
 static inline int mergeRowsPartitions(SPMATROW* rowsParts,spmat* mat,
   CONFIG* conf){
-    uint nzNum=0,j,rLen, partNum = mat->M * conf->gridCols;
+    uint nzNum=0,j,rLen,idx,partsNum = mat->M * conf->gridCols;
+    //TODO PARALLEL MERGE - SAVE STARTING OFFSET OF EACH PARTITION IN THE OUT MATRIX
+    uint* rowsPartsOffsets=alloca(partsNum*sizeof(*rowsPartsOffsets));
     ///count nnz entries and alloc arrays for them
     for (uint r=0; r<mat->M; r++){
-        for (j=0,rLen=0; j<conf->gridCols; j++)  //for each partition -> get len
-            rLen += rowsParts[ IDX2D(r,j,conf->gridCols) ].len;
+        //for each partition ->get len -> outMat.IRP and aux offsets  
+        for (j=0,rLen=0; j<conf->gridCols; j++){
+            idx = IDX2D(r,j,conf->gridCols);
+            rowsPartsOffsets[idx]=nzNum+rLen;//part start=prev accumulated end
+            rLen += rowsParts[idx].len;
+        }
         nzNum += rLen;
         mat->IRP[r+1] = nzNum;
 #ifdef ROWLENS
@@ -366,10 +372,15 @@ static inline int mergeRowsPartitions(SPMATROW* rowsParts,spmat* mat,
         return EXIT_FAILURE;
     }
     ///POPOLATE WITH ROWS NNZ VALUES AND INDEXES
-    for (uint i=0,startOff=0,pLen;  i<partNum;  startOff+=rowsParts[i++].len){
+    //OLD FOR
+    //for (uint i=0,startOff=0,pLen;  i<partsNum;  startOff+=rowsParts[i++].len){
+    //TODO PARALLEL PARTS MEMCOPY
+    uint pLen; //omp for aux vars
+    #pragma omp parallel for schedule(static) private(pLen)
+    for (uint i=0;  i<partsNum; i++){
         pLen = rowsParts[i].len;
-        memcpy(mat->AS + startOff,rowsParts[i].AS,pLen*sizeof(*(mat->AS)));
-        memcpy(mat->JA + startOff,rowsParts[i].JA,pLen*sizeof(*(mat->JA)));
+        memcpy(mat->AS + rowsPartsOffsets[i],rowsParts[i].AS,pLen*sizeof(*(mat->AS)));
+        memcpy(mat->JA + rowsPartsOffsets[i],rowsParts[i].JA,pLen*sizeof(*(mat->JA)));
     }
     CONSISTENCY_CHECKS{ //TODO REMOVE written nnz check manually
         for (uint i=0,w=0; i<mat->M; i++){
@@ -414,8 +425,9 @@ static inline int mergeRows(SPMATROW* rows,spmat* mat){
         return EXIT_FAILURE;
     }
     ///POPOLATE WITH ROWS NNZ VALUES AND INDEXES
+    //TODO PARALLEL COPY
+    #pragma omp parallel for schedule(static)
     for (uint r=0; r<mat->M; r++){
-        //startOff+=rows[r].len;   //TODO row copy start offset alternative
         memcpy(mat->AS + mat->IRP[r],rows[r].AS,rows[r].len*sizeof(*(mat->AS)));
         memcpy(mat->JA + mat->IRP[r],rows[r].JA,rows[r].len*sizeof(*(mat->JA)));
     }
@@ -431,11 +443,76 @@ static inline int mergeRows(SPMATROW* rows,spmat* mat){
             }
         }
     }
-        
     return EXIT_SUCCESS;
 } 
     
 //////////////////////// COMPUTE CORE /////////////////////////////////////////
+spmat* spgemmTemplate(spmat* A,spmat* B, CONFIG* conf){ //TODO TEMPLATE FOR AN SPGEMM
+    DEBUG printf("spgemm rowBlocks of A, (allcd) colBlocks of B\tM=%uxN=%u\n",A->M,B->N);
+    spmat* AB = allocSpMatrix(A->M,B->N);
+    if (!AB)    goto _err;
+     
+
+    _err:
+    freeSpmat(AB);  AB = NULL; 
+    _free:
+
+    return AB;
+}
+spmat* spgemmGustavsonRows(spmat* A,spmat* B, CONFIG* conf){
+    DEBUG printf("spgemm rowBlocks of A, full B\tM=%u x N=%u\n",A->M,B->N);
+    ///thread aux
+    THREAD_AUX_VECT *accVects = NULL,*acc;
+    SPMATROW*       accRows  = NULL;
+    ///init AB matrix
+    spmat* AB = allocSpMatrix(A->M,B->N);
+    if (!AB)    goto _err;
+    ///aux structures alloc 
+    if (!(accVects = _initAccVectors(conf->threadNum,AB->N))){
+        ERRPRINT("accVects init failed\n");
+        goto _err;
+    }
+    if (!(accRows = calloc(AB->M , sizeof(*accRows)))) {
+        ERRPRINT("accRows malloc failed\n");
+        goto _err;
+    }
+    //init sparse row accumulators row indexes //TODO usefull in balance->reorder case
+    for (uint r=0; r<AB->M; r++)    accRows[r].r = r;
+   
+    uint err;
+    AUDIT_INTERNAL_TIMES	Start=omp_get_wtime();
+    #pragma omp parallel for schedule(static) private(acc)
+    for (uint r=0;  r<A->M; r++){    //row-by-row formulation
+        //iterate over nz entry index c inside current row r
+        acc = accVects + omp_get_thread_num();
+        for (uint c=A->IRP[r]; c<A->IRP[r+1]; c++) //row-by-row formul. accumulation
+            scSparseRowMul(A->AS[c], B, A->JA[c], acc);
+        //trasform accumulated dense vector to CSR with using the aux idxs
+        if ((err=sparsifyDenseVect(acc,accRows + r,0))){
+            fprintf(stderr,"sparsify failed ar row %u.\t aborting.\n",r);
+            #pragma omp cancel for
+        }
+        _resetAccVect(acc);   //rezero for the next A row
+    }
+    if (err)                      goto _err;
+    ///merge sparse row computed before
+    if (mergeRows(accRows,AB))    goto _err;
+
+    goto _free;
+    
+    _err:
+    if(AB)  freeSpmat(AB);
+    AB=NULL;    //nothing'll be returned
+    _free:
+    if (accRows){
+        for (uint r=0; r<AB->M; r++)    freeSpRow(accRows + r);
+        free(accRows);
+    }
+    if(accVects)     _freeAccVectors(accVects,conf->threadNum);
+
+    return AB;
+}
+
 spmat* spgemmGustavsonRowBlocks(spmat* A,spmat* B, CONFIG* conf){
     DEBUG printf("spgemm rowBlocks of A, full B\tM=%u x N=%u\n",A->M,B->N);
     ///thread aux
@@ -704,18 +781,6 @@ spmat* spgemmGustavson2DBlocksAllocated(spmat* A,spmat* B, CONFIG* conf){
 }
 
 
-spmat* spgemmTemplate(spmat* A,spmat* B, CONFIG* conf){
-    DEBUG printf("spgemm rowBlocks of A, (allcd) colBlocks of B\tM=%uxN=%u\n",A->M,B->N);
-    spmat* AB = allocSpMatrix(A->M,B->N);
-    if (!AB)    goto _err;
-     
-
-    _err:
-    freeSpmat(AB);  AB = NULL; 
-    _free:
-
-    return AB;
-}
 
 spmat* sp3gemmGustavsonParallel(spmat* R,spmat* AC,spmat* P,CONFIG* conf){
     

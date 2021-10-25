@@ -38,7 +38,6 @@ double Start;
 static CONFIG Conf = {
     .gridRows  = 8,
     .gridCols  = 8,
-    .threadNum = 8,
     .spgemmFunc=NULL
 };
 
@@ -100,7 +99,8 @@ int main(int argc, char** argv){
     }
     
     //// PARALLEL COMPUTATION
-    ////TODO int maxThreads = omp_get_max_threads();
+    int maxThreads = omp_get_max_threads();
+    Conf.threadNum = (uint) maxThreads;
     end = omp_get_wtime();elapsed = end-start;
     VERBOSE{printf("preparing time: %le\n",elapsed);print3SPGEMMCore(R,AC,P,&Conf);}
     if (!(out = computeFunc(R,AC,P,&Conf))){

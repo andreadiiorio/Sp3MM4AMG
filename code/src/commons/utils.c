@@ -83,22 +83,22 @@ int createNewFile(char* const outFpath){
 int getConfig(CONFIG* conf){
     int changes=EXIT_FAILURE;
     char *varVal,*ptr;
-    uint gridRows,gridCols;
+    ulong val;
     if ((varVal = getenv(GRID_ROWS))){
-        gridRows=strtoul(varVal,&ptr,10);
-        if (ptr==varVal ||  gridRows == ULONG_MAX){
+        val=strtoul(varVal,&ptr,10);
+        if (ptr==varVal || val>= UINT_MAX){
             perror("strtol errd");
         } else {
-            conf->gridRows = gridRows;
+            conf->gridRows = val;
         }
         changes = EXIT_SUCCESS;
     }
     if ((varVal = getenv(GRID_COLS))){
-        gridCols=strtoul(varVal,&ptr,10);
-        if (ptr==varVal ||  gridCols == ULONG_MAX){
+        val=strtoul(varVal,&ptr,10);
+        if (ptr==varVal || val>= UINT_MAX){
             perror("strtol errd");
         } else {
-            conf->gridCols = gridCols;
+            conf->gridCols = val;
         }
         changes = EXIT_SUCCESS;
     }

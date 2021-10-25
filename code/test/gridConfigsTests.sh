@@ -1,0 +1,12 @@
+export GRID_ROWS=4  GRID_COLS=14; bash ../scripts/testAllMatrixGroups.sh  >   "log/testAll"$GRID_ROWS"X"$GRID_COLS 
+export GRID_ROWS=8  GRID_COLS=10; bash ../scripts/testAllMatrixGroups.sh  >   "log/testAll"$GRID_ROWS"X"$GRID_COLS 
+export GRID_ROWS=10 GRID_COLS=4; bash ../scripts/testAllMatrixGroups.sh   >  "log/testAll"$GRID_ROWS"X"$GRID_COLS 
+export GRID_ROWS=15 GRID_COLS=4; bash ../scripts/testAllMatrixGroups.sh   >  "log/testAll"$GRID_ROWS"X"$GRID_COLS 
+export GRID_ROWS=16 GRID_COLS=5; bash ../scripts/testAllMatrixGroups.sh   >  "log/testAll"$GRID_ROWS"X"$GRID_COLS 
+export GRID_ROWS=16 GRID_COLS=10; bash ../scripts/testAllMatrixGroups.sh  >   "log/testAll"$GRID_ROWS"X"$GRID_COLS 
+export GRID_ROWS=20 GRID_COLS=2; bash ../scripts/testAllMatrixGroups.sh   >  "log/testAll"$GRID_ROWS"X"$GRID_COLS 
+export GRID_ROWS=20 GRID_COLS=4; bash ../scripts/testAllMatrixGroups.sh   >  "log/testAll"$GRID_ROWS"X"$GRID_COLS 
+export GRID_ROWS=20 GRID_COLS=6; bash ../scripts/testAllMatrixGroups.sh   >  "log/testAll"$GRID_ROWS"X"$GRID_COLS 
+export GRID_ROWS=40 GRID_COLS=4; bash ../scripts/testAllMatrixGroups.sh   >  "log/testAll"$GRID_ROWS"X"$GRID_COLS 
+export GRID_ROWS=40 GRID_COLS=6; bash ../scripts/testAllMatrixGroups.sh   >  "log/testAll"$GRID_ROWS"X"$GRID_COLS 
+export GRID_ROWS=80 GRID_COLS=4; bash ../scripts/testAllMatrixGroups.sh   >  "log/testAll"$GRID_ROWS"X"$GRID_COLS 

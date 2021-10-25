@@ -17,7 +17,7 @@ usage <logFile>
 """
 from collections import namedtuple
 from re import finditer
-from sys import argv
+from sys import argv,stderr
 
 getReGroups=lambda pattern,string:\
     finditer(pattern,string).__next__().groups()
@@ -48,7 +48,7 @@ with open(argv[1]) as f:    log=f.read()
 linesGroup = [ g.split("\n") for g in log.split("##")]
 
 for i,g in enumerate(linesGroup):
-    if len(g) < 3:  print("not complete group",i,g);continue
+    if len(g) < 3:  print("not complete group",i,g,file=stderr);continue
     header   = g[0]
     configSiz= g[1]
     computes = list(filter(lambda l:"@" in l,g[2:]))

@@ -190,6 +190,7 @@ int main(int argc,char** argv){
             return EXIT_FAILURE;
         }
     }
+    if (argc > 5)   outFname = argv[5];
 
     data=malloc(sizeof(*data));
     if (!data){
@@ -215,8 +216,8 @@ int main(int argc,char** argv){
         ERRPRINT("dataLen overflow\n");
         goto _free;
     }
-    printf("building ppm image with header:\n%s\n=>pixelDataLen: %luMB,"
-      "collapseSquare:%u,unify:%u\n",data->header,dataLen>>20,collapseSquareW,unifyNearW);
+    printf("building ppm image at:%s with header:\n%s\n=>pixelDataLen: %luMB,"
+      "collapseSquare:%u,unify:%u\n",outFname,data->header,dataLen>>20,collapseSquareW,unifyNearW);
     
     ///out file mmap for easy write
     outFd=open(outFname, O_RDWR | O_CREAT | O_EXCL | O_TRUNC, mode);

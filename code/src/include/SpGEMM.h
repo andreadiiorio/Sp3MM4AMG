@@ -33,9 +33,14 @@ spmat* sp3gemmGustavsonParallel(spmat* R,spmat* AC,spmat* P,CONFIG* conf);
 ///SUB FUNCTIONS
 ///SPGEMM FUNCTIONS
 /*
+ * sparse parallel implementation of @A * @B parallelizing Gustavson row-by-row
+ * formulation using an aux dense vector @_auxDense
+ * return resulting product matrix
+ */
+spmat* spgemmGustavsonRows(spmat* A,spmat* B, CONFIG* conf);
+/*
  * sparse parallel implementation of @A * @B parallelizing Gustavson 
  * with partitioning of @A in @conf->gridRows blocks of rows  
- * used aux dense vector @_auxDense, long @_auxDenseLen. preallocd outside
  * return resulting product matrix
  */
 spmat* spgemmGustavsonRowBlocks(spmat* A,spmat* B, CONFIG* conf);
@@ -59,6 +64,7 @@ spmat* spgemmGustavson2DBlocksAllocated(spmat* A,spmat* B, CONFIG* conf);
 ///HERE array of spgemm function pntr usable, NULL terminated
 //#pragma message "C Preprocessor got here!"
 static const SPGEMM_INTERF  SpgemmFuncs[] = {
+    &spgemmGustavsonRows,
     &spgemmGustavsonRowBlocks,
     &spgemmGustavson2DBlocks,
     &spgemmGustavson2DBlocksAllocated,

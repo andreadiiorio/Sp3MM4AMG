@@ -6,6 +6,10 @@ CFLAGS+=-lm
 #TODO extra to reduce useless warnings
 CFLAGS+=-Wno-pointer-sign -Wno-unused-parameter -Wno-unused-but-set-variable
 CFLAGS+=-Wno-unused-label
+##TODO OMP CONFIG
+#OMP_CANCELLATION=true
+#export OMP_CANCELLATION
+
 MACROS = -DDEBUGPRINT="if(FALSE)" -DDEBUG="if(FALSE)" -DVERBOSE="if(TRUE)" -DCONSISTENCY_CHECKS="if(FALSE)" -DDEBUGCHECKS="if(FALSE)"
 CFLAGS+=$(RUNTIME)
 #bind to source original project
@@ -56,7 +60,6 @@ SpGEMM_OMP_with_test_CBLAS.elf: $(srcDir)/main_OMP.c $(srcDir)/SpGEMM_OMP.c $(sr
 sparseMatrixToImage.elf:	sparseMatrixToImage.c $(srcDir)/commons/*.c $(srcDir)/lib/*.c $(srcDir)/include/*.h #TODO wiser selection of includes...
 	$(CC) $(CFLAGS) -I$(srcDir)/include -I. $(filter-out %.h,$^) -o $@ $(MACROS) \
 	-D MAIN_SPMAT_IMG -fopenmp
-	#TODO ADD SELECTION MACRO TO ADD MAIN
 sparseMatrixToImageTest.elf:	sparseMatrixToImage.c $(srcDir)/commons/*.c $(srcDir)/lib/*.c $(srcDir)/include/*.h #TODO wiser selection of includes...
 	$(CC) $(CFLAGS) -I$(srcDir)/include -I. $(filter-out %.h,$^) -o $@ $(MACROS) \
 		-D MAIN_SPMAT_IMG -DTEST -O0 -fopenmp

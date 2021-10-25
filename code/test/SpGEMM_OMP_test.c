@@ -191,6 +191,7 @@ int main(int argc, char** argv){
     if (!getConfig(&Conf)){
         VERBOSE printf("configuration changed from env");
     }
+    Conf.threadNum = (uint) omp_get_max_threads();
     end = omp_get_wtime();elapsed = end-start;
     VERBOSE{printf("preparing time: %le\t",elapsed);print3SPGEMMCore(R,AC,P,&Conf);}
     SP3GEMM_INTERF sp3GEMMcompute=&sp3gemmGustavsonParallel;//TODO ITERATE OVER NEW POSSIBILITIES
