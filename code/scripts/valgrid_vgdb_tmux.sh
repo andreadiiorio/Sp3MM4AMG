@@ -1,8 +1,14 @@
+usage="<TRGT BIN TO DEBUG WITH VALGRID + GDB,[override args]>;\nexport SESSIONNAME"
+if [ "$1" = "-h" ];then echo -e "$usage";exit 1;fi
+if [ -z $1 ];then echo -e "$usage"; exit 1;fi
+TRGTBIN=$(realpath "$1" )
+ARGS=("r" "ac" "p" "ac_next")
+#TODO OVERRIDE ARGS WITH $2,...
 sesionName="$( echo $0--$(date -Iseconds) | tr ':./' '_' )"
 if [[ $SESSIONNAME ]]; then sessionName=$SESSIONNAME; fi
 VALGRIND_SPAWN_TIME=1
 VGDB="/usr/libexec/valgrind/../../bin/vgdb" #PATH FROM VALGRIND..
-VALGRINDCMD="valgrind -s --leak-check=full --show-leak-kinds=all --track-origins=yes --vgdb=yes --vgdb-error=0 ./SpGEMM_OMP.o dump_lev_d_p0_l002_r.mtx dump_lev_d_p0_l001_ac.mtx dump_lev_d_p0_l002_p.mtx  2>&1 | less"
+VALGRINDCMD="valgrind -s --leak-check=full --show-leak-kinds=all --track-origins=yes --vgdb=yes --vgdb-error=0 $TRGTBIN ${ARGS[@]}  2>&1 | less"
 GDBCMD='gdb -ex "target remote | vgdb";kill -9 $(pidof valgrind)'";tmux kill-session $sessionName"
 
 

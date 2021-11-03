@@ -19,14 +19,14 @@ typedef struct{
     double *AS; 
 } spmat; //describe a sparse matrix
 
-////portion of sparse matrix definition for parallel SPGEMM
-//CSR   TODO -> macro-generalize for both
+////Sparse vector accumulator -- corresponding to a matrix portion
 typedef struct{
-    uint    r;     //row index in the original matrix
+    //uint    r;     //row index in the corresponding matrix
+    //uint    c;     //col index in the corresponding matrix
     uint    len;   //rowLen
     double* AS;    //row nnz    values
     uint*   JA;    //row nnz    colIndexes
-} SPMATROW; 
+} SPACC; 
 
 /*
  * return !0 if col @j idx is in row @i of sparse mat @smat
@@ -54,11 +54,11 @@ inline void freeSpmat(spmat* mat){
 }
 
 //free max aux structs not NULL pointed
-inline void freeSpRow(SPMATROW* r){ 
+inline void freeSpAcc(SPACC* r){ 
     if(r->AS)   free(r->AS);
     if(r->JA)   free(r->JA);
 }
-
+////alloc&init functions
 //alloc&init internal structures only dependent of dimensions @rows,@cols
 inline int allocSpMatrixInternal(uint rows, uint cols, spmat* mat){
     mat -> M = rows;
@@ -93,6 +93,50 @@ inline spmat* allocSpMatrix(uint rows, uint cols){
     return mat;
 }
 
+////dyn alloc of spGEMM output matrix
+/*
+///size prediction of AB = @A * @B
+inline uint SpGEMMPreAlloc(spmat* A,spmat* B){
+    //TODO BETTER PREALLOC HEURISTICS HERE 
+    return MAX(A->NZ,B->NZ);
+}
+//init a sparse matrix AB=@A * @B with a initial allocated space by an euristic
+inline spmat* initSpMatrixSpGEMM(spmat* A, spmat* B){
+    spmat* out;
+    if (!(out = allocSpMatrix(A->M,B->N)))  return NULL;
+    out -> NZ = SpGEMMPreAlloc(A,B);
+    if (!(out->AS = malloc(out->NZ*sizeof(*(out->AS))))){
+        ERRPRINT("initSpMatrix: out->AS malloc errd\n");
+        free(out);
+        return NULL;
+    }
+    if (!(out->JA = malloc(out->NZ*sizeof(*(out->JA))))){
+        ERRPRINT("initSpMatrix: out->JA malloc errd\n");
+        freeSpmat(out);
+        return NULL;
+    }
+    return out;
+}
+
+#define REALLOC_FACTOR  1.5
+//realloc sparse matrix NZ arrays
+inline int reallocSpMatrix(spmat* mat,uint newSize){
+    mat->NZ *= newSize;
+    void* tmp;
+    if (!(tmp = realloc(mat->AS,mat->NZ * sizeof(*(mat->AS))))){
+        ERRPRINT("reallocSpMatrix:  realloc AS errd\n");
+        return EXIT_FAILURE;
+    }
+    mat->AS = tmp;
+    if (!(tmp = realloc(mat->JA,mat->NZ * sizeof(*(mat->JA))))){
+        ERRPRINT("reallocSpMatrix:  realloc JA errd\n");
+        return EXIT_FAILURE;
+    }
+    mat->JA = tmp;
+    return EXIT_SUCCESS;
+}
+*/
+////MISC
 //print useful information about 3SPGEMM about to compute
 void print3SPGEMMCore(spmat* R,spmat* AC,spmat* P,CONFIG* conf);
 #endif

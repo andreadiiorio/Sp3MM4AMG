@@ -6,6 +6,7 @@
 #define	ABS(a)				        ((a) > 0   ? (a) : -(a))
 #define	MIN(a,b)			        ((a) < (b) ? (a) : (b))
 #define MAX(a,b)			        ((a) > (b) ? (a) : (b))
+#define AVG(a,b)                    ( a/2 + b/2 + (a%2+b%2)/2 )
 #define swap(a,b)                   a=a^b;b=b^a;a=a^b
 #define MAT_IDX_ROWMAJ(r,c,cols)	( r*cols+c )
 //ceil(x/y) with integers
@@ -18,8 +19,13 @@
 #define UNIF_REMINDER_DISTRI_STARTIDX(i,div,rem) \
     ( i * div + MIN(i,rem)*1 )
 
-#define _ERRPRINT(str)               fprintf( stderr,str )
-#define ERRPRINT(str)                fprintf( stderr,"\33[31m\33[1m\33[44m" str "\33[0m" )
+////PRINTS
+#define CHIGHLIGHT                  "\33[1m\33[92m"
+#define CHIGHLIGHTERR               "\33[31m\33[1m\33[44m"
+#define CEND                        "\33[0m"
+#define hprintf(str,...)            printf( CHIGHLIGHT str CEND,__VA_ARGS__ ) 
+#define _ERRPRINT(str)              fprintf( stderr, str )
+#define ERRPRINT(str)               fprintf( stderr, CHIGHLIGHTERR str CEND )
 ///CONSTANTS
 #define DOUBLE_DIFF_THREASH         7e-5
 #define DRNG_DEVFILE                "/dev/urandom"
@@ -51,6 +57,9 @@
 #ifndef CONSISTENCY_CHECKS
     #define CONSISTENCY_CHECKS          if( TRUE )
 #endif
+#ifndef AVG_TIMES_ITERATION
+    #define AVG_TIMES_ITERATION         5
+#endif
 ///aux types
 typedef unsigned char  uchar;
 typedef unsigned short ushort;
@@ -76,7 +85,7 @@ typedef _DECIMAL_TRGT_PREC	decimal;
 
 
 //////TODO CONFIGURATION DEFINITIONS
-extern double Start;
+extern double Start,End,Elapsed,ElapsedInternal;
 typedef struct{
     ushort gridRows;
     ushort gridCols;

@@ -6,11 +6,13 @@ expected prefixed lines in this order + template
 @sizes and config
 @compute ... func:X elapsed:XX internalTime:X
 TEMPLATE:
-## /home/andreadiiorio/data/tesi/VanekBrezina/Large/Smoothed/dump_lev_d_p0_l003_r.mtx /home/andreadiiorio/data/tesi/VanekBrezina/Large/Smoothed/dump_lev_d_p0_l002_ac.mtx /home/andreadiiorio/data/tesi/VanekBrezina/Large/Smoothed/dump_lev_d_p0_l003_p.mtx /home/andreadiiorio/data/tesi/VanekBrezina/Large/Smoothed/dump_lev_d_p0_l003_ac.mtx # ./VanekBrezina/Large/Smoothed 2
-preparing time: 1.226807e+00    @COARSENING AC: 64560x64560 ---> 1813x1813      conf grid: 40x8,        NNZ:326894-1903196-326894                            
-@computing Sp3GEMM as pair of SpGEMM with func:0 at:0x403360    elapsed 4.291327e-02 - flops 3.883883e+10       internalTime: 4.169533e-03                   
-@computing Sp3GEMM as pair of SpGEMM with func:1 at:0x402990    elapsed 4.628078e-02 - flops 3.601283e+10       internalTime: 6.217946e-03                   
-@computing Sp3GEMM as pair of SpGEMM with func:2 at:0x403890    elapsed 4.590042e-02 - flops 3.631125e+10       internalTime: 4.198987e-03                   
+## ../../data/Matching/Small/Unsmoothed/dump_lev_d_p0_l003_r.mtx ../../data/Matching/Small/Unsmoothed/dump_lev_d_p0_l002_ac.mtx ../../data/Matching/Small/Unsmoothed/dump_lev_d_p0_l003_p.mtx 
+../../data/Matching/Small/Unsmoothed/dump_lev_d_p0_l003_ac.mtx # ../../data/Matching/Small/Unsmoothed 2                                                                                       
+@COARSENING AC: 343x343 ---> 70x70      conf grid: 8x8, NNZ:343-2261-343                                                                                                                      
+@computing Sp3GEMM as pair of SpGEMM with func:0 at:0x403610    R:70x343 AC:343x343 P:343x70 CSR sp.Mat timeAvg:4.546160e-02 timeVar:4.173552e-09       timeInternalAvg:4.536528e-02 timeInternalVar:3.463142e-09                                                                                                                                                                           
+@computing Sp3GEMM as pair of SpGEMM with func:1 at:0x403930    R:70x343 AC:343x343 P:343x70 CSR sp.Mat timeAvg:4.508296e-02 timeVar:1.414607e-05       timeInternalAvg:4.505302e-02 timeInternalVar:1.414472e-05                                                                                                                                                                           
+@computing Sp3GEMM as pair of SpGEMM with func:2 at:0x403250    R:70x343 AC:343x343 P:343x70 CSR sp.Mat timeAvg:1.607386e-02 timeVar:3.895463e-04       timeInternalAvg:1.599381e-02 timeInternalVar:3.894364e-04                                                                                                                                                                           
+@computing Sp3GEMM as pair of SpGEMM with func:3 at:0x403c80    R:70x343 AC:343x343 P:343x70 CSR sp.Mat timeAvg:4.049085e-04 timeVar:8.014725e-10       timeInternalAvg:1.945628e-04 timeInternalVar:3.897424e-10                                                                                                                                                                           
 all spgemmFuncs passed the test
 
 usage <logFile>
@@ -38,7 +40,7 @@ parseSizes=lambda s:  s #[int(x) for x in s.split("x")] #TODO not good CSV PARSE
 
 
 
-FIELDS = "source,funcN,time,internalTime,preparingTime,srcSize,dstSize,NNZ_R,NNZ_AC,NNZ_P,gridSize"
+FIELDS = "source,funcN,timeAvg,timeVar,internalTimeAvg,internalTimeVar,srcSize,dstSize,NNZ_R,NNZ_AC,NNZ_P,gridSize"
 Execution = namedtuple("Execution",FIELDS)
 
 if "-h" in argv[1] or len(argv)<2:  print(__doc__);exit(1)
@@ -52,18 +54,20 @@ for i,g in enumerate(linesGroup):
     header   = g[0]
     configSiz= g[1]
     computes = list(filter(lambda l:"@" in l,g[2:]))
-    src      = header[header.rfind("#"):].replace(" ","_")
+    src      = header[header.rfind("#"):].strip().replace(" ","_")
     srcSize  = parseSizes(getReMatch("COARSENING AC:\s*("+GRID_PATTERN+")",configSiz))
     dstSize  = parseSizes(getReMatch("-->\s*("+GRID_PATTERN+")",configSiz))
     gridSize = parseSizes(getReMatch("grid:\s*("+GRID_PATTERN+")",configSiz))
     nnz_racp=getReMatch("NNZ:\s*(\d+-\d+-\d+)",configSiz)
     nnz_r,nnz_ac,nnz_p=[int(x) for x in nnz_racp.split("-")]
-    preparingTime = float(getReMatch("preparing time:\s*("+FP_PATTERN+")",configSiz))
+    #preparingTime = float(getReMatch("preparing time:\s*("+FP_PATTERN+")",configSiz))
     for l in computes:
         funcN   = int(getReMatch("func:\s*(\d)",l))
-        elapsed = float(getReMatch("elapsed\s*("+FP_PATTERN+")",l))
-        internalTime = float(getReMatch("internalTime:\s*("+FP_PATTERN+")",l))
-        executionTimes.append(Execution(src,funcN,elapsed,internalTime,preparingTime,srcSize,dstSize,nnz_r,nnz_ac,nnz_p,gridSize))
+        timeAvg = float(getReMatch("timeAvg:\s*("+FP_PATTERN+")",l))
+        timeVar = float(getReMatch("timeVar:\s*("+FP_PATTERN+")",l))
+        timeInternalAvg = float(getReMatch("timeInternalAvg:\s*("+FP_PATTERN+")",l))
+        timeInternalVar = float(getReMatch("timeInternalVar:\s*("+FP_PATTERN+")",l))
+        executionTimes.append(Execution(src,funcN,timeAvg,timeVar,timeInternalAvg,timeInternalVar,srcSize,dstSize,nnz_r,nnz_ac,nnz_p,gridSize))
 
 print(FIELDS)
 for e in executionTimes:    

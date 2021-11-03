@@ -11,17 +11,26 @@
 #include "macros.h"
 #include "sparseMatrix.h"
 
+///inline exports
+spmat*  allocSpMatrix(uint rows, uint cols);
+int     allocSpMatrixInternal(uint rows, uint cols, spmat* mat);
+spmat*  initSpMatrixSpGEMM(spmat* A, spmat* B);
+int     reallocSpMatrix(spmat* mat,uint newSize);
+void    freeSpmatInternal(spmat* mat);
+void    freeSpmat(spmat* mat);
+
 #ifdef DEBUG_TEST_CBLAS
+    #pragma message("INCLUDING CBLAS")
     #include "SpGEMM_OMP_test.h"
 #endif
 
-//inline export here 
-spmat* allocSpMatrix(uint rows, uint cols);
-int allocSpMatrixInternal(uint rows, uint cols, spmat* mat);
-void freeSpmatInternal(spmat* mat);
 
-//global vars	-	audit
-double Start;
+
+//global vars	->	audit
+double Start,End,Elapsed,ElapsedInternal;
+
+////AUX FUNCTIONS
+///scalar-vector multiply
 
 //TODO che guadagno si ha ad utilizzare solo la versione generica delle successive 2 funzioni
 /*
@@ -96,7 +105,64 @@ static inline void scSparseRowMul(double scalar,spmat* mat,uint trgtR, THREAD_AU
 }
 
 
-///AUX
+///OUTPUT SIZE PREDICTION
+uint* spGEMMSizeUpperbound(spmat* A,spmat* B){
+    AUDIT_INTERNAL_TIMES    Start = omp_get_wtime();
+    uint* rowSizes = calloc((A->M+1), sizeof(*rowSizes));
+    if (!rowSizes){
+        ERRPRINT("spGEMMSizeUpperbound: rowSizes calloc errd\n");
+        return NULL;
+    }
+    //#pragma omp parallel for schedule(static)
+    for (uint r=0;  r<A->M; r++){
+        for (uint jj=A->IRP[r],j,rlen;  jj<A->IRP[r+1]; jj++){
+            j = A->JA[jj];
+#ifdef ROWLENS
+            rlen = B->RL[j];
+#else
+            rlen = B->IRP[j+1] - B->IRP[j];
+#endif 
+            rowSizes[r]     += rlen;
+            rowSizes[A->M]  += rlen;    //TODO OMP REDUCTION SUM LIKE TO PARALLELIZE
+        }
+    }
+    AUDIT_INTERNAL_TIMES    End= omp_get_wtime();
+    VERBOSE 
+        printf("spGEMMSizeUpperbound:%u\t%le s\n",rowSizes[A->M],End-Start);
+    return rowSizes;
+}
+
+/*
+ * check SpGEMM resulting matrix @AB = A * B nnz distribution in rows
+ * with the preallocated, forecasted size in @forecastedSizes 
+ * in @forecastedSizes there's for each row -> forecasted size 
+ * and in the last entry the cumulative of the whole matrix
+ */
+static inline void checkOverallocPercent(uint* forecastedSizes,spmat* AB){
+    for (int r=0,rSize,forecastedSize; (uint) r < AB->M; r++){
+        forecastedSize = forecastedSizes[r];
+#ifdef ROWLENS
+        rSize = AB->RL[r];
+#else
+        rSize = AB->IRP[r+1] - AB->IRP[r];
+#endif
+        DEBUGCHECKS{
+            if ( forecastedSize < rSize ){
+                ERRPRINT("BAD FORECASTING\n");
+                exit(22);
+            }
+        }
+        DEBUGPRINT
+            printf("extra forecastedSize of row: %u\t=\t%lf %% \n",
+              r,100*(forecastedSize-rSize) / (double) forecastedSize);
+    }
+    int extraMatrix = forecastedSizes[AB->M] - AB->NZ;
+    VERBOSE
+        printf("extra forecastedSize of the matrix: \t%u\t = %lf %% \n",
+          extraMatrix, 100*extraMatrix /(double) forecastedSizes[AB->M]);
+}
+
+///SPARSE MATRIX PARTITIONING
 /*
  * partition CSR sparse matrix @A in @gridCols columns partitions 
  * returning an offsets matrix out[i][j] = start of jth colPartition of row i
@@ -107,17 +173,17 @@ uint* colsOffsetsPartitioningUnifRanges(spmat* A,uint gridCols){
     uint _colBlock = A->N/gridCols, _colBlockRem = A->N%gridCols;
     uint* offsets = malloc( (subRowsN+1) * sizeof(*offsets) );
     if (!offsets)  {
-        ERRPRINT("offsets malloc errd\n");
+        ERRPRINT("colsOffsetsPartitioningUnifRanges:\toffsets malloc errd\n");
         return NULL;
     }
-    ///OFFSETS COMPUTE FOR COL GROUPS -> O( B.NZ )
-    for (uint r=0, j=0; r<A->M; j=A->IRP[++r]){
+    ///OFFSETS COMPUTE FOR COL GROUPS -> O( A.NZ )
+    for (uint r=0, j=0;     r<A->M;     j=A->IRP[++r]){
+        //navigate column groups inside current row
         for (uint gc=0,gcStartCol=0;  gc<gridCols;  gc++){
-            //goto the to the next  column group inside current row
-            //continuing the B's nnz entries navigation (idx j)
-            for (uint c=A->JA[j]; c<gcStartCol && j<A->IRP[r+1]; c=A->JA[++j]);
+            //goto GroupCols start entry,keeping A's nnz entries navigation (idx j)
+            //for (uint c=A->JA[j]; c<gcStartCol && j < A->IRP[r+1]; c=A->JA[++j]);
+            while ( j < A->IRP[r+1] &&  A->JA[j] < gcStartCol )  j++;
             offsets[ IDX2D(r,gc,gridCols) ] = j;  //row's gc group startIdx
-            //gcStartCol += _colBlock + (gc < _colBlockRem ?1:0);//nextGroup start
             gcStartCol += UNIF_REMINDER_DISTRI(gc,_colBlock,_colBlockRem);
         }
     }
@@ -125,23 +191,23 @@ uint* colsOffsetsPartitioningUnifRanges(spmat* A,uint gridCols){
     return offsets;
 }
 /*
- * partition CSR sparse matrix @A in @gridCols columns partitions as indipended
- * sparse matrixes and return them
+ * partition CSR sparse matrix @A in @gridCols columns partitions as 
+ * indipended and allocated sparse matrixes and return them
  * subdivide @A columns in uniform cols ranges in the output 
  */
 spmat* colsPartitioningUnifRanges(spmat* A,uint gridCols){
     spmat *colParts, *colPart;
     uint _colBlock = A->N/gridCols, _colBlockRem = A->N%gridCols, *tmpJA;
     double* tmpAS;
-    //alloc/init partitions structures
+    ///alloc/init partitions structures
     if (!(colParts = calloc(gridCols, sizeof(*colParts)))){
-        ERRPRINT("columns partitions of A calloc fail\n");
+        ERRPRINT("colsPartitioningUnifRanges\tcolumns partitions of A calloc fail\n");
         return NULL;
     }
     for (uint i=0,colBlock; i<gridCols; i++){
         colBlock = UNIF_REMINDER_DISTRI(i,_colBlock,_colBlockRem);
         if (allocSpMatrixInternal(A->M,colBlock,colParts + i)){
-            ERRPRINT("allocSpMatrixInternal of a A cols partition errd\n");
+            ERRPRINT("colsPartitioningUnifRanges\tallocSpMatrixInternal partition err\n");
             goto _err;
         }
         //TODO overalloc A cols partitions NZ arrays, then realloc
@@ -154,27 +220,27 @@ spmat* colsPartitioningUnifRanges(spmat* A,uint gridCols){
             goto _err;
         }
     }
-    //for each A col part. -> last copied nz value index
-    //TODO also to get cols parts sizes to realloc overallocd AS,JA of A parts
+    //for each A col partition -> last copied nz index = nnz copied ammount
     uint* colPartsLens = alloca(gridCols * sizeof(colPartsLens));
     memset(colPartsLens, 0, sizeof(*colPartsLens) * gridCols);
     //OFFSET BASED COPY OF A.COL_GROUPS -> O( A.NZ )
-    for (uint r=0, j=0; r<A->M; j=A->IRP[++r]){
-        //copy until the to the next  column group inside current row
-        //continuing the A's nnz entries navigation (nz_idx=j+i)
-        for (uint gc=0,gcStartCol=0,i=0;  gc<gridCols;  gc++,j+=i,i=0){
+    for (uint r=0, j=0;     r<A->M;     j=A->IRP[++r]){
+        //navigate column groups inside current row
+        for (uint gc=0,gcEndCol=0,i;  gc<gridCols ;  gc++,j+=i){
+            i = 0;  //@i=len current subpartition of row @r to copy
             colPart = colParts + gc;
             colPart->IRP[r] = colPartsLens[gc];
-            gcStartCol += UNIF_REMINDER_DISTRI(gc,_colBlock,_colBlockRem);
-            //@i=len current subpartition of row @r to compute
-            for (uint c=A->JA[j+i]; c<gcStartCol && j+i<A->IRP[r+1]; c=A->JA[j + ++i]);
-            memcpy(colPart->AS+colPartsLens[gc], A->AS+j, i*sizeof(*(A->AS)));
-            memcpy(colPart->JA+colPartsLens[gc], A->JA+j, i*sizeof(*(A->JA)));
+            gcEndCol += UNIF_REMINDER_DISTRI(gc,_colBlock,_colBlockRem);
+            //goto next GroupCols,keeping A's nnz entries navigation ( index j+i )
+            //for (uint c=A->JA[j+i]; c<gcEndCol && j+i  < A->IRP[r+1]; c=A->JA[j+ ++i]);
+            while ( j+i < A->IRP[r+1] && A->JA[j+i] < gcEndCol ) i++;
+            memcpy(colPart->AS+colPart->IRP[r], A->AS+j, i*sizeof(*(A->AS)));
+            memcpy(colPart->JA+colPart->IRP[r], A->JA+j, i*sizeof(*(A->JA)));
             
+            colPartsLens[gc] += i;
 #ifdef ROWLENS
             colPart->RL[r] = i;
 #endif
-            colPartsLens[gc] += i;
         }
     }
     //TODO realloc overallcd A parts NZ arrays (TODO -> downsizing -> nofails?)
@@ -199,11 +265,194 @@ spmat* colsPartitioningUnifRanges(spmat* A,uint gridCols){
     for (uint i=0; i<gridCols; i++)   freeSpmatInternal(colParts+i);
     return NULL;
 }
+
+////partial [dense] results merging
+///SpGEMM holder of accumulats 
+SPGEMM_ACC* initSpGEMMAcc(uint entriesNum, uint accumulatorsNum){
+    SPGEMM_ACC* out = calloc(1,sizeof(*out));
+    if (!out){
+        ERRPRINT("initSpGEMMAcc:    out calloc errd\n");
+        return NULL;
+    }
+    out->size = entriesNum;
+    if (!(out->JA = malloc(entriesNum * sizeof(*(out->JA))))){
+        ERRPRINT("initSpGEMMAcc:    JA malloc errd\n");
+        goto _err;
+    }
+    if (!(out->AS = malloc(entriesNum * sizeof(*(out->AS))))){
+        ERRPRINT("initSpGEMMAcc:    AS malloc errd\n");
+        goto _err;
+    }
+    if (!(out->accs = malloc(accumulatorsNum * sizeof(*(out->accs))))){
+        ERRPRINT("initSpGEMMAcc:    accs malloc errd\n");
+        goto _err;
+    }
+    return out;
+
+    _err:
+    if (out->JA)    free(out->JA);
+    if (out->AS)    free(out->AS);
+    if (out->accs)  free(out->accs);
+    if (out)        free(out);
+    return NULL;
+}
+
+static inline void freeSpGEMMAcc(SPGEMM_ACC* acc){
+    free(acc->JA);
+    free(acc->AS);
+    free(acc->accs);
+    free(acc);
+}
+
+/*
+ * sparsify dense accumulated vector @accV (with shifted of @startColAcc) 
+ * into sparse accumulator @accSparse that'll use space for nnz entries from @acc
+*/
+static inline void sparsifyDenseVect(SPGEMM_ACC* acc,THREAD_AUX_VECT* accV,
+  SPACC* accSparse, uint startColAcc){
+    //sort nnz indexes of dense accumulator
+    uint nnz = accV -> nnzIdxLast;
+    sortuint(accV->nnzIdx,nnz); //sort nnz idx for ordered write
+    accSparse -> len = nnz;
+    uint accSparseStartIdx;
+    accSparseStartIdx = __atomic_fetch_add(&(acc->lastAssigned),nnz,__ATOMIC_SEQ_CST); 
+    /*#pragma omp atomic capture
+    {   //fetch and add like .... 
+        accSparseStartIdx = acc->lastAssigned;
+        acc->lastAssigned += nnz;
+    }*/
+    DEBUGCHECKS{
+        if (acc->lastAssigned >= acc->size){
+            ERRPRINT("OMP ATOMIC OR SG ERRD IN SPACE ASSIGNMENTS...\n");
+            exit(22);
+        }
+    }
+    //
+    accSparse -> AS = acc->AS + accSparseStartIdx; 
+    accSparse -> JA = acc->JA + accSparseStartIdx; 
+    ///sparsify dense acc.v into row
+    for (uint i=0,j;    i<nnz;   i++){ 
+        j = accV -> nnzIdx[i];        //shifted idx of a nnz of sp.Vect accumulator
+        accSparse -> JA[i] = j + startColAcc;
+        accSparse -> AS[i] = accV->v[j];
+    }
+    //TODO USED TO BE A CONSISTENCY CHECK
+}
+
+/*
+ * merge @conf->gridCols*@mat->M sparse rows partitions into @mat
+ * EXPECTED rowsParts @rowsParts to be sorted in accord to the 
+ * 2D rowMajor computing grid given in @conf
+ * allocd arrays to hold non zero values and indexes into @mat
+ */
+static inline int mergeRowsPartitions(SPACC* rowsParts,spmat* mat,
+  CONFIG* conf){
+    uint nzNum=0,j,rLen,idx,partsNum = mat->M * conf->gridCols;
+    //TODO PARALLEL MERGE - SAVE STARTING OFFSET OF EACH PARTITION IN THE OUT MATRIX
+    uint* rowsPartsOffsets=alloca(partsNum*sizeof(*rowsPartsOffsets));
+    ///count nnz entries and alloc arrays for them
+    for (uint r=0; r<mat->M; r++){
+        //for each partition ->get len -> outMat.IRP and aux offsets  
+        for (j=0,rLen=0; j<conf->gridCols; j++){
+            idx = IDX2D(r,j,conf->gridCols);
+            rowsPartsOffsets[idx]=nzNum+rLen;//part start=prev accumulated end
+            rLen += rowsParts[idx].len;
+        }
+        nzNum += rLen;
+        mat->IRP[r+1] = nzNum;
+#ifdef ROWLENS
+        mat->RL[r] = rLen;
+#endif
+    }
+    mat->NZ = nzNum;
+    if (!(mat->AS = malloc(nzNum * sizeof(*(mat->AS))))){
+        ERRPRINT("merged sparse matrix AS alloc errd\n");
+        return EXIT_FAILURE;
+    }  
+    if (!(mat->JA = malloc(nzNum * sizeof(*(mat->JA))))){
+        ERRPRINT("merged sparse matrix JA alloc errd\n");
+        return EXIT_FAILURE;
+    }
+    ///POPOLATE WITH ROWS NNZ VALUES AND INDEXES
+    //OLD FOR
+    //for (uint i=0,startOff=0,pLen;  i<partsNum;  startOff+=rowsParts[i++].len){
+    //TODO PARALLEL PARTS MEMCOPY
+    uint pLen; //omp for aux vars
+    #pragma omp parallel for schedule(static) private(pLen)
+    for (uint i=0;  i<partsNum; i++){
+        pLen = rowsParts[i].len;
+        memcpy(mat->AS + rowsPartsOffsets[i],rowsParts[i].AS,pLen*sizeof(*(mat->AS)));
+        memcpy(mat->JA + rowsPartsOffsets[i],rowsParts[i].JA,pLen*sizeof(*(mat->JA)));
+    }
+    CONSISTENCY_CHECKS{ //TODO REMOVE written nnz check manually
+        for (uint i=0,w=0; i<mat->M; i++){
+            if (mat->IRP[i] != w) 
+                {ERRPRINT("MERGE ROW ERR IRP\n");return -1;}
+            for (j=0; j<conf->gridCols; j++){
+                SPACC r = rowsParts[IDX2D(i,j,conf->gridCols)];
+                for (uint jj=0; jj<r.len; jj++,w++){
+                    if (mat->AS[w]!= r.AS[jj]){
+                        ERRPRINT("MERGE ROW ERR AS\n"); return -1;}
+                    if (mat->JA[w]!= r.JA[jj]){
+                        ERRPRINT("MERGE ROW ERR JA\n"); return -1;}
+                }
+            }
+        }
+    }
+    return EXIT_SUCCESS;
+}
+/*
+ * merge @mat->M sparse rows @rows in sparse matrix @mat
+ * EXPECTED @rows to be sorted in accord to trgt matrix row index @r
+ * allocd arrays to hold non zero values and indexes into @mat
+ */
+static inline int mergeRows(SPACC* rows,spmat* mat){
+    uint nzNum=0;
+    //count nnz entries and alloc arrays for them
+    for (uint r=0;   r<mat->M;   ++r){
+        nzNum += rows[r].len;
+        mat->IRP[r+1] = nzNum;
+#ifdef ROWLENS
+        mat->RL[r]  = rows[r].len
+#endif
+    }
+    mat->NZ = nzNum;
+    if (!(mat->AS = malloc(nzNum * sizeof(*(mat->AS))))){
+        ERRPRINT("merged sparse matrix AS alloc errd\n");
+        return EXIT_FAILURE;
+    }  
+    if (!(mat->JA = malloc(nzNum * sizeof(*(mat->JA))))){
+        ERRPRINT("merged sparse matrix JA alloc errd\n");
+        return EXIT_FAILURE;
+    }
+    ///POPOLATE WITH ROWS NNZ VALUES AND INDEXES
+    //TODO PARALLEL COPY
+    #pragma omp parallel for schedule(static)
+    for (uint r=0; r<mat->M; r++){
+        memcpy(mat->AS + mat->IRP[r],rows[r].AS,rows[r].len*sizeof(*(mat->AS)));
+        memcpy(mat->JA + mat->IRP[r],rows[r].JA,rows[r].len*sizeof(*(mat->JA)));
+    }
+    CONSISTENCY_CHECKS{ //TODO REMOVE written nnz check manually
+        for (uint r=0,i=0; r<mat->M; r++){
+            if (i != mat->IRP[r])
+                {ERRPRINT("MERGE ROW ERR IRP\n");return -1;}
+            for (uint j=0; j<rows[r].len; j++,i++){
+                if (mat->AS[i]!= rows[r].AS[j]){
+                    ERRPRINT("MERGE ROW ERR AS\n"); return -1;}
+                if (mat->JA[i]   != rows[r].JA[j]){
+                    ERRPRINT("MERGE ROW ERR JA\n"); return -1;}
+            }
+        }
+    }
+    return EXIT_SUCCESS;
+} 
+
+///DENSE accumulator utils
 /*
  * alloc threads' aux arrays once and split them in threads' structures
- *so free them once from the first thread struct, with the original pointers returned from the alloc
+ * so free them once from the first thread struct, with the original pointers returned from the alloc
  */
-static THREAD_AUX_VECT* _initAccVectors_monoalloc(uint num,uint size){
+static THREAD_AUX_VECT* _initAccVectors_monoalloc(uint num,uint size){ //TODO PERF WITH NEXT
     THREAD_AUX_VECT* out    = NULL;
     double* vAll            = NULL;
     uint* vAllNzIdx         = NULL;
@@ -271,7 +520,8 @@ static inline void _resetAccVect(THREAD_AUX_VECT* acc){
     memset(acc->nnzIdx,0,acc->vLen * sizeof(*(acc->nnzIdx)));
     acc->nnzIdxLast = 0;
 }
-static void _freeAccVectorsChecks(THREAD_AUX_VECT* vectors,uint num){
+//TODO free only allocated subvectors ... u.c. direct use _allocAuxVect
+static void _freeAccVectorsChecks(THREAD_AUX_VECT* vectors,uint num){ 
     if (!vectors)   return;
     for (uint i=0; i<num; i++){
         if(vectors[i].v)        free(vectors[i].v);
@@ -279,7 +529,7 @@ static void _freeAccVectorsChecks(THREAD_AUX_VECT* vectors,uint num){
     }
     free(vectors);
 }
-static void _freeAccVectors(THREAD_AUX_VECT* vectors,uint num){
+static void freeAccVectors(THREAD_AUX_VECT* vectors,uint num){
     for (uint i=0; i<num; i++){
         free(vectors[i].v);
         free(vectors[i].nnzIdx);
@@ -288,170 +538,12 @@ static void _freeAccVectors(THREAD_AUX_VECT* vectors,uint num){
 }
 
 
-/*
- * sparsify accumulated vector @accV into sparse matrix row [partition] @accSparse
- * @accV has non zero values and indexed shifted back of @startColAcc columns
- */
-static inline int sparsifyDenseVect(THREAD_AUX_VECT* accV,SPMATROW* accSparse,
-  uint startColAcc){
-    uint nnz = accV -> nnzIdxLast;
-    accSparse -> len = nnz;
-    //alloc row nnz element space
-    if (!(accSparse->AS = malloc(nnz * sizeof(*(accSparse->AS))))){
-        ERRPRINT("sparsifyDenseVect: accSparse->AS malloc error\n");
-        goto _err;
-    }
-    if (!(accSparse->JA = malloc(nnz * sizeof(*(accSparse->JA))))){
-        ERRPRINT("sparsifyDenseVect: accSparse->JA malloc error\n");
-        goto _err;
-    }
-
-    sortuint(accV->nnzIdx,nnz); //sort nnz idx for ordered write
-
-    ///SPARSIFY DENSE ACC.V INTO ROW
-    for (uint i=0,j;    i<nnz;   i++){ 
-        j = accV -> nnzIdx[i];        //shifted idx of a nnz of sp.Vect accumulator
-        accSparse -> JA[i] = j + startColAcc;
-        accSparse -> AS[i] = accV->v[j];
-    }
-    CONSISTENCY_CHECKS{ //TODO check if nnzIdxs sparsify is good as a full scan
-        double* tmpNNZ = calloc(accV->vLen, sizeof(*tmpNNZ)); //TODO OVERFLOW POSSIBLE
-        if (!tmpNNZ){ERRPRINT("sparsify check tmpNNZ malloc err\n");goto _err;}
-        uint ii=0;
-        for (uint i=0; i< accV->vLen; i++){
-            if ( accV->v[i] )   tmpNNZ[ii++] = accV->v[i];
-        }
-        if (memcmp(tmpNNZ,accSparse->AS,nnz*sizeof(*tmpNNZ)))
-        //if (doubleVectorsDiff(tmpNNZ,accSparse->AS,nnz))
-            //{ERRPRINT("quick sparsify check err\n");free(tmpNNZ);goto _err;}
-        if (ii != nnz){
-            fprintf(stderr,"quick sparsify nnz num wrong!:%u<->%u\n",ii,nnz);
-            free(tmpNNZ);goto _err;
-        }
-        free(tmpNNZ);
-    }
-    return EXIT_SUCCESS;
-    _err:
-    //if(accSparse->AS)  free(accSparse->AS); //TODO free anyway later
-    //if(accSparse->JA)  free(accSparse->JA);
-    return EXIT_FAILURE;    
-}
-
-/*
- * merge @conf->gridCols*@mat->M sparse rows partitions into @mat
- * EXPECTED rowsParts @rowsParts to be sorted in accord to the 
- * 2D rowMajor computing grid given in @conf
- * allocd arrays to hold non zero values and indexes into @mat
- */
-static inline int mergeRowsPartitions(SPMATROW* rowsParts,spmat* mat,
-  CONFIG* conf){
-    uint nzNum=0,j,rLen,idx,partsNum = mat->M * conf->gridCols;
-    //TODO PARALLEL MERGE - SAVE STARTING OFFSET OF EACH PARTITION IN THE OUT MATRIX
-    uint* rowsPartsOffsets=alloca(partsNum*sizeof(*rowsPartsOffsets));
-    ///count nnz entries and alloc arrays for them
-    for (uint r=0; r<mat->M; r++){
-        //for each partition ->get len -> outMat.IRP and aux offsets  
-        for (j=0,rLen=0; j<conf->gridCols; j++){
-            idx = IDX2D(r,j,conf->gridCols);
-            rowsPartsOffsets[idx]=nzNum+rLen;//part start=prev accumulated end
-            rLen += rowsParts[idx].len;
-        }
-        nzNum += rLen;
-        mat->IRP[r+1] = nzNum;
-#ifdef ROWLENS
-        mat->RL[r] = rLen;
-#endif
-    }
-    mat->NZ = nzNum;
-    if (!(mat->AS = malloc(nzNum * sizeof(*(mat->AS))))){
-        ERRPRINT("merged sparse matrix AS alloc errd\n");
-        return EXIT_FAILURE;
-    }  
-    if (!(mat->JA = malloc(nzNum * sizeof(*(mat->JA))))){
-        ERRPRINT("merged sparse matrix JA alloc errd\n");
-        return EXIT_FAILURE;
-    }
-    ///POPOLATE WITH ROWS NNZ VALUES AND INDEXES
-    //OLD FOR
-    //for (uint i=0,startOff=0,pLen;  i<partsNum;  startOff+=rowsParts[i++].len){
-    //TODO PARALLEL PARTS MEMCOPY
-    uint pLen; //omp for aux vars
-    #pragma omp parallel for schedule(static) private(pLen)
-    for (uint i=0;  i<partsNum; i++){
-        pLen = rowsParts[i].len;
-        memcpy(mat->AS + rowsPartsOffsets[i],rowsParts[i].AS,pLen*sizeof(*(mat->AS)));
-        memcpy(mat->JA + rowsPartsOffsets[i],rowsParts[i].JA,pLen*sizeof(*(mat->JA)));
-    }
-    CONSISTENCY_CHECKS{ //TODO REMOVE written nnz check manually
-        for (uint i=0,w=0; i<mat->M; i++){
-            if (mat->IRP[i] != w) 
-                {ERRPRINT("MERGE ROW ERR IRP\n");return -1;}
-            for (j=0; j<conf->gridCols; j++){
-                SPMATROW r = rowsParts[IDX2D(i,j,conf->gridCols)];
-                for (uint jj=0; jj<r.len; jj++,w++){
-                    if (mat->AS[w]!= r.AS[jj]){
-                        ERRPRINT("MERGE ROW ERR AS\n"); return -1;}
-                    if (mat->JA[w]!= r.JA[jj]){
-                        ERRPRINT("MERGE ROW ERR JA\n"); return -1;}
-                }
-            }
-        }
-    }
-    return EXIT_SUCCESS;
-}
-
-/*
- * merge @mat->M sparse rows @rows in sparse matrix @mat
- * EXPECTED @rows to be sorted in accord to trgt matrix row index @r
- * allocd arrays to hold non zero values and indexes into @mat
- */
-static inline int mergeRows(SPMATROW* rows,spmat* mat){
-    uint nzNum=0;
-    //count nnz entries and alloc arrays for them
-    for (uint r=0;   r<mat->M;   ++r){
-        nzNum += rows[r].len;
-        mat->IRP[r+1] = nzNum;
-#ifdef ROWLENS
-        mat->RL[r]  = rows[r].len
-#endif
-    }
-    mat->NZ = nzNum;
-    if (!(mat->AS = malloc(nzNum * sizeof(*(mat->AS))))){
-        ERRPRINT("merged sparse matrix AS alloc errd\n");
-        return EXIT_FAILURE;
-    }  
-    if (!(mat->JA = malloc(nzNum * sizeof(*(mat->JA))))){
-        ERRPRINT("merged sparse matrix JA alloc errd\n");
-        return EXIT_FAILURE;
-    }
-    ///POPOLATE WITH ROWS NNZ VALUES AND INDEXES
-    //TODO PARALLEL COPY
-    #pragma omp parallel for schedule(static)
-    for (uint r=0; r<mat->M; r++){
-        memcpy(mat->AS + mat->IRP[r],rows[r].AS,rows[r].len*sizeof(*(mat->AS)));
-        memcpy(mat->JA + mat->IRP[r],rows[r].JA,rows[r].len*sizeof(*(mat->JA)));
-    }
-    CONSISTENCY_CHECKS{ //TODO REMOVE written nnz check manually
-        for (uint r=0,i=0; r<mat->M; r++){
-            if (i != mat->IRP[r])
-                {ERRPRINT("MERGE ROW ERR IRP\n");return -1;}
-            for (uint j=0; j<rows[r].len; j++,i++){
-                if (mat->AS[i]!= rows[r].AS[j]){
-                    ERRPRINT("MERGE ROW ERR AS\n"); return -1;}
-                if (mat->JA[i]   != rows[r].JA[j]){
-                    ERRPRINT("MERGE ROW ERR JA\n"); return -1;}
-            }
-        }
-    }
-    return EXIT_SUCCESS;
-} 
-    
 //////////////////////// COMPUTE CORE /////////////////////////////////////////
+///1D
 spmat* spgemmTemplate(spmat* A,spmat* B, CONFIG* conf){ //TODO TEMPLATE FOR AN SPGEMM
-    DEBUG printf("spgemm rowBlocks of A, (allcd) colBlocks of B\tM=%uxN=%u\n",A->M,B->N);
+    DEBUG printf("spgemm\trows of A,\t(allcd) colBlocks of B\tM=%uxN=%u\n",A->M,B->N);
     spmat* AB = allocSpMatrix(A->M,B->N);
     if (!AB)    goto _err;
-     
 
     _err:
     freeSpmat(AB);  AB = NULL; 
@@ -460,89 +552,78 @@ spmat* spgemmTemplate(spmat* A,spmat* B, CONFIG* conf){ //TODO TEMPLATE FOR AN S
     return AB;
 }
 spmat* spgemmGustavsonRows(spmat* A,spmat* B, CONFIG* conf){
-    DEBUG printf("spgemm rowBlocks of A, full B\tM=%u x N=%u\n",A->M,B->N);
+    DEBUG printf("spgemm\trows of A,\tfull B\tM=%u x N=%u\n",A->M,B->N);
     ///thread aux
     THREAD_AUX_VECT *accVects = NULL,*acc;
-    SPMATROW*       accRows  = NULL;
-    ///init AB matrix
+    SPGEMM_ACC* outAccumul=NULL;
+    uint* rowsSizes = NULL;
+    ///init AB matrix with SPGEMM heuristic preallocation
     spmat* AB = allocSpMatrix(A->M,B->N);
     if (!AB)    goto _err;
+    if (!(rowsSizes = spGEMMSizeUpperbound(A,B)))   goto _err;
+    
     ///aux structures alloc 
     if (!(accVects = _initAccVectors(conf->threadNum,AB->N))){
         ERRPRINT("accVects init failed\n");
         goto _err;
     }
-    if (!(accRows = calloc(AB->M , sizeof(*accRows)))) {
-        ERRPRINT("accRows malloc failed\n");
-        goto _err;
-    }
-    //init sparse row accumulators row indexes //TODO usefull in balance->reorder case
-    for (uint r=0; r<AB->M; r++)    accRows[r].r = r;
-   
-    uint err;
+    if (!(outAccumul = initSpGEMMAcc(rowsSizes[AB->M],AB->M)))  goto _err;
+
     AUDIT_INTERNAL_TIMES	Start=omp_get_wtime();
-    #pragma omp parallel for schedule(static) private(acc)
+    #pragma omp parallel for schedule(runtime) private(acc)
     for (uint r=0;  r<A->M; r++){    //row-by-row formulation
         //iterate over nz entry index c inside current row r
         acc = accVects + omp_get_thread_num();
-        for (uint c=A->IRP[r]; c<A->IRP[r+1]; c++) //row-by-row formul. accumulation
+        for (uint c=A->IRP[r]; c<A->IRP[r+1]; c++) //row-by-row formul
             scSparseRowMul(A->AS[c], B, A->JA[c], acc);
-        //trasform accumulated dense vector to CSR with using the aux idxs
-        if ((err=sparsifyDenseVect(acc,accRows + r,0))){
-            fprintf(stderr,"sparsify failed ar row %u.\t aborting.\n",r);
-            #pragma omp cancel for
-        }
+        //trasform accumulated dense vector to a CSR row
+        sparsifyDenseVect(outAccumul,acc,outAccumul->accs + r,0);
         _resetAccVect(acc);   //rezero for the next A row
     }
-    if (err)                      goto _err;
     ///merge sparse row computed before
-    if (mergeRows(accRows,AB))    goto _err;
-
+    if (mergeRows(outAccumul->accs,AB))    goto _err;
+    AUDIT_INTERNAL_TIMES	End=omp_get_wtime();
+    DEBUG                   checkOverallocPercent(rowsSizes,AB);
     goto _free;
-    
+
     _err:
     if(AB)  freeSpmat(AB);
     AB=NULL;    //nothing'll be returned
     _free:
-    if (accRows){
-        for (uint r=0; r<AB->M; r++)    freeSpRow(accRows + r);
-        free(accRows);
-    }
-    if(accVects)     _freeAccVectors(accVects,conf->threadNum);
+    if(rowsSizes)   free(rowsSizes);
+    if(accVects)    freeAccVectors(accVects,conf->threadNum);
+    if(outAccumul)  freeSpGEMMAcc(outAccumul);
 
     return AB;
 }
 
 spmat* spgemmGustavsonRowBlocks(spmat* A,spmat* B, CONFIG* conf){
-    DEBUG printf("spgemm rowBlocks of A, full B\tM=%u x N=%u\n",A->M,B->N);
+    DEBUG printf("spgemm\trowBlocks of A,\tfull B\tM=%u x N=%u\n",A->M,B->N);
     ///thread aux
-    THREAD_AUX_VECT* accVect = NULL;
-    SPMATROW*       accRows  = NULL;
-    ///init AB matrix
+    THREAD_AUX_VECT *accVects = NULL,*acc;
+    SPGEMM_ACC* outAccumul=NULL;
+    uint* rowsSizes = NULL;
+    ///init AB matrix with SPGEMM heuristic preallocation
     spmat* AB = allocSpMatrix(A->M,B->N);
     if (!AB)    goto _err;
+    if (!(rowsSizes = spGEMMSizeUpperbound(A,B)))   goto _err;
+    ///aux structures alloc 
+    if (!(accVects = _initAccVectors(conf->gridRows,AB->N))){
+        ERRPRINT("accVects init failed\n");
+        goto _err;
+    }
+    if (!(outAccumul = initSpGEMMAcc(rowsSizes[AB->M],AB->M)))  goto _err;
+   
     //perform Gustavson over rows blocks -> M / @conf->gridRows
     uint rowBlock = AB->M/conf->gridRows, rowBlockRem = AB->M%conf->gridRows;
-    ///aux structures alloc
-    if (!(accVect = _initAccVectors(conf->gridRows,AB->N))){
-        ERRPRINT("accVect init failed\n");
-        goto _err;
-    }
-    if (!(accRows = calloc(AB->M , sizeof(*accRows)))) {
-        ERRPRINT("accRows malloc failed\n");
-        goto _err;
-    }
-    //init sparse row accumulators row indexes //TODO usefull in balance - reorder case
-    for (uint r=0; r<AB->M; r++)    accRows[r].r = r;
-   
     AUDIT_INTERNAL_TIMES	Start=omp_get_wtime();
-    uint b,startRow,block,err; //omp for aux vars
-    #pragma omp parallel for schedule(static) private(startRow,block)
+    uint b,startRow,block; //omp for aux vars
+    #pragma omp parallel for schedule(runtime) private(acc,startRow,block)
     for (b=0;   b < conf->gridRows; b++){
         block      = UNIF_REMINDER_DISTRI(b,rowBlock,rowBlockRem);
         startRow   = UNIF_REMINDER_DISTRI_STARTIDX(b,rowBlock,rowBlockRem);
        
-        DEBUG{
+        DEBUGPRINT{
             fflush(NULL);
             printf("block %u\t%u:%u(%u)\n",b,startRow,startRow+block-1,block);
             fflush(NULL);
@@ -550,44 +631,43 @@ spmat* spgemmGustavsonRowBlocks(spmat* A,spmat* B, CONFIG* conf){
         //row-by-row formulation in the given row block
         for (uint r=startRow;  r<startRow+block;  r++){
             //iterate over nz entry index c inside current row r
-            for (uint c=A->IRP[r]; c<A->IRP[r+1]; c++) //row-by-row formul. accumulation
-                scSparseRowMul(A->AS[c], B, A->JA[c], accVect+b);
-            //trasform accumulated dense vector to CSR with using the aux idxs
-            if ((err=sparsifyDenseVect(accVect+b,accRows + r,0))){
-                fprintf(stderr,"sparsify failed ar row %u.\t aborting.\n",r);
-                #pragma omp cancel for
-            }
-            _resetAccVect(accVect+b);   //rezero for the next A row
+            acc = accVects + b;
+            for (uint c=A->IRP[r]; c<A->IRP[r+1]; c++) 
+                scSparseRowMul(A->AS[c], B, A->JA[c], acc);
+            //trasform accumulated dense vector to a CSR row
+            sparsifyDenseVect(outAccumul,acc,outAccumul->accs + r,0);
+            _resetAccVect(acc);   //rezero for the next A row
         }
     }
-    if (err)                      goto _err;
     ///merge sparse row computed before
-    if (mergeRows(accRows,AB))    goto _err;
-
-
+    if (mergeRows(outAccumul->accs,AB))    goto _err;
+    AUDIT_INTERNAL_TIMES	End=omp_get_wtime();
+    DEBUG                   checkOverallocPercent(rowsSizes,AB);
     goto _free;
-    
+
     _err:
     if(AB)  freeSpmat(AB);
     AB=NULL;    //nothing'll be returned
     _free:
-    if (accRows){
-        for (uint r=0; r<AB->M; r++)    freeSpRow(accRows + r);
-        free(accRows);
-    }
-    if(accVect)     _freeAccVectors(accVect,conf->gridRows);
+    if(rowsSizes)   free(rowsSizes);
+    if(accVects)    freeAccVectors(accVects,conf->gridRows);
+    if(outAccumul)  freeSpGEMMAcc(outAccumul);
 
     return AB;
 }
 
+///2D
 //PARTITIONS NOT ALLOCATED
 spmat* spgemmGustavson2DBlocks(spmat* A,spmat* B, CONFIG* conf){ 
-    DEBUG printf("spgemm A rowBlocks , B colBlocks\tM=%uxN=%u\n",A->M,B->N);
+    DEBUG printf("spgemm\trowBlocks of A ,\tcolBlocks of B\tM=%uxN=%u\n",A->M,B->N);
     uint* offsets = NULL;   //B group columns starting offset for each row
     THREAD_AUX_VECT *accVectors=NULL,*accV;
-    SPMATROW* accRowsParts=NULL, *accRowPart;
+    SPACC* accRowPart;
     spmat* AB = allocSpMatrix(A->M,B->N);
+    SPGEMM_ACC* outAccumul=NULL;
+    uint*   rowsSizes=NULL;
     if (!AB)    goto _err;
+    if (!(rowsSizes = spGEMMSizeUpperbound(A,B)))   goto _err;
      
     //2D indexing aux vars
     uint gridSize=conf->gridRows*conf->gridCols, subRowsN=B->M*conf->gridCols;
@@ -600,21 +680,17 @@ spmat* spgemmGustavson2DBlocks(spmat* A,spmat* B, CONFIG* conf){
         goto _err;
 
     ///other AUX struct alloc
-    //TODO aux vector of different sizes -> individual alloc later
-    if (!(accVectors = calloc(gridSize, sizeof(*accVectors)))){
+    if (!(accVectors = _initAccVectors(gridSize,_colBlock+(_colBlockRem?1:0)))){
         ERRPRINT("accVectors calloc failed\n");
         goto _err;
     }
-    if (!(accRowsParts = calloc(subRowsN, sizeof(*accRowsParts)))){
-        ERRPRINT("accRowsParts calloc errd\n");
-        goto _err;
-    }
+    if (!(outAccumul = initSpGEMMAcc(rowsSizes[AB->M],subRowsN)))   goto _err;
 
     uint bPartLen,bPartID,bPartOffset;//B partition acces aux vars
     
     AUDIT_INTERNAL_TIMES	Start=omp_get_wtime();
-    uint tileID,t_i,t_j,err=0;    //for aux vars
-    #pragma omp parallel for schedule(static) \
+    uint tileID,t_i,t_j;                            //for aux vars
+    #pragma omp parallel for schedule(runtime) \
       private(accV,accRowPart,rowBlock,colBlock,startRow,startCol,\
       bPartLen,bPartID,bPartOffset,t_i,t_j)
     for (tileID = 0; tileID < gridSize; tileID++){
@@ -624,17 +700,14 @@ spmat* spgemmGustavson2DBlocks(spmat* A,spmat* B, CONFIG* conf){
         t_j = tileID%conf->gridCols;  //j-th col block
         //get tile row-cols group FAIR sizes
         rowBlock = UNIF_REMINDER_DISTRI(t_i,_rowBlock,_rowBlockRem); 
-        colBlock = UNIF_REMINDER_DISTRI(t_j,_colBlock,_colBlockRem);
         startRow = UNIF_REMINDER_DISTRI_STARTIDX(t_i,_rowBlock,_rowBlockRem);
         startCol = UNIF_REMINDER_DISTRI_STARTIDX(t_j,_colBlock,_colBlockRem);
         
         accV = accVectors + tileID; 
-        if ((err=_allocAuxVect(accV,colBlock))){
-            #pragma omp cancel for
-        }
          
-        DEBUG{
+        DEBUGPRINT{
             fflush(NULL);
+            colBlock = UNIF_REMINDER_DISTRI(t_j,_colBlock,_colBlockRem);
             printf("rowBlock [%u\t%u:%u(%u)]\t",t_i,startRow,startRow+rowBlock-1,rowBlock);
             printf("colBlock [%u\t%u:%u(%u)]\n",t_j,startCol,startCol+colBlock-1,colBlock);
             fflush(NULL);
@@ -654,28 +727,24 @@ spmat* spgemmGustavson2DBlocks(spmat* A,spmat* B, CONFIG* conf){
                   B->JA+bPartOffset,bPartLen,startCol,accV);
             }
 
-            accRowPart = accRowsParts + IDX2D(r,t_j,conf->gridCols);
-            if ((err=sparsifyDenseVect(accV,accRowPart,startCol))){
-                fprintf(stderr,"err sparsify at block %u,%u\n",t_i,t_j);
-                #pragma omp cancel for
-            }
+            accRowPart = outAccumul->accs + IDX2D(r,t_j,conf->gridCols);
+            sparsifyDenseVect(outAccumul,accV,accRowPart,startCol);
             _resetAccVect(accV);
         }
     }
-    if (err)                                        goto _err;
-    if (mergeRowsPartitions(accRowsParts,AB,conf))  goto _err;
+    if (mergeRowsPartitions(outAccumul->accs,AB,conf))  goto _err;
+    AUDIT_INTERNAL_TIMES	End=omp_get_wtime();
+    DEBUG                   checkOverallocPercent(rowsSizes,AB);
     goto _free;
 
     _err:
     if (AB) freeSpmat(AB);
     AB = NULL; 
     _free:
+    if (rowsSizes)   free(rowsSizes);
     if (offsets)     free(offsets);
-    if (accRowsParts){
-        for(uint i=0;i<subRowsN;i++)    freeSpRow(accRowsParts+i);
-        free(accRowsParts);
-    }
-    _freeAccVectorsChecks(accVectors,gridSize);
+    if (accVectors)  freeAccVectors(accVectors,gridSize);
+    if (outAccumul)  freeSpGEMMAcc(outAccumul);
     
     return AB;
         
@@ -685,33 +754,32 @@ spmat* spgemmGustavson2DBlocks(spmat* A,spmat* B, CONFIG* conf){
 
 
 spmat* spgemmGustavson2DBlocksAllocated(spmat* A,spmat* B, CONFIG* conf){
-    DEBUG printf("spgemm rowBlocks of A, (allcd) colBlocks of B\tM=%uxN=%u\n",A->M,B->N);
+    DEBUG printf("spgemm\trowBlocks of A,\tcolBlocks (allcd) of B\tM=%uxN=%u\n",A->M,B->N);
     spmat *AB = NULL, *colPartsB = NULL, *colPart;
-    if (!(AB = allocSpMatrix(A->M,B->N)))   goto _err;
+    uint*   rowsSizes=NULL;
+    //aux vectors  
+    SPGEMM_ACC* outAccumul=NULL;
+    THREAD_AUX_VECT *accVectors=NULL,*accV;
+    SPACC* accRowPart;
+    if (!(AB = allocSpMatrix(A->M,B->N)))           goto _err;
+    if (!(rowsSizes = spGEMMSizeUpperbound(A,B)))   goto _err;
     //2D indexing aux vars
     uint gridSize=conf->gridRows*conf->gridCols, subRowsN=B->M*conf->gridCols;
     uint _rowBlock = AB->M/conf->gridRows, _rowBlockRem = AB->M%conf->gridRows;
     uint _colBlock = AB->N/conf->gridCols, _colBlockRem = AB->N%conf->gridCols;
     uint startRow,startCol,rowBlock,colBlock; //data division aux variables
-    //aux vectors  
-    THREAD_AUX_VECT *accVectors=NULL,*accV;
-    SPMATROW* accRowsParts=NULL, *accRowPart;
     ////B cols  partition in CSRs
     if (!(colPartsB = colsPartitioningUnifRanges(B,conf->gridCols)))  goto _err;
     ///other AUX struct alloc
-    //TODO aux vector of different sizes -> individual alloc later
-    if (!(accVectors = calloc(gridSize, sizeof(*accVectors)))){
+    if (!(accVectors = _initAccVectors(gridSize,_colBlock+(_colBlockRem?1:0)))){
         ERRPRINT("accVectors calloc failed\n");
         goto _err;
     }
-    if (!(accRowsParts = calloc(subRowsN, sizeof(*accRowsParts)))){
-        ERRPRINT("accRowsParts calloc errd\n");
-        goto _err;
-    }
+    if (!(outAccumul = initSpGEMMAcc(rowsSizes[AB->M],subRowsN)))   goto _err;
     
     AUDIT_INTERNAL_TIMES	Start=omp_get_wtime();
-    uint tileID,t_i,t_j,err=0;    //for aux vars
-    #pragma omp parallel for schedule(static) \
+    uint tileID,t_i,t_j;    //for aux vars
+    #pragma omp parallel for schedule(runtime) \
       private(accV,accRowPart,colPart,rowBlock,colBlock,startRow,startCol,t_i,t_j)
     for (tileID = 0; tileID < gridSize; tileID++){
         ///get iteration's indexing variables
@@ -726,11 +794,8 @@ spmat* spgemmGustavson2DBlocksAllocated(spmat* A,spmat* B, CONFIG* conf){
         
         colPart = colPartsB + t_j;
         accV = accVectors + tileID; 
-        if ((err=_allocAuxVect(accV,colBlock))){
-            #pragma omp cancel for
-        }
          
-        DEBUG{
+        DEBUGPRINT{
             fflush(NULL);
             printf("rowBlock [%u\t%u:%u(%u)]\t",t_i,startRow,startRow+rowBlock-1,rowBlock);
             printf("colBlock [%u\t%u:%u(%u)]\n",t_j,startCol,startCol+colBlock-1,colBlock);
@@ -754,16 +819,14 @@ spmat* spgemmGustavson2DBlocksAllocated(spmat* A,spmat* B, CONFIG* conf){
                     bRowLen,startCol,accV);
             }
 
-            accRowPart = accRowsParts + IDX2D(r,t_j,conf->gridCols);
-            if ((err=sparsifyDenseVect(accV,accRowPart,startCol))){
-                fprintf(stderr,"err sparsify at block %u,%u\n",t_i,t_j);
-                #pragma omp cancel for
-            }
+            accRowPart = outAccumul->accs + IDX2D(r,t_j,conf->gridCols);
+            sparsifyDenseVect(outAccumul,accV,accRowPart,startCol);
             _resetAccVect(accV);
         }
     }
-    if (err)                                        goto _err;
-    if (mergeRowsPartitions(accRowsParts,AB,conf))  goto _err;
+    if (mergeRowsPartitions(outAccumul->accs,AB,conf))  goto _err;
+    AUDIT_INTERNAL_TIMES	End=omp_get_wtime();
+    DEBUG                   checkOverallocPercent(rowsSizes,AB);
     goto _free;
 
     _err:
@@ -775,7 +838,10 @@ spmat* spgemmGustavson2DBlocksAllocated(spmat* A,spmat* B, CONFIG* conf){
         for (uint i=0; i<conf->gridCols; i++)   freeSpmatInternal(colPartsB+i);
         free(colPartsB);
     }
-
+    if (rowsSizes)   free(rowsSizes);
+    if (accVectors)  freeAccVectors(accVectors,gridSize);
+    if (outAccumul)  freeSpGEMMAcc(outAccumul);
+    
     return AB;
         
 }
@@ -784,7 +850,7 @@ spmat* spgemmGustavson2DBlocksAllocated(spmat* A,spmat* B, CONFIG* conf){
 
 spmat* sp3gemmGustavsonParallel(spmat* R,spmat* AC,spmat* P,CONFIG* conf){
     
-    double end,start,elapsed,partial,flops;
+    double end,start,partial,flops;
     start = omp_get_wtime();
    
     SPGEMM_INTERF computeSpGEMM = (SPGEMM_INTERF) conf->spgemmFunc;
@@ -805,22 +871,25 @@ spmat* sp3gemmGustavsonParallel(spmat* R,spmat* AC,spmat* P,CONFIG* conf){
 #ifdef DEBUG_TEST_CBLAS
     if(GEMMCheckCBLAS(R,AC,RAC))                goto _free;
 #endif
-    AUDIT_INTERNAL_TIMES    partial = omp_get_wtime() - Start;
+    AUDIT_INTERNAL_TIMES    partial = End - Start;
     if (!(out = computeSpGEMM(RAC,P,conf)))     goto _free;
 #ifdef DEBUG_TEST_CBLAS
     if(GEMMCheckCBLAS(RAC,P,out))               goto _free;
 #endif
-     
+    
+    ///time accounting and prints 
     end = omp_get_wtime();
-    elapsed=end-start;
-    flops = ( 2 * R->NZ * P->NZ * AC->NZ )/ ( elapsed );
+    Elapsed         = end - start;
+    ElapsedInternal = End - Start + partial;
+    flops = ( 2 * R->NZ * P->NZ * AC->NZ ) / ( Elapsed );
     DEBUG 
       printf("sp3gemmGustavsonParallel of R:%ux%u AC:%ux%u P:%ux%u CSR sp.Mat",
         R->M,R->N,AC->M,AC->N,P->M,P->N);
-    VERBOSE
-      printf("elapsed %le - flops %le\tinternalTime: %le",elapsed,flops,end-Start+partial);
-    
-
+    VERBOSE {
+        printf("elapsed %le - flops %le",Elapsed,flops);
+        AUDIT_INTERNAL_TIMES    printf("\tinternalTime: %le",ElapsedInternal);
+        printf("\n");
+    }
     _free:
     if (RAC)    freeSpmat(RAC);
 

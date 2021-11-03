@@ -1,8 +1,8 @@
 CC=gcc
 FF=gfortran
-CFLAGS=-Wall -Wextra -ggdb -O2
+CFLAGS=-Wall -Wextra -O2 
 #libs
-CFLAGS+=-lm
+CFLAGS+=-lm -fopenmp
 #TODO extra to reduce useless warnings
 CFLAGS+=-Wno-pointer-sign -Wno-unused-parameter -Wno-unused-but-set-variable
 CFLAGS+=-Wno-unused-label
@@ -10,7 +10,8 @@ CFLAGS+=-Wno-unused-label
 #OMP_CANCELLATION=true
 #export OMP_CANCELLATION
 
-MACROS = -DDEBUGPRINT="if(FALSE)" -DDEBUG="if(FALSE)" -DVERBOSE="if(TRUE)" -DCONSISTENCY_CHECKS="if(FALSE)" -DDEBUGCHECKS="if(FALSE)"
+MACROS = -DDEBUGPRINT="if(FALSE)" -DDEBUG="if(FALSE)" -DCONSISTENCY_CHECKS="if(FALSE)" -DVERBOSE="if(FALSE)" 
+MACROSDBG = -DCONSISTENCY_CHECKS="if(TRUE)"  -DDEBUGCHECKS="if(TRUE)" -DVERBOSE="if(TRUE)" -DDEBUG="if(TRUE)"
 CFLAGS+=$(RUNTIME)
 #bind to source original project
 srcDir=$(realpath ../src)
@@ -39,43 +40,55 @@ endif
 CBLAS_SLIB=CBLAS_LAPACK/$(STATIC_LIBS_DIR)/libcblas.a
 BLAS_SLIB=CBLAS_LAPACK/$(STATIC_LIBS_DIR)/librefblas.a
 
+#TESTS FOR ALL SP3GEMM FUNCS
+test_SpGEMM_OMP.elf: SpGEMM_OMP_test.c $(srcDir)/SpGEMM_OMP.c $(srcDir)/commons/*.c  $(srcDir)/lib/*.c $(srcDir)/include/*.h 
+	$(CC)   $(CFLAGS) -I$(srcDir)/include/  $(filter-out %.h,$^) \
+	  $(MACROS) -DTEST_MAIN -o $@
+
+test_SpGEMM_OMP_DBG.elf: SpGEMM_OMP_test.c $(srcDir)/SpGEMM_OMP.c $(srcDir)/commons/*.c  $(srcDir)/lib/*.c $(srcDir)/include/*.h 
+	$(CC)   $(CFLAGS) -O0 -I$(srcDir)/include/  $(filter-out %.h,$^) -ggdb $(MACROS) \
+	  $(MACROSDBG) -DTEST_MAIN -o $@
+
 test_CBLAS_SpGEMM_OMP.elf: SpGEMM_OMP_test.c $(srcDir)/SpGEMM_OMP.c $(srcDir)/commons/*.c  $(srcDir)/lib/*.c $(srcDir)/include/*.h Makefile
+	@rm -f *.o
 	#create objectfile not linked
-	$(CC) -O2 -fopenmp $(CFLAGS) -I$(srcDir)/include/ -I$(CBLAS_INCLUDE) $(filter-out %.h,$^) -c $(MACROS) -DTEST_MAIN
+	$(CC)  $(CFLAGS) -I$(srcDir)/include/ -I$(CBLAS_INCLUDE) $(filter-out %.h,$^) -c $(MACROS) -DTEST_MAIN -DCBLAS_TESTS \
+	  -ggdb $(MACROSDBG)
 	#link it with static compiled cblas and source version library
 	$(FF) -O2 -frecursive -o $@ *.o  $(CBLAS_SLIB) $(BLAS_SLIB) $(EXTRALIBS)
 
-test_CBLAS_SpGEMM_OMP_DBG.elf: SpGEMM_OMP_test.c $(srcDir)/SpGEMM_OMP.c $(srcDir)/commons/*.c  $(srcDir)/lib/*.c $(srcDir)/include/*.h Makefile
-	#create objectfile not linked
-	$(CC) -O0 -fopenmp $(CFLAGS) -I$(srcDir)/include/ -I$(CBLAS_INCLUDE) $(filter-out %.h,$^) -c  -DTEST_MAIN
-	#link it with static compiled cblas and source version library
-	$(FF) -O0 -frecursive -o $@ *.o  $(CBLAS_SLIB) $(BLAS_SLIB) $(EXTRALIBS)
-
 SpGEMM_OMP_with_test_CBLAS.elf: $(srcDir)/main_OMP.c $(srcDir)/SpGEMM_OMP.c $(srcDir)/commons/*.c  $(srcDir)/lib/*.c $(srcDir)/include/*.h SpGEMM_OMP_test.c 
 	#create objectfile not linked
-	$(CC) -fopenmp $(CFLAGS) -I$(srcDir)/include/ -I$(CBLAS_INCLUDE) -I. $(filter-out %.h,$^) -c $(MACROS) -DDEBUG_TEST_CBLAS
+	$(CC)  $(CFLAGS) -I$(srcDir)/include/ -I$(CBLAS_INCLUDE) -I. $(filter-out %.h,$^)  $(MACROS) -c -ggdb \
+	  -DDEBUG_TEST_CBLAS -DCBLAS_TESTS $(MACROSDBG)
 	#link it with static compiled cblas and source version library
 	$(FF) -O2 -frecursive -o $@ *.o  $(CBLAS_SLIB) $(BLAS_SLIB) $(EXTRALIBS) 
 
-sparseMatrixToImage.elf:	sparseMatrixToImage.c $(srcDir)/commons/*.c $(srcDir)/lib/*.c $(srcDir)/include/*.h #TODO wiser selection of includes...
+sparseMatrixToImage.elf:	sparseMatrixToImage.c $(srcDir)/commons/*.c $(srcDir)/lib/*.c $(srcDir)/include/*.h 
 	$(CC) $(CFLAGS) -I$(srcDir)/include -I. $(filter-out %.h,$^) -o $@ $(MACROS) \
-	-D MAIN_SPMAT_IMG -fopenmp
-sparseMatrixToImageTest.elf:	sparseMatrixToImage.c $(srcDir)/commons/*.c $(srcDir)/lib/*.c $(srcDir)/include/*.h #TODO wiser selection of includes...
+	-D MAIN_SPMAT_IMG 
+sparseMatrixToImageTest.elf:	sparseMatrixToImage.c $(srcDir)/commons/*.c $(srcDir)/lib/*.c $(srcDir)/include/*.h
 	$(CC) $(CFLAGS) -I$(srcDir)/include -I. $(filter-out %.h,$^) -o $@ $(MACROS) \
-		-D MAIN_SPMAT_IMG -DTEST -O0 -fopenmp
+		-D MAIN_SPMAT_IMG -DTEST 
 testAll:
-	$(shell cat ../../data/matrixGroups.list | xargs -L 1 sh -c 'echo $0 ${@};./test_CBLAS_SpGEMM_OMP.elf $0 ${@}' ) #TODO FIX
+	$(shell bash ../scripts/testAllMatrixGroups.sh | tee - > log/testAll$GRID_ROWSXGRID_COLS )
+	#$(shell cat ../../data/matrixGroups.list | xargs -L 1 sh -c 'echo $0 ${@};./test_CBLAS_SpGEMM_OMP.elf $0 ${@}' ) #TODO FIX
 clean:
 	rm -i *.elf
+	rm -f *.o
 
 try:   
+	@echo uname:        $(UNAME) 
 	@echo uname:        $(UNAME)
 	@echo EXTRALIBS:    $(EXTRALIBS)
-	
-	
-	
+	ifeq ($(findstring DEBIAN,$(UNAME)),DEBIAN)
+		@echo uname:        DEBIAN
+	else
+		@echo uname:       fedora
+	endif 
+		
 	
 
-objs = test_SpGEMM_OMP.o sparseMatrixToImage.o
-all: $(objs)
+coreObjs = test_SpGEMM_OMP.o test_SpGEMM_OMP_DBG sparseMatrixToImage.o
+all: $(coreObjs)
 .PHONY: all clean testAll

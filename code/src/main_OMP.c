@@ -9,8 +9,8 @@
 #include "macros.h"
 
 #include "sparseMatrix.h"
-extern void freeSpRow(SPMATROW* r);
-extern void freeSpmat(spmat* mat);
+///inline redef here
+void freeSpmat(spmat* mat);
 
 #ifdef DEBUG_TEST_CBLAS
     #include "SpGEMM_OMP_test.h"

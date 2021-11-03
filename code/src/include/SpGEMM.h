@@ -4,8 +4,27 @@
 #include "macros.h"
 #include "sparseMatrix.h"
 
-
-
+///OUTPUT SIZE PREDICTION
+/*
+ * return for each spGEMM output matrix row -> upper bound size
+ * also an extra position at the end for the cumulative total size of the 
+ * output matrix AB = A*B
+ * O(A.NZ)
+ */
+uint* spGEMMSizeUpperbound(spmat* A,spmat* B);
+typedef struct{
+    //space to hold SPGEMM output
+    uint    size;
+    uint*   JA;
+    double* AS;
+    uint    lastAssigned;   //last JA&AS assigned index to an accumulator //TODO OMP ATOMIC
+    SPACC*  accs;
+} SPGEMM_ACC; //accumulator for SPGEMM
+/* 
+ * init an spgemm op accumulator, that whill hold @entriesNum nnz entries, pointed by
+ * pointed by @accumulatorsNum sparse vector accumulators
+ */
+SPGEMM_ACC* initSpGEMMAcc(uint entriesNum, uint accumulatorsNum);
 
 //compute function interface and its pointer definitions
 typedef spmat* ( SPGEMM        )  (spmat*,spmat*,CONFIG*);

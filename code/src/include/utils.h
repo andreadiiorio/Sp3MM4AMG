@@ -38,6 +38,8 @@ int fillRndVector(uint size, double* v);
 //read vector as a sequence of space separated double from file at @fpath 
 #define VECTOR_STEP_MALLOC 100
 
+//compute E[@values] in @out[0] and VAR[@values] in @out[1] of @numVals values
+void statsAvgVar(double* values,uint numVals, double* out);
 /*convert @sparseMat sparse matrix in dense matrix returned*/
 double* CSRToDense(spmat* sparseMat);
 void printMatrix(double* mat,uint m,uint n,char justNZMarkers);

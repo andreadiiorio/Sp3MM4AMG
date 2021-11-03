@@ -133,7 +133,16 @@ static inline int rndDouble_sinDecimal(double* d){
     *d = (_rndHold % MAXRND) + sin(_rndHold);
     return EXIT_SUCCESS;
 }
-    
+   
+void statsAvgVar(double* values,uint numVals, double* out){
+    double sum=0,sumSquare=0;
+    for (uint i=0;  i<numVals;  i++){
+        sum += values[i];
+        sumSquare += values[i]*values[i];
+    }
+    out[0]  =   sum/numVals;                            //AVG
+    out[1]  =   sumSquare/numVals - (out[0] * out[0]);  //VAR
+}
 
 /// MATRIX - VECTOR UTILS
 int fillRndVector(uint size, double* v){

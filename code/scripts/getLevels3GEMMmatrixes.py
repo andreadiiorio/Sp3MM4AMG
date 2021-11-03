@@ -23,8 +23,12 @@ MATRIX=namedtuple("MATRIX","levN roleName fullname")
 MATRIX_LEVEL_GROUP=namedtuple("MATRIX_LEVEL_GROUP",\
  "r ac p ac_next levN ancestorDir")
 
-DEBUG=bool(environ.get("DEBUG",False))
-ABSPATH=bool(environ.get("ABSPATH",True ))
+def getBool(s):
+    if "f" in str(s).lower():   return False
+    else:                       return True   
+
+DEBUG=getBool(environ.get("DEBUG",False))
+ABSPATH=getBool(environ.get("ABSPATH",True ))
 ROOTDIR="."
 INCLUDENEXTAC=True
 MATRIX_EXT=environ.get("MATRIX_EXT",".mtx")
@@ -68,7 +72,8 @@ def scanMatrixGroups(baseDir=ROOTDIR):
     return groups
         
 if __name__ == "__main__":
-    if "-h" in argv[1]: print(__doc__ % (ROOTDIR,str(INCLUDENEXTAC)));exit(1)
+    if len(argv) < 2 or "-h" in argv[1]: 
+        print(__doc__ % (ROOTDIR,str(INCLUDENEXTAC)),file=stderr); exit(1)
     if len(argv)>1:     ROOTDIR=argv[1]
     if len(argv)>2:     INCLUDENEXTAC=bool(argv[2])
     
