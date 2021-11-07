@@ -10,7 +10,7 @@ CFLAGS+=-Wno-unused-label
 #OMP_CANCELLATION=true
 #export OMP_CANCELLATION
 
-MACROS = -DDEBUGPRINT="if(FALSE)" -DDEBUG="if(FALSE)" -DCONSISTENCY_CHECKS="if(FALSE)" -DVERBOSE="if(FALSE)" 
+MACROS = -DDEBUGPRINT="if(FALSE)" -DDEBUG="if(FALSE)" -DCONSISTENCY_CHECKS="if(FALSE)" -DVERBOSE="if(FALSE)"  -DDEBUGCHECKS="if(FALSE)"
 MACROSDBG = -DCONSISTENCY_CHECKS="if(TRUE)"  -DDEBUGCHECKS="if(TRUE)" -DVERBOSE="if(TRUE)" -DDEBUG="if(TRUE)"
 CFLAGS+=$(RUNTIME)
 #bind to source original project
@@ -41,9 +41,13 @@ CBLAS_SLIB=CBLAS_LAPACK/$(STATIC_LIBS_DIR)/libcblas.a
 BLAS_SLIB=CBLAS_LAPACK/$(STATIC_LIBS_DIR)/librefblas.a
 
 #TESTS FOR ALL SP3GEMM FUNCS
-test_SpGEMM_OMP.elf: SpGEMM_OMP_test.c $(srcDir)/SpGEMM_OMP.c $(srcDir)/commons/*.c  $(srcDir)/lib/*.c $(srcDir)/include/*.h 
+test_SpGEMM_OMP_Stats.elf: SpGEMM_OMP_test.c $(srcDir)/SpGEMM_OMP.c $(srcDir)/commons/*.c  $(srcDir)/lib/*.c $(srcDir)/include/*.h 
 	$(CC)   $(CFLAGS) -I$(srcDir)/include/  $(filter-out %.h,$^) \
 	  $(MACROS) -DTEST_MAIN -o $@
+
+test_SpGEMM_OMP.elf: SpGEMM_OMP_test.c $(srcDir)/SpGEMM_OMP.c $(srcDir)/commons/*.c  $(srcDir)/lib/*.c $(srcDir)/include/*.h 
+	$(CC)   $(CFLAGS) -I$(srcDir)/include/  $(filter-out %.h,$^) \
+	  $(MACROS) -DTEST_MAIN -DAVG_TIMES_ITERATION=1 -o $@
 
 test_SpGEMM_OMP_DBG.elf: SpGEMM_OMP_test.c $(srcDir)/SpGEMM_OMP.c $(srcDir)/commons/*.c  $(srcDir)/lib/*.c $(srcDir)/include/*.h 
 	$(CC)   $(CFLAGS) -O0 -I$(srcDir)/include/  $(filter-out %.h,$^) -ggdb $(MACROS) \
@@ -70,6 +74,9 @@ sparseMatrixToImage.elf:	sparseMatrixToImage.c $(srcDir)/commons/*.c $(srcDir)/l
 sparseMatrixToImageTest.elf:	sparseMatrixToImage.c $(srcDir)/commons/*.c $(srcDir)/lib/*.c $(srcDir)/include/*.h
 	$(CC) $(CFLAGS) -I$(srcDir)/include -I. $(filter-out %.h,$^) -o $@ $(MACROS) \
 		-D MAIN_SPMAT_IMG -DTEST 
+ompGetICV.o:	ompGetICV.c
+	$(CC) $(CFLAGS) $^ -o $@
+
 testAll:
 	$(shell bash ../scripts/testAllMatrixGroups.sh | tee - > log/testAll$GRID_ROWSXGRID_COLS )
 	#$(shell cat ../../data/matrixGroups.list | xargs -L 1 sh -c 'echo $0 ${@};./test_CBLAS_SpGEMM_OMP.elf $0 ${@}' ) #TODO FIX

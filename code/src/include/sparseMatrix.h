@@ -93,6 +93,12 @@ inline spmat* allocSpMatrix(uint rows, uint cols){
     return mat;
 }
 
+
+/*  
+    check if sparse matrixes A<->B differ up to 
+    DOUBLE_DIFF_THREASH per element
+*/
+int spmatDiff(spmat* A, spmat* B);
 ////dyn alloc of spGEMM output matrix
 /*
 ///size prediction of AB = @A * @B

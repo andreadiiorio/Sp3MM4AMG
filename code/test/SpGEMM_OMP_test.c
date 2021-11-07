@@ -232,7 +232,7 @@ int main(int argc, char** argv){
                 }
             } else {
 #endif
-            if (doubleVectorsDiff(outToCheck->AS,oracleOut->AS,oracleOut->NZ)){
+            if (spmatDiff(outToCheck,oracleOut)){
                 fprintf(stderr,"compute func number:%u check with oracle failed\n",f);
                 goto _free;
             }

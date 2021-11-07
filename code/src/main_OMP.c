@@ -10,7 +10,7 @@
 
 #include "sparseMatrix.h"
 ///inline redef here
-void freeSpmat(spmat* mat);
+//void freeSpmat(spmat* mat);
 
 #ifdef DEBUG_TEST_CBLAS
     #include "SpGEMM_OMP_test.h"

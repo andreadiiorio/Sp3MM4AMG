@@ -1,13 +1,29 @@
 #include <stdlib.h>
 #include <stdio.h>
 #include <math.h>
+#include <string.h>
 #include <errno.h>
 
 #include "macros.h"
 #include "sparseMatrix.h"
 #include "utils.h"
 
-///AUX
+int spmatDiff(spmat* A, spmat* B){
+    if (A->NZ != B->NZ){
+        ERRPRINT("NZ differ\n");
+        return EXIT_FAILURE;
+    }
+    if (doubleVectorsDiff(A->AS,B->AS,A->NZ)){
+        ERRPRINT("AS DIFFER\n");
+        return EXIT_FAILURE;
+    }
+    if (memcmp(A->JA,B->JA,A->NZ)){
+        ERRPRINT("JA differ\n");
+        return EXIT_FAILURE;
+    }
+    return EXIT_SUCCESS;
+}
+
 double* CSRToDense(spmat* sparseMat){
     double* denseMat;
     ulong i,j,idxNZ,denseSize;

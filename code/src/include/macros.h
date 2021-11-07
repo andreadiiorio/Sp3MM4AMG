@@ -40,11 +40,11 @@
 #endif
 //long prints
 #ifndef DEBUGPRINT
-    #define DEBUGPRINT                  if( FALSE)
+    #define DEBUGPRINT                  if( FALSE )
 #endif
 //heavy impact debug checks
 #ifndef DEBUGCHECKS
-    #define DEBUGCHECKS                 if( TRUE )
+    #define DEBUGCHECKS                 if( FALSE )
 #endif
 //extra print in the normal output
 #ifndef AUDIT_INTERNAL_TIMES
