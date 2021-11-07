@@ -2,22 +2,15 @@
 \label{Chapter1} % 2 reference \ref{Chapter1} 
 %----------------------------------------------------------------------------------------
 
-% Define some commands to keep the formatting separated from the content 
-\newcommand{\nnz}{non zero }
-\newcommand{\keyword}[1]{\textbf{#1}}
-\newcommand{\tabhead}[1]{\textbf{#1}}
-\newcommand{\code}[1]{\texttt{#1}}
-\newcommand{\file}[1]{\texttt{\bfseries#1}}
-\newcommand{\option}[1]{\texttt{\itshape#1}}
 
 
 \section{Notazione}
-Si indica con $C \in \mathbb{R}^{m x n}$ il risultato del prodotto di 
-$A \in \mathbb{R}^{m x k},B \in \mathbb{R}^{k x n}$. \\ 
+Nel seguito si indicherà con $C \in \mathbb{R}^{m x n}$ il risultato del prodotto di 
+$A \in \mathbb{R}^{m x k},B \in \mathbb{R}^{k x n}$. Dove:\\ 
 $a_{ij} \in A$ è l'elemento della riga i e colonna j della matrice A.\\
 $a_{i*}~,~a_{*j}$ indicano rispettivamente la riga i-esima e la colonna j-esima della matrice A\\
-$I_i(A)$ indica il set di indici di colonna relativi agl'elementi non zero della riga i-esima di A\\
-$I_j(B)$ indica il set di indici di riga relativi agl'elementi non zero della colonna j-esima di B\\
+$I_i(A)$ indica il set di indici di colonna relativi agl'elementi \nnz della riga i-esima di A\\
+$I^j(B)$ indica il set di indici di riga relativi agl'elementi \nnz della colonna j-esima di B\\
 $I(i,j)$ indica il set di indici $k$ di righe di A e di colonne di B tali che
 $a_{ik}*b_{kj} \neq 0$\\
 $nnz(A)$ indica il numero di non zeri della matrice A. \\ 
@@ -25,6 +18,7 @@ $nzc(A)~,~nzr(A)$ indicano rispettivamente il numero di colonne e di righe di A
 con almeno un elemento \nnz.\\
 
 \section{Formulazioni SpGEMM}
+\label{Ch1:formulazioni}
 Gli algoritmi per la risoluzione del prodotto tra due matrici sparse possono
 essere classificati in base alle formulazioni e partizionamento dei dati del problema SpGEMM 
 \parencite{sysReviewChi}.\\ Le principali formulazioni del problema sono sono:
@@ -32,7 +26,7 @@ essere classificati in base alle formulazioni e partizionamento dei dati del pro
   \item Inner-product \qquad $c_{ij} = \sum\limits_{k \in I(i,j)}  a_{ik} \ast  b_{kj}$
   \item Outer-product \qquad $C = \sum\limits_{i=1}^k  a_{*i} \otimes  b_{i*}$		
   \item row-by-row	  \qquad $c_{i*} = \sum\limits_{k \in I_i(A)}  a_{ik} \ast  b_{k*}$
-  \item col-by-col    \qquad $c_{*j} = \sum\limits_{k \in I_j(B)}  a_{*k} \ast  b_{kj}$
+  \item col-by-col    \qquad $c_{*j} = \sum\limits_{k \in I^j(B)}  a_{*k} \ast  b_{kj}$
 \end{itemize}
 
 \subsection{Rappresenzione mediante grafi}
@@ -112,7 +106,7 @@ funzionalità sono analizzati successivamente in \ref{ssec:gustavsonDerivate} %T
 \\
 
 
-\section{Algoritmi paralleli multi-dimensionali}
+\section{Algoritmi paralleli multi-dimensionali} 
 Gli algoritmi paralleli risolutivi del prodotto tra matrici possono essere
 classificati in base al partizionamento del carico di lavoro sui processi.\\
 \begin{figure}[h]
@@ -127,6 +121,7 @@ con voxel $W(i,j,k)$ \parencite{cartesianPartitioningModels}.
 Le proiezioni $W(i,j,k)$  sulle facce del cubo relative alle matrici A e B 
 hanno elementi \nnz e determinano il pattern degl'elementi \nnz sulla matrice C.
 %WORKCUBE NOTATIONS
+\label{ch1:workCube}
 I sottoinsiemi dei voxel di W ottenuti fissando uno o due indici sono denominati:
 \begin{itemize}
   \item Layers: W(i,:,:),W(:,j,:),W(:,:,k)
@@ -137,13 +132,13 @@ I sottoinsiemi dei voxel di W ottenuti fissando uno o due indici sono denominati
 
 \subsection{Matrici ipersparse e rappresentazione DCSC}
 È possibile definire una matrice sparsa A, come {\bf ipersparsa }se $nnz(A)$ è
-inferiore alla sua dimensione più grande N\\ %TODO def in newIdeas 14.2.2, matrici quadrate
-Le matrici ipersparse sono rare nell'algebra lineare numerica ma occorrono 
-frequentemente nel processamento grafi, particolarmente se in parallelo.\\
+inferiore alla sua dimensione più grande N \parencite{2dNewIdeas} \\ %TODO newIdeas 14.2.2 x matrici quadrate
+Tipicamente questa tipologia di matrici è rara nell'algebra lineare numerica ma trova applicazioni
+nel partizionamento di matrici sparse e nel processamento grafi, particolarmente se in parallelo.\\
 
-Inoltre, data una suddivisone bidimensionale di una matrice sparsa, %TODO quadrata
+Data una suddivisone bidimensionale di una matrice sparsa, %TODO quadrata
 per un processamento parallelo in una griglia di p processi, si ha che ogni processo
-verrà assegnato ad una matrice di dimensione $(n/\sqrt{p})~x~(n/\sqrt{p})$.
+verrà assegnato ad una matrice di dimensione circa $(n/\sqrt{p})~x~(n/\sqrt{p})$. %TODO ~~
 L'occupazione globale di spazio di memoria sarà pari a 
 $O(nnz + p \cdot n/\sqrt{p}) = O(nnz + n \cdot \sqrt{p})$ con CSC che è maggiore
 dell'occupazione totale della matrice in un singolo processo $O(n + nnz)$.\\
@@ -175,7 +170,8 @@ lo pseudo-codice dell'algoritmo è riportato in \ref{figCode:hypersparseGEMM}
 {\bf fase di preprocessamento} \\
 viene effettuata una trasposizione di B, così da avere un indicizzamento rapido delle righe di B
 in formato DCSC, necessario per la
-formulazione outer-product.\\ %costo di trasposizione varia tra $O(n + nnz(B) \to nnz(B) lg nnz(b)) in base all implementazione
+formulazione outer-product.\\ 
+%costo di trasposizione varia tra $O(n + nnz(B) \to nnz(B) lg nnz(b)) in base all implementazione
 Viene effettuata l'intersezione tra gli indici delle colonne non zero di A e
 delle righe non zero di B, identificando così il set $Isect = A.JC \cap B^T.JC$ degli
 indici che partecipano all'outer-product.\\
@@ -216,12 +212,12 @@ operazioni aritmetiche necessarie per il prodotto di A e B.\\
 \end{figure}
 
 
-\subsection{2D}
+\subsection{Algoritmi con un partizionamento 2D}
 
 \subsubsection{Derivati di Gustavson} \label{ssec:gustavsonDerivate}
 Una parallelizzazione della formulazione per righe dell'algoritmo di Gustavson è
 descritta in \parencite{intelSpGEMMDenseAccumulator}, sfruttando la
-rappresentazione di matrici sparse in formato CSR. 
+rappresentazione di matrici sparse in formato CSR.  \label{ssec:intelSpGEMMDenseAccumulator}
 Lo pseudocodice dell'algoritmo è riportato in \ref{figCode:gustavsonRigheBlocksIntel}
 e una sua rappresentazione grafica è raffigurata in
 \ref{fig:gustavsonRigheBlocksGraphicalIntel}\\
@@ -249,7 +245,7 @@ elementi \nnz sommati in X.\\
 %Nota su partizionamento -> MENO cache miss su X
 Utilizzando un partizionamento delle colonne di B è possibile partizionare anche
 l'accumulatore X relativo ad una riga risultante di C. In questa maniera si
-riduce il numero di cache line toccate dagl'aggiornamenti di X, riducendo il
+riduce il numero di cache line toccate dagli aggiornamenti di X, riducendo il
 numero di cache miss relativi al ciclo interno dell'algoritmo.\\
 Gli autori dell'algoritmo hanno verificato la riduzione di cache miss
 utilizzando degli hardware counter per verificare il numero di cache miss L2
@@ -285,7 +281,7 @@ $e\_nnz = \frac{\sum\limits_{i:e\_nnz(i) > L2\_FP\_WORDS} e\_nnz(i)}
 Un partizionamento bidimensionale della risoluzione del prodotto tra matrici
 dense è realizzato dell'algoritmo parallelo SUMMA \parencite{denseSumma} che è alla
 base di una sua controparte per matrici sparse \parencite{sparseSUMMA}.\\
-Il calcolo di $C=AB$ è sudiviso in sottomatrici assegnate a processi organizzati 
+Il calcolo di $C=AB$ è suddiviso in sottomatrici assegnate a processi organizzati 
 in una griglia bidimensionale di dimensione  $p_r x p_c$.\\
 È possibile calcolare un blocco della matrice C come:
 $C_{ij} =  \overbrace{\left(  A_{i1} | \dots |  A_{ip_c} \right)}^{\tilde{A^{i*}} }
@@ -320,7 +316,7 @@ Un partizionamento bidimensionale del problema SpGEMM è realizzato
 dall'algoritmo Sparse SUMMA \parencite{sparseSUMMA}, derivato dalla sua
 controparte per matrici dense.\\
 %SPARSE SUMMA
-È riportato lo pseudo-codice dell algoritmo sparseSUMMA 
+È riportato lo pseudo-codice dell'algoritmo sparseSUMMA 
 in \ref{figCode:sparseSUMMA} e una sua iterazione graficamente in
 \ref{fig:sparseSUMMAIteration}.\\
 Le matrici sono divise in blocchi e rappresentante in formato DCSC,
@@ -341,7 +337,7 @@ $O(\frac{dn}{\sqrt{p}}+\frac{d^2n}{p}lg(\frac{d^2n}{p}))$
   \centering \includegraphics{sparseSUMMAIteration.svg.png} \decoRule \label{fig:sparseSUMMAIteration}
 \end{figure}
 
-\subsection{3D}
+\subsection{Algoritmi con un partizionamento 3D}
 Un partizionamento tridimensionale del problema SpGEMM è realizzato dall'
 algoritmo Split-3D-SpGEMM \parencite{Split3DSpGEMM}, dove al partizionamento
 bidimensionale descritto precedentemente, viene aggiunto una ulteriore
