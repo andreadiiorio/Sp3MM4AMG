@@ -206,6 +206,7 @@ int main(int argc, char** argv){
     }
     Conf.threadNum = (uint) omp_get_max_threads();
     SP3GEMM_INTERF sp3GEMMcompute=&sp3gemmGustavsonParallel;//TODO ITERATE OVER NEW POSSIBILITIES
+    //elapsed stats aux vars
     double times[AVG_TIMES_ITERATION],  timesInteral[AVG_TIMES_ITERATION];
     double elapsedStats[2],  elapsedInternalStats[2];
     //TODO int maxThreads = omp_get_max_threads();
@@ -217,7 +218,7 @@ int main(int argc, char** argv){
     uint f;
     for (f=0,spgemmFunc=SpgemmFuncs[f]; spgemmFunc; spgemmFunc=SpgemmFuncs[++f]){
         Conf.spgemmFunc = (void*) spgemmFunc; //spgemmFunc used twice in compute
-        hprintf("@computing Sp3GEMM as pair of SpGEMM with func:\%u at:%p\t",
+        hprintsf("@computing Sp3GEMM as pair of SpGEMM with func:\%u at:%p\t",
           f,spgemmFunc);
         for (uint i=0;  i< AVG_TIMES_ITERATION; i++){
             if (!(outToCheck = sp3GEMMcompute(R,AC,P,&Conf))){

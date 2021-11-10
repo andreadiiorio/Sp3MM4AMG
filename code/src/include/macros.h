@@ -23,8 +23,9 @@
 #define CHIGHLIGHT                  "\33[1m\33[92m"
 #define CHIGHLIGHTERR               "\33[31m\33[1m\33[44m"
 #define CEND                        "\33[0m"
-#define hprintf(str,...)            printf( CHIGHLIGHT str CEND,__VA_ARGS__ ) 
-#define _ERRPRINT(str)              fprintf( stderr, str )
+#define hprintsf(str,...)           printf( CHIGHLIGHT str CEND,__VA_ARGS__ ) 
+#define hprintf(str)                printf( CHIGHLIGHT str CEND) 
+#define ERRPRINTS(str,...)          fprintf( stderr, CHIGHLIGHTERR str CEND,__VA_ARGS__ )
 #define ERRPRINT(str)               fprintf( stderr, CHIGHLIGHTERR str CEND )
 ///CONSTANTS
 #define DOUBLE_DIFF_THREASH         7e-5

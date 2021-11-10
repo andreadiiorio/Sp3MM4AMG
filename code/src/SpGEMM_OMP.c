@@ -315,12 +315,12 @@ static inline void sparsifyDenseVect(SPGEMM_ACC* acc,THREAD_AUX_VECT* accV,
     sortuint(accV->nnzIdx,nnz); //sort nnz idx for ordered write
     accSparse -> len = nnz;
     uint accSparseStartIdx;
-    accSparseStartIdx = __atomic_fetch_add(&(acc->lastAssigned),nnz,__ATOMIC_SEQ_CST); 
-    /*#pragma omp atomic capture
+    //accSparseStartIdx = __atomic_fetch_add(&(acc->lastAssigned),nnz,__ATOMIC_ACQ_REL); 
+    #pragma omp atomic capture
     {   //fetch and add like .... 
         accSparseStartIdx = acc->lastAssigned;
         acc->lastAssigned += nnz;
-    }*/
+    }
     DEBUGCHECKS{
         if (acc->lastAssigned >= acc->size){
             ERRPRINT("OMP ATOMIC OR SG ERRD IN SPACE ASSIGNMENTS...\n");

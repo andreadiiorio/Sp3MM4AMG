@@ -1,6 +1,7 @@
 #ifndef UTILS
 #define UTILS
 
+#include <stddef.h> 
 #include "macros.h"
 
 extern int urndFd;	//file pointer to DRNG_DEVFILE O_RDONLY opened

@@ -232,15 +232,7 @@ spmat* MMtoCSR(char* matPath){
     return mat;
 
     err:
-    if (mat){
-        if(mat->IRP)    free(mat->IRP); 
-        if(mat->AS)     free(mat->AS); 
-        if(mat->JA)     free(mat->JA); 
-#ifdef ROWLENS
-        if(mat->RL)     free(mat->RL); 
-#endif
-        free(mat);
-    }
+    if (mat)    freeSpmat(mat);
     if (fp)         fclose(fp);
     return NULL;
 }
