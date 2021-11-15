@@ -11,20 +11,20 @@
  * output matrix AB = A*B
  * O(A.NZ)
  */
-uint* spGEMMSizeUpperbound(spmat* A,spmat* B);
+ulong* spGEMMSizeUpperbound(spmat* A,spmat* B);
 typedef struct{
     //space to hold SPGEMM output
-    uint    size;
-    uint*   JA;
+    ulong    size;
+    ulong*   JA;
     double* AS;
-    uint    lastAssigned;   //last JA&AS assigned index to an accumulator //TODO OMP ATOMIC
+    ulong    lastAssigned;   //last JA&AS assigned index to an accumulator //TODO OMP ATOMIC
     SPACC*  accs;
 } SPGEMM_ACC; //accumulator for SPGEMM
 /* 
  * init an spgemm op accumulator, that whill hold @entriesNum nnz entries, pointed by
  * pointed by @accumulatorsNum sparse vector accumulators
  */
-SPGEMM_ACC* initSpGEMMAcc(uint entriesNum, uint accumulatorsNum);
+SPGEMM_ACC* initSpGEMMAcc(ulong entriesNum, ulong accumulatorsNum);
 
 //compute function interface and its pointer definitions
 typedef spmat* ( SPGEMM        )  (spmat*,spmat*,CONFIG*);
@@ -35,9 +35,9 @@ typedef spmat* (*SP3GEMM_INTERF)  (spmat*,spmat*,spmat*,CONFIG*);
 //aux struct for sparse vector-scalar product accumualtion
 typedef struct{
     double* v;          //aux accumulating dense vector
-    uint    vLen;       //size of the aux dense vector //TODO USELESS?
-    uint*   nnzIdx;     //v, nonzero accumulated values
-    uint    nnzIdxLast; //last appended non zero index
+    ulong    vLen;       //size of the aux dense vector //TODO USELESS?
+    ulong*   nnzIdx;     //v, nonzero accumulated values
+    ulong    nnzIdxLast; //last appended non zero index
 } THREAD_AUX_VECT;
 
 ///SP3GEMM FUNCTIONS

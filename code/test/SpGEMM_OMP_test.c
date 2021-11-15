@@ -102,14 +102,14 @@ int GEMMCheckCBLAS(spmat* A,spmat* B,spmat* AB){
 #include "SpGEMM.h"
 
 ////inline export here 
-//spmat* allocSpMatrix(uint rows, uint cols);
-//int allocSpMatrixInternal(uint rows, uint cols, spmat* mat);
+//spmat* allocSpMatrix(ulong rows, ulong cols);
+//int allocSpMatrixInternal(ulong rows, ulong cols, spmat* mat);
 //void freeSpmatInternal(spmat* mat);
 
 #ifdef CBLAS_TESTS 
 #define TESTTESTS "TESTTESTS"
 #define HELP "usage Matrixes: R_{i+1}, AC_{i}, P_{i+1},[AC_{i+1}," TESTTESTS "]" \
-"all matriexes in MatrixMarket_sparse_matrix_COO\n" \
+"all matriexes in MatrixMarket_sparse_matrix_COO[.compressed]\n" \
 "giving AC_{i+1} the outputs of the 3SPGEMM will be matched with the given result as an oracle" \
 "\ngiving" TESTTESTS "the tests function output over the given inputs will be used to check if match the given result AC_{i+1}\n" 
 
@@ -121,7 +121,7 @@ int GEMMCheckCBLAS(spmat* A,spmat* B,spmat* AB){
 #endif
 
 //global vars   ->  audit
-double Start,End,Elapsed,ElapsedInternal;
+//double Start,End,Elapsed,ElapsedInternal;
 
 static CONFIG Conf = {
     .gridRows  = 8,
@@ -139,20 +139,29 @@ int main(int argc, char** argv){
     spmat *R = NULL, *AC = NULL, *P = NULL, *outToCheck = NULL, *oracleOut=NULL;
     double* outCBLAS = NULL; //CBLAS TEST FUNCTION OUTPUT
     ////parse sparse matrixes 
-    if (!( R = MMtoCSR(argv[1]))){
+    char* trgtMatrix;
+    trgtMatrix = TMP_EXTRACTED_MARTIX;
+    if (extractInTmpFS(argv[1],TMP_EXTRACTED_MARTIX) < 0)   trgtMatrix = argv[1];
+    if (!( R = MMtoCSR(trgtMatrix))){
         ERRPRINT("err during conversion MM -> CSR of R\n");
         goto _free;
     }
-    if (!( AC = MMtoCSR(argv[2]))){
+    trgtMatrix = TMP_EXTRACTED_MARTIX;
+    if (extractInTmpFS(argv[2],TMP_EXTRACTED_MARTIX) < 0)   trgtMatrix = argv[2];
+    if (!( AC = MMtoCSR(trgtMatrix))){
         ERRPRINT("err during conversion MM -> CSR of AC\n");
         goto _free;
     }
-    if (!( P = MMtoCSR(argv[3]))){
+    trgtMatrix = TMP_EXTRACTED_MARTIX;
+    if (extractInTmpFS(argv[3],TMP_EXTRACTED_MARTIX) < 0)   trgtMatrix = argv[3];
+    if (!( P = MMtoCSR(trgtMatrix))){
         ERRPRINT("err during conversion MM -> CSR of P\n");
         goto _free;
     }
     if (argc > 4 ){  //get the result matrix to check computations
-        if (!( oracleOut = MMtoCSR(argv[4]) )){
+        trgtMatrix = TMP_EXTRACTED_MARTIX;
+        if (extractInTmpFS(argv[4],TMP_EXTRACTED_MARTIX) < 0)   trgtMatrix = argv[4];
+        if (!( oracleOut = MMtoCSR(trgtMatrix) )){
             ERRPRINT("err during conversion MM -> CSR AC_{i+1}\n");
             goto _free;
         }
@@ -246,7 +255,7 @@ int main(int argc, char** argv){
         }
         statsAvgVar(times,AVG_TIMES_ITERATION,elapsedStats);
         statsAvgVar(timesInteral,AVG_TIMES_ITERATION,elapsedInternalStats);
-        printf("R:%ux%u AC:%ux%u P:%ux%u CSR sp.Mat ",
+        printf("R:%lux%lu AC:%lux%lu P:%lux%lu CSR sp.Mat ",
           R->M,R->N,AC->M,AC->N,P->M,P->N);
         printf("timeAvg:%le timeVar:%le\ttimeInternalAvg:%le timeInternalVar:%le \n",
             elapsedStats[0],elapsedStats[1],elapsedInternalStats[0],elapsedInternalStats[1]);

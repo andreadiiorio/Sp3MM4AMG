@@ -30,10 +30,10 @@ typedef enum {
 
 
 //global vars	-	audit
-double Start;
+//double Start;
 
 #define HELP "usage Matrixes: R_{i+1}, AC_{i}, P_{i+1}," \
-    "in MatrixMarket_sparse_matrix_COO, [COMPUTE/PARTITION_MODE: "_ROWS","_SORTED_ROWS","_TILES" ("_ROWS")]\n"
+    "in MatrixMarket_sparse_matrix_COO[compressed], [COMPUTE/PARTITION_MODE: "_ROWS","_SORTED_ROWS","_TILES" ("_ROWS")]\n"
 
 static CONFIG Conf = {
     .gridRows  = 8,
@@ -66,18 +66,25 @@ int main(int argc, char** argv){
     }
     
     spmat *R = NULL, *AC = NULL, *P = NULL, *out = NULL;
+    char* trgtMatrix;
     ////parse sparse matrixes 
-    if (!( R = MMtoCSR(argv[1]))){
+    trgtMatrix = TMP_EXTRACTED_MARTIX;
+    if (extractInTmpFS(argv[1],TMP_EXTRACTED_MARTIX) < 0)   trgtMatrix = argv[1];
+    if (!( R = MMtoCSR(trgtMatrix))){
         ERRPRINT("err during conversion MM -> CSR of R\n");
         goto _free;
     }
     ////parse sparse matrixes 
-    if (!( AC = MMtoCSR(argv[2]))){
+    trgtMatrix = TMP_EXTRACTED_MARTIX;
+    if (extractInTmpFS(argv[2],TMP_EXTRACTED_MARTIX) < 0)   trgtMatrix = argv[2];
+    if (!( AC = MMtoCSR(trgtMatrix))){
         ERRPRINT("err during conversion MM -> CSR of AC\n");
         goto _free;
     }
     ////parse sparse matrixes 
-    if (!( P = MMtoCSR(argv[3]))){
+    trgtMatrix = TMP_EXTRACTED_MARTIX;
+    if (extractInTmpFS(argv[3],TMP_EXTRACTED_MARTIX) < 0)   trgtMatrix = argv[3];
+    if (!( P = MMtoCSR(trgtMatrix))){
         ERRPRINT("err during conversion MM -> CSR of P\n");
         goto _free;
     }

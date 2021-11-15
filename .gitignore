@@ -1,3 +1,8 @@
 data/
 code/**/*.o
 code/**/*.elf
+doc/**/*.pdf
+doc/**/*.aux
+doc/**/*.log
+doc/**/*.bbl
+doc/**/*.out
