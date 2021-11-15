@@ -1,0 +1,297 @@
+\chapter{Implementazione OpenMp}
+\label{Chapter2} % 2 reference \ref{Chapter2} 
+%----------------------------------------------------------------------------------------
+
+% Define some commands to keep the formatting separated from the content 
+Prendendo spunto dalle caratteristiche principali degli algoritmi descritti
+nella sezione precedente \ref{Chapter1}, 
+ho realizzato alcune implementazioni per il prodotto tra matrici sparse con OpenMP,
+considerando la formulazione row-by-row in \ref{Ch1:formulazioni} 
+ed un partizionamento dei dati monodimensionale e bidimensionale.\\ 
+
+\section{Determinazione della dimensione matrice risultante} \label{ch2:outSizeUB}
+La dimensione della matrice risultante può essere determinata sia con un
+UpperBound sia con in una modalità accurata con maggiore costo computazionale.\\
+Ho scelto di adottare una soluzione efficiente per calcolare un UpperBound per la
+dimensione della matrice risultante come riportato nell'algoritmo 4 di \parencite{sysReviewChi}.\\
+In questa soluzione, ispirandosi a una formulazione row-by-row di SpGWMM, 
+si determina la dimensione massima di ogni riga della matrice risultante come:\\
+$ | I_i(C) |~\leq~\sum\limits_{ j \in I_i(A) }  | I_j(B) | $ 
+
+\section{Accumulatore denso per i prodotti intermedi} %TODO descrizione generica oltre della sola form. row-by-row
+Come analizzato da \parencite{intelSpGEMMDenseAccumulator}, precedentemente in 
+\ref{ssec:intelSpGEMMDenseAccumulator} possono esserci diversi vantaggi 
+nell'utilizzo di un accumulatore denso per i prodotti intermedi effettuati in SpGEMM.
+%THREAD_AUX_VECT
+Per questa ragione ho deciso di utilizzare questo stratagemma nella
+computazione delle partizioni delle righe della matrice risultante in una
+struttura di questo tipo:
+\begin{lstlisting}
+double* v;          //dense accumulator for intermediate products
+uint*   nnzIdx;     //nonzero accumulated values indexes of v
+uint    nnzIdxLast; //index of last appended non zero value in nnzIdx
+\end{lstlisting}    %TODO uint    vLen;       
+nella quale in \verb|v| vengono accumulati i prodotti intermedi 
+ed in \verb|nnzIdx| vengono inseriti gli indici delle componenti non zero accumulate in \verb|v|.
+%Dense acc size
+Entrambi questi array devono essere allocati con uno spazio sufficiente a contenere
+tutti i risultati dei prodotti intermedi da effettuare in un'iterazione di SpGEMM. \\
+Nel caso della formulazione row-by-row 
+\verb|v| rappresenterà gli elementi \nnz di una partizione di una riga della matrice risultate e
+\verb|nnzIdx| rappresenteranno gli indici relativi, \emph{shiftati} di uno %TODO traslati..
+spiazzamento da aggiungere, relativo a quale partizione della matrice risultate si sta calcolando.
+È possibile sovrallocare questi vettori con il numero di colonne di una partizione della matrice B\\
+%nnzIdx append 
+Gl'indici dei valori non zero accumulati in \verb|v| sono inseriti consecutivamente grazie   
+alla variabile \verb|nnzIdxLast|,contente l'indice dell'ultimo elemento inserito in \verb|nnzIdx|
+il quale corrisponde ad un buon UpperBound del numero di valori non zero accumulati .\\
+
+\subsection{Trasformazione da un accumulatore denso in un vettore sparso}  %sparsifyDenseVect
+\label{ch2:sparsifyDenseVect}
+È necessario trasformare l'accumulatore denso appena descritto in un 
+formato sparso per ottenere la matrice risultate, copiando gli elementi \nnz 
+in \verb|v| e i relativi indici nella struttura sparsa di destinazione.\\
+%Esigenza vettore sparso come step intermedio
+Data la generazione parallela degli accumulatori densi
+ho scelto di utilizzare dei vettori sparsi ausiliari, rappresentanti porzioni della matrice risultate, 
+piuttosto che scrivere gli elementi \nnz di \verb|v| direttamente nell' output di SpGEMM,
+%alternativa senza accSparso intermedio con troppa sincronizzazione / predizione & memove & realloc
+data la difficile determinazione dell'offset al quale copiare gli elementi \nnz e la relativa sincronizzazione necessaria.
+
+\subsubsection{Allocazione vettori sparsi intermedi}
+La dimensione dei vettori sparsi intermedi, generati in parallelo,
+non è nota prima di ottenere gli accumulatori densi a meno di non effettuare 
+una precomputazione simbolica dell'intera operazione SpGEMM come indicato in \parencite{sysReviewChi}.\\
+Nell'ipotesi di usare una parallelizzazione di SpGEMM sfruttando la direttiva OpenMp,
+\begin{lstlisting}[numbers=none]
+#pragma omp parallel for 
+\end{lstlisting} %TODO ANCHE A LIVELLO GENERALE in costrutti work-sharing? 
+effettuare delle operazioni che potrebbero causare errori, come delle malloc,
+e quindi la terminazione  anticipata del ciclo parallelizzato, 
+vanno contro la filosofia OpenMP secondo cui il numero di iterazioni del ciclo
+da parallelizzare deve essere precomputabile prima del ciclo stesso. \\ 
+%TODO KEEP? omp cancel disabled by dflt
+%A sostegno della filosifa OpenMP riguardo la precomputabilità del numero di iterazioni di un ciclo parallelizzato 
+A sostegno di ciò c'è che il costrutto che potrebbe consentire una uscita anticipata dal ciclo:
+\begin{lstlisting}[numbers=none]
+#pragma omp cancel for 
+\end{lstlisting} 
+è disabilitato a meno di essere abilitato esplicitamente mediante la 
+Internal Control Variable \verb|cancel-var | \parencite{openmp5.1}\\
+     % TODO DOUBLE CHECK: per motivi di performance
+
+Per questo motivo, ho deciso di effettuare una preallocazione di uno spazio
+sufficiente a contenere tutti gli elementi \nnz della matrice risultante, come
+descritto in \ref{ch2:outSizeUB} per poi assegnarne porzioni ai vari thread 
+che necessitano di \emph{sparsificare} un accumulatore denso in un accumulatore 
+sparso mediante una primitiva atomica di sincronizzazione.\\
+
+Una semplificazione della trasformazione dell'accumulatore denso in un
+accumulatore sparso è riportata nel blocco di codice seguente
+%%static inline void sparsifyDenseVect
+\begin{lstlisting}
+uint nnz = accDenseV -> nnzIdxLast, accSparseStartIdx;
+sortuint(accDenseV->nnzIdx,nnz); //sort nnz idx for ordered write
+accSparse -> len = nnz;
+//sparse accumulator space atomic assign
+accSparseStartIdx = __atomic_fetch_add(&(accDense->lastAssigned),nnz,__ATOMIC_SEQ_CST); 
+accSparse -> AS = accDense->AS + accSparseStartIdx; 
+accSparse -> JA = accDense->JA + accSparseStartIdx; 
+///sparsify dense acc.v into row
+for (uint i=0,j;    i<nnz;   i++){ 
+    j = accDenseV -> nnzIdx[i]; //shifted 
+    accSparse -> JA[i] = j + startColAcc;
+    accSparse -> AS[i] = accDenseV->v[j];
+}
+\end{lstlisting}
+in cui si riserva uno spazio per il nuovo accumulatore sparso \verb|accSparse|
+nelle righe 5-7.\\
+In particolare ho utilizzato un contatore per gli elementi già assegnati dalla
+preallocazione iniziale il cui accesso è gestito dalla primitiva di sincronizzazione 
+\verb|__atomic_fetch_add| in riga 5, per ottenere il suo valore corrente 
+ed incrementarlo atomicamente del numero di elementi \nnz dell'accumulatore denso 
+%così da simulare una allocazione 
+.\\
+%sort nnzIdx array
+Gli indici degli elementi \nnz inseriti in \verb|nnzIdx| è relativo all'ordine
+degli elementi \nnz incontrati durante i prodotti intermedi e necessita quindi
+di un riordinamento, fatto a riga 2 
+sfruttando la funzione \verb|qsort| inclusa nella \verb|glibc|.
+Il riordinamento non ha un grande impatto sulle performance dato che 
+è effettuato in parallelo su ogni partizione della matrice risultante che,
+essendo sparse, contengono potenzialmente pochi elementi \nnz .\\
+%NOTA SU QUICK SORT OTTIMIZZATO https://elixir.bootlin.com/glibc/glibc-2.34.9000/source/stdlib/qsort.c#L89
+Infine effettuo la copia dei soli valori \nnz nelle righe 10-12,
+%shift back from scSparseVectMulPart 
+avendo cura di trasformare gli indici degli elementi \nnz da relativi al solo
+accumulatore ad assoluti rispetto alla matrice risultante
+
+%TODO EVENTUALMENTE ? PARTE RELATIVA TRIPLO PRODOTTO DIRETTO VS  COPPIA DI SPGEMM
+
+\section{Partizionamento monodimensionale}
+Un semplice partizionamento delle matrici per parallelizzare l'operazione di
+moltiplicazione tra matrici sparse $A * B$ in una formulazione row-by-row è quello di 
+assegnare righe o blocchi di righe della matrice A ai thread.
+Nella terminologia introdotta precedentemente in \ref{ch1:workCube}, equivale ad
+assegnare gruppi di Layers del cubo di lavoro ai vari threads.\\
+Segue una parte del codice per effettuare l'operazione di SpGEMM con 
+un partizionamento per blocchi di righe della matrice A:    \label{ch2:part1DGroup}
+\begin{lstlisting}
+    #pragma omp parallel for schedule(runtime) private(acc,startRow,block)
+    for (b=0;   b < conf->gridRows; b++){
+        block     = UNIF_REMINDER_DISTRI(b,rowBlock,rowBlockRem);
+        startRow  = UNIF_REMINDER_DISTRI_STARTIDX(b,rowBlock,rowBlockRem);
+        //row-by-row formulation in the given row block
+        for (uint r=startRow;  r<startRow+block;  r++){
+            //iterate over nz entry index c inside current row r
+            accDense = accVects + b;
+            for (uint c=A->IRP[r]; c<A->IRP[r+1]; c++) 
+                scSparseRowMul(A->AS[c], B, A->JA[c], accDense );
+            //trasform accumulated dense vector to a CSR row
+            sparsifyDenseVect(outAccumul,acc,outAccumul->accs + r,0);
+            _resetAccVect(accDense);   //rezero for the next A row
+        }
+    }
+    ///merge sparse row computed before
+    if (mergeRows(outAccumul->accs,AB))    goto _err;
+\end{lstlisting}
+Data una rappresentazione CSR delle matrici, è possibile effettuare un 
+partizionamento delle righe semplicemente suddividendo gli indici degli elementi
+\nnz tramite il vettore degli offset iniziali delle righe \verb|IRP|,
+come fatto nelle righe 2-6.\\
+La i-esima riga di C è calcolata come 
+$c_{i*} = \sum\limits_{k \in I_i(A)}  a_{ik} \ast  b_{k*}$  in un accumulatore denso
+nelle righe 9-10.\\
+Successivamente gli accumulatori densi vengono convertiti in accumulatori sparsi
+in \verb|sparsifyDenseVect| come precedentemente descritto \ref{ch2:sparsifyDenseVect}
+per poi essere copiati nella matrice risultante in \verb|mergeRows| a riga 17.
+
+\section{Partizionamento bidimensionale}
+Un partizionamento 2D delle matrici in input è quello di assegnare ai threads 
+blocchi bidimensionali della matrice C ottenuti dalla moltiplicazione di
+blocchi di righe della matrice A e blocchi di colonne della matrice B.\\
+Nella terminologia introdotta precedentemente in \ref{ch1:workCube}, equivale ad
+assegnare gruppi di fibers del cubo di lavoro ai vari threads.\\
+
+\subsection{Partizionamento colonne di una matrice CSR mediante offset}
+Per partizionare le colonne di una matrice CSR è possibile utilizzare una
+matrice di indici di supporto contenete per ogni riga l'indice iniziale di ogni
+partizione. Segue la funzione per effettuare questo partizionamento:
+\begin{lstlisting}
+/*
+ * partition CSR sparse matrix @A in @gridCols columns partitions 
+ * returning an offsets matrix out[i][j] = start of jth colPartition of row i
+ * subdivide @A columns in uniform cols ranges in the output 
+ */
+uint* colsOffsetsPartitioningUnifRanges(spmat* A,uint gridCols){
+    uint subRowsN = A->M * gridCols;
+    uint _colBlock = A->N/gridCols, _colBlockRem = A->N%gridCols;
+    uint* offsets = malloc( (subRowsN+1) * sizeof(*offsets) );
+    if (!offsets)  {
+        ERRPRINT("colsOffsetsPartitioning:\t offsets malloc errd\n");
+        return NULL;
+    }
+    ///OFFSETS COMPUTE FOR COL GROUPS -> O( A.NZ )
+    for (uint r=0, j=0;     r<A->M;     j=A->IRP[++r]){
+        //navigate column groups inside current row
+        for (uint gc=0,gcStartCol=0;  gc<gridCols;  gc++){
+            //goto GroupCols start entry keeping A's nnz entries navigation (j)
+            while ( j < A->IRP[r+1] &&  A->JA[j] < gcStartCol )  j++;
+            offsets[ IDX2D(r,gc,gridCols) ] = j;//row's part start
+            gcStartCol += UNIF_REMINDER_DISTRI(gc,_colBlock,_colBlockRem);
+        }
+    }
+    offsets[subRowsN] = A->NZ;
+    return offsets;
+}
+\end{lstlisting}
+Per calcolare l'indice iniziale delle partizioni per ogni riga si valutano gli
+elementi \nnz della matrice fino ad averne uno con indice di colonna $\geq$
+dell'indice iniziale della partizione a riga 19
+
+\subsection{Partizionamento colonne di una matrice CSR in matrici separate}
+Un partizionamento per colonne alternativo di una matrice CSR consiste in una
+allocazione di matrici CSR dedicate per ogni partizione con una sovrallocazione
+inziale degli elementi \nnz.\\
+Segue il principale blocco di codice per effettuare questo partizionamento:
+
+\begin{lstlisting}
+//for each A cols part -> last copied nz index = nnz copied ammount
+uint* colPartsLens = alloca(gridCols * sizeof(colPartsLens));
+memset(colPartsLens, 0, sizeof(*colPartsLens) * gridCols);
+//OFFSET BASED COPY OF A.COL_GROUPS -> O( A.NZ )
+for (uint r=0, j=0;     r<A->M;     j=A->IRP[++r]){
+    //navigate column groups inside current row
+    for (uint gc=0,gcEndCol=0,i;  gc<gridCols ;  gc++,j+=i){
+        i = 0;  //@i=len current subpartition of row @r to copy
+        colPart = colParts + gc;
+        colPart->IRP[r] = colPartsLens[gc];
+        gcEndCol += UNIF_REMINDER_DISTRI(gc,_colBlock,_colBlockRem);
+        //goto next GroupCols,keeping A's nnz entries navigation (j+i)
+        while ( j+i < A->IRP[r+1] && A->JA[j+i] < gcEndCol ) i++;
+        memcpy(colPart->AS+colPart->IRP[r],A->AS+j,i*sizeof(*(A->AS)));
+        memcpy(colPart->JA+colPart->IRP[r],A->JA+j,i*sizeof(*(A->JA)));
+        
+        colPartsLens[gc] += i;
+    }
+}
+\end{lstlisting}
+
+Tenendo traccia del numero di elementi \nnz copiati per ogni partizione nel
+vettore \verb|colPartsLens| è possibile aggiornare l'indice iniziale di riga 
+delle partizioni a riga 10 ed a riga 14, in maniera simile al partizionamento
+precedente, si identifica il confine della partizione corrente per poi
+effettuare la copia dei valori \nnz della partizione nelle righe 14,15.\\ %TODO meno ripetizioni ?
+
+Considerando quest'ultimo tipo di partizionamento delle colonne della matrice B 
+ed utilizzando il partizionamento precedente per gruppi di righe della matrice A
+\ref{ch2:part1DGroup}, l'operazione di SpGEMM è effettuata mediante il codice seguente:
+\begin{lstlisting}
+#pragma omp parallel for schedule(runtime) private(accV,accRowPart,\
+  colPart,rowBlock,colBlock,startRow,startCol,t_i,t_j)
+for (tileID = 0; tileID < gridSize; tileID++){
+    ///get iteration's indexing variables
+    //tile index in the 2D grid of AB computation 
+    t_i = tileID/conf->gridCols;  //i-th row block
+    t_j = tileID%conf->gridCols;  //j-th col block
+    //get tile row-cols group FAIR sizes
+    rowBlock = UNIF_REMINDER_DISTRI(t_i,_rowBlock,_rowBlockRem); 
+    colBlock = UNIF_REMINDER_DISTRI(t_j,_colBlock,_colBlockRem);
+    startRow = UNIF_REMINDER_DISTRI_STARTIDX(t_i,_rowBlock,_rowBlockRem);
+    startCol = UNIF_REMINDER_DISTRI_STARTIDX(t_j,_colBlock,_colBlockRem);
+    
+    colPart = colPartsB + t_j;
+    accV = accVectors + tileID; 
+     
+    ///AB[t_i][t_j] block compute
+    for (uint r=startRow;  r<startRow+rowBlock;  r++){
+        //iterate over nz col index j inside current row r
+        //row-by-row restricted to colsubset of B to get AB[r][:colBlock:]
+        for (uint j=A->IRP[r],c,bRowStart,bRowLen; j<A->IRP[r+1]; j++){
+            //get start of B[A->JA[j]][:colBlock:]
+            c = A->JA[j]; // column of nnz entry in A[r][:] <-> target B row
+            bRowStart = colPart->IRP[c];
+            bRowLen   = colPart->IRP[c+1] - bRowStart;
+            scSparseVectMulPart(A->AS[j],colPart->AS+bRowStart,
+                colPart->JA+bRowStart, bRowLen,startCol,accV);
+        }
+
+        accRowPart = outAccumul->accs + IDX2D(r,t_j,conf->gridCols);
+        sparsifyDenseVect(outAccumul,accV,accRowPart,startCol);
+        _resetAccVect(accV);
+    }
+}
+    if (mergeRowsPartitions(outAccumul->accs,AB,conf))  goto _err;
+\end{lstlisting}
+Ogni thread è associato a un blocco da calcolare bidimensionale della matrice C
+identificato dagl'indici \verb|t_i| \verb|t_j| a riga 6 e 7,
+moltiplicando un blocco di righe della matrice A e un blocco di colonne della matrice
+B identificati dalle variabili in rige 9-12.\\
+Nel ciclo a riga 21, ogni thread computerà la porzione della riga \verb|r| di C
+relativa alla dimensione della partizione corrente di B a lui associata in un
+accumulatore denso.
+Successivamente ogni thread provvederà a trasformare l'accumulatore denso in uno
+sparso mediante \verb|sparsifyDenseVect|, tenendo conto della colonna della
+sua partizione.\\
+Infine, mediante \verb|mergeRowsPartitions| i vari vettori sparsi accumulati
+in una struttura di supporto dai thread, verranno uniti nella matrice risultante.\\
