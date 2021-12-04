@@ -1,6 +1,7 @@
 data/
 code/**/*.o
 code/**/*.elf
+articoli/**/*.txt
 doc/**/*.pdf
 doc/**/*.aux
 doc/**/*.log

@@ -4,7 +4,7 @@ source matrixes lines starts with ##, computing and configuration lines start wi
 expected prefixed lines in this order + template
 ##sources ... #source
 @sizes and config
-@compute ... func:X elapsed:XX internalTime:X
+@compute ... func:X timeAvg:XXX timeVar:XXX timeInternalAvg:XXX timeInternalVar:XXX
 TEMPLATE:
 ## ../../data/Matching/Small/Unsmoothed/dump_lev_d_p0_l003_r.mtx ../../data/Matching/Small/Unsmoothed/dump_lev_d_p0_l002_ac.mtx ../../data/Matching/Small/Unsmoothed/dump_lev_d_p0_l003_p.mtx 
 ../../data/Matching/Small/Unsmoothed/dump_lev_d_p0_l003_ac.mtx # ../../data/Matching/Small/Unsmoothed 2                                                                                       
@@ -20,6 +20,9 @@ usage <logFile>
 from collections import namedtuple
 from re import finditer
 from sys import argv,stderr
+
+FIELDS = "source,funcN,timeAvg,timeVar,internalTimeAvg,internalTimeVar,srcSize,dstSize,NNZ_R,NNZ_AC,NNZ_P,gridSize"
+Execution = namedtuple("Execution",FIELDS)
 
 getReGroups=lambda pattern,string:\
     finditer(pattern,string).__next__().groups()
@@ -38,39 +41,46 @@ GRID_PATTERN="[0-9]+x[0-9]+"
 FP_PATTERN="[-+]?\d+\.?\d+e[-+]\d+"
 parseSizes=lambda s:  s #[int(x) for x in s.split("x")] #TODO not good CSV PARSED
 
-
-
-FIELDS = "source,funcN,timeAvg,timeVar,internalTimeAvg,internalTimeVar,srcSize,dstSize,NNZ_R,NNZ_AC,NNZ_P,gridSize"
-Execution = namedtuple("Execution",FIELDS)
-
-if "-h" in argv[1] or len(argv)<2:  print(__doc__);exit(1)
-
-executionTimes = list() #Execution tups
-with open(argv[1]) as f:    log=f.read()
-linesGroup = [ g.split("\n") for g in log.split("##")]
-
-for i,g in enumerate(linesGroup):
-    if len(g) < 3:  print("not complete group",i,g,file=stderr);continue
-    header   = g[0]
-    configSiz= g[1]
-    computes = list(filter(lambda l:"@" in l,g[2:]))
-    src      = header[header.rfind("#"):].strip().replace(" ","_")
+def parseHeader(header):
+    return header[header.rfind("#"):].strip().replace(" ","_") #src
+def parseConfigSize(configSiz):
     srcSize  = parseSizes(getReMatch("COARSENING AC:\s*("+GRID_PATTERN+")",configSiz))
     dstSize  = parseSizes(getReMatch("-->\s*("+GRID_PATTERN+")",configSiz))
     gridSize = parseSizes(getReMatch("grid:\s*("+GRID_PATTERN+")",configSiz))
     nnz_racp=getReMatch("NNZ:\s*(\d+-\d+-\d+)",configSiz)
     nnz_r,nnz_ac,nnz_p=[int(x) for x in nnz_racp.split("-")]
-    #preparingTime = float(getReMatch("preparing time:\s*("+FP_PATTERN+")",configSiz))
-    for l in computes:
-        funcN   = int(getReMatch("func:\s*(\d)",l))
-        timeAvg = float(getReMatch("timeAvg:\s*("+FP_PATTERN+")",l))
-        timeVar = float(getReMatch("timeVar:\s*("+FP_PATTERN+")",l))
-        timeInternalAvg = float(getReMatch("timeInternalAvg:\s*("+FP_PATTERN+")",l))
-        timeInternalVar = float(getReMatch("timeInternalVar:\s*("+FP_PATTERN+")",l))
-        executionTimes.append(Execution(src,funcN,timeAvg,timeVar,timeInternalAvg,timeInternalVar,srcSize,dstSize,nnz_r,nnz_ac,nnz_p,gridSize))
+    return srcSize,dstSize,gridSize,nnz_r,nnz_ac,nnz_p
 
-print(FIELDS)
-for e in executionTimes:    
-    for f in e: print(f,end=", ")
-    print("")
-print("\n")
+def parseComputeTimes(l):
+    funcN   = int(getReMatch("func:\s*(\d)",l))
+    timeAvg = float(getReMatch("timeAvg:\s*("+FP_PATTERN+")",l))
+    timeVar = float(getReMatch("timeVar:\s*("+FP_PATTERN+")",l))
+    timeInternalAvg = float(getReMatch("timeInternalAvg:\s*("+FP_PATTERN+")",l))
+    timeInternalVar = float(getReMatch("timeInternalVar:\s*("+FP_PATTERN+")",l))
+    return funcN,timeAvg,timeVar,timeInternalAvg,timeInternalVar
+if __name__ == "__main__":
+    if "-h" in argv[1] or len(argv)<2:  print(__doc__);exit(1)
+    
+    executionTimes = list() #Execution tups
+    with open(argv[1]) as f:    log=f.read()
+    linesGroup = [ g.split("\n") for g in log.split("##")]
+    
+    for i,g in enumerate(linesGroup):
+        if len(g) < 3:  print("not complete group",i,g,file=stderr);continue
+        #splitting log parts of computation
+        header   = g[0]
+        configSiz= g[1]
+        computes = list(filter(lambda l:"@" in l,g[2:]))
+        #parsing
+        src = parseHeader(header)
+        srcSize,dstSize,gridSize,nnz_r,nnz_ac,nnz_p = parseConfigSize(configSiz)
+        #preparingTime = float(getReMatch("preparing time:\s*("+FP_PATTERN+")",configSiz))
+        for l in computes:
+            funcN,timeAvg,timeVar,timeInternalAvg,timeInternalVar = parseComputeTimes(l)
+            executionTimes.append(Execution(src,funcN,timeAvg,timeVar,timeInternalAvg,timeInternalVar,srcSize,dstSize,nnz_r,nnz_ac,nnz_p,gridSize))
+    
+    print(FIELDS)
+    for e in executionTimes:    
+        for f in e: print(f,end=", ")
+        print("")
+    print("\n")
