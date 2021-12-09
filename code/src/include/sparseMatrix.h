@@ -4,6 +4,7 @@
 #define SPARSEMATRIX 
 
 #include "macros.h"
+#include "config.h"
 
 typedef struct{
     ulong NZ,M,N;
@@ -14,7 +15,7 @@ typedef struct{
 #endif
     ulong* IRP;
     //CUDA SPECIFIC
-    //ulong MAXNZ;
+    ulong MAX_ROW_NZ;
 
     double *AS; 
 } spmat; //describe a sparse matrix
@@ -111,6 +112,7 @@ inline spmat* allocSpMatrix(ulong rows, ulong cols){
     return mat;
 }
 
+//////////////////////////////// CSR SPECIFIC /////////////////////////////////
 ///SPARSE MATRIX PARTITIONING
 /*
  * partition CSR sparse matrix @A in @gridCols columns partitions 
@@ -125,6 +127,7 @@ ulong* colsOffsetsPartitioningUnifRanges(spmat* A,uint gridCols);
  * subdivide @A columns in uniform cols ranges in the output 
  */
 spmat* colsPartitioningUnifRanges(spmat* A,uint gridCols);
+///////////////////////////////////////////////////////////////////////////////
 
 /*  
     check if sparse matrixes A<->B differ up to 

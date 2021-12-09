@@ -1,3 +1,5 @@
+#ifndef SpGEMM_CBLAS_H
+#define SpGEMM_CBLAS_H
 
 /*
  * wrap CBLAS calls to compute @A * @B
@@ -15,3 +17,4 @@ int GEMMTripleCheckCBLAS(spmat* R,spmat* AC,spmat* P,spmat* RACP);
  */
 int GEMMCheckCBLAS(spmat* A,spmat* B,spmat* AB);
 
+#endif

@@ -5,7 +5,7 @@ CFLAGS+=-lm -fopenmp
 
 #TODO extra to reduce useless warnings
 CFLAGS+=-Wno-pointer-sign -Wno-unused-parameter -Wno-unused-but-set-variable
-CFLAGS+=-Wno-unused-label -Wno-unused-function
+CFLAGS+=-Wno-unused-label -Wno-switch #-Wno-unused-function
 ##TODO OMP CONFIG
 #OMP_CANCELLATION=true
 #export OMP_CANCELLATION
@@ -26,7 +26,7 @@ objs = SpGEMM_OMP.o #SpGEMM_CUDA.o
 all: $(objs)
 .PHONY: all
 
-SpGEMM_OMP.o: main_OMP.c SpGEMM_OMP.c commons/*.c lib/*.c include/*.h
+SpGEMM_OMP.o: main_OMP.c SpGEMM_*_OMP.c commons/*.c lib/*.c include/*.h
 	$(CC) $(CFLAGS) $(CONSTS) $(MACROS) -I include/ $(filter-out %.h,$^) -o $@
 clean:
 	rm -i *.o 

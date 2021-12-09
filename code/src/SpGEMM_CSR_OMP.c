@@ -11,19 +11,6 @@
 #include "macros.h"
 #include "sparseMatrix.h"
 
-///inline exports
-spmat*  allocSpMatrix(ulong rows, ulong cols);
-int     allocSpMatrixInternal(ulong rows, ulong cols, spmat* mat);
-spmat*  initSpMatrixSpGEMM(spmat* A, spmat* B);
-void    freeSpmatInternal(spmat* mat);
-void    freeSpmat(spmat* mat);
-
-#ifdef DEBUG_TEST_CBLAS
-    #pragma message("INCLUDING CBLAS")
-    #include "SpGEMM_OMP_test.h"
-#endif
-
-
 
 //global vars	->	audit
 double Start,End,Elapsed,ElapsedInternal;
@@ -744,34 +731,25 @@ spmat* spgemmGustavson2DBlocksAllocated(spmat* A,spmat* B, CONFIG* conf){
 
 
 
-spmat* sp3gemmGustavsonParallel(spmat* R,spmat* AC,spmat* P,CONFIG* conf){
+spmat* sp3gemmGustavsonParallelPair(spmat* R,spmat* AC,spmat* P,CONFIG* conf,SPGEMM_INTERF spgemm){
     
     double end,start,partial,flops;
     start = omp_get_wtime();
    
-    SPGEMM_INTERF computeSpGEMM = (SPGEMM_INTERF) conf->spgemmFunc;
-    if (!computeSpGEMM){
-        //TODO runtime decide witch spgemm implementation to use if not given
-        computeSpGEMM = &spgemmGustavson2DBlocks; 
-        //computeSpGEMM = &spgemmGustavson2DBlocksAllocated;//TODO COMPARA CON VERSIONE CHE ALLOCA LE PARTIZIONI DELLE COLONNE
-        //TODO ANY CONVENIENZA STORING B.COLPARTITIONS ... ALTRIMENTI:
-        //computeSpGEMM = &spgemmGustavsonRowBlocks;
+    if (!spgemm){
+        //TODO runtime on sizes decide witch spgemm implementation to use if not given
+        spgemm = &spgemmGustavson2DBlocks; 
     }
-    //alloc dense aux vector, reusable over 3 product 
+    /* TODO 
+    alloc dense aux vector, reusable over 3 product 
+    TODO arrays sovrallocati per poter essere riusati nelle 2 SpGEMM
     ulong auxVectSize = MAX(R->N,AC->N);
     auxVectSize      = MAX(auxVectSize,P->N);
-    //TODO arrays sovrallocati per poter essere riusati nelle 2 SpGEMM
-    
+    */
     spmat *RAC = NULL, *out = NULL;
-    if (!(RAC = computeSpGEMM(R,AC,conf)))      goto _free;
-#ifdef DEBUG_TEST_CBLAS
-    if(GEMMCheckCBLAS(R,AC,RAC))                goto _free;
-#endif
+    if (!(RAC = spgemm(R,AC,conf)))      goto _free;
     AUDIT_INTERNAL_TIMES    partial = End - Start;
-    if (!(out = computeSpGEMM(RAC,P,conf)))     goto _free;
-#ifdef DEBUG_TEST_CBLAS
-    if(GEMMCheckCBLAS(RAC,P,out))               goto _free;
-#endif
+    if (!(out = spgemm(RAC,P,conf)))     goto _free;
     
     ///time accounting and prints 
     end = omp_get_wtime();
@@ -790,5 +768,4 @@ spmat* sp3gemmGustavsonParallel(spmat* R,spmat* AC,spmat* P,CONFIG* conf){
     if (RAC)    freeSpmat(RAC);
 
     return out;
-
 }

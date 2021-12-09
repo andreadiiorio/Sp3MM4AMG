@@ -4,19 +4,26 @@
 #include <omp.h>
 
 #include "SpGEMM.h"
+#include "ompChunksDivide.h"
 #include "parser.h"
 #include "utils.h"
 #include "macros.h"
 
 #include "sparseMatrix.h"
-///inline redef here
-//void freeSpmat(spmat* mat);
-
 #ifdef DEBUG_TEST_CBLAS
     #include "SpGEMM_OMP_test.h"
 #endif
 
-SP3GEMM sp3gemmGustavsonParallel;
+//inline funcs
+CHUNKS_DISTR    chunksFair,chunksFairFolded,chunksNOOP;
+spmat*  allocSpMatrix(ulong rows, ulong cols);
+int     allocSpMatrixInternal(ulong rows, ulong cols, spmat* mat);
+spmat*  initSpMatrixSpGEMM(spmat* A, spmat* B);
+void    freeSpmatInternal(spmat* mat);
+void    freeSpmat(spmat* mat);
+
+CHUNKS_DISTR_INTERF chunkDistrbFunc=&chunksFairFolded;
+
 
 //COMPUTE MODES 
 typedef enum {
@@ -38,7 +45,6 @@ typedef enum {
 static CONFIG Conf = {
     .gridRows  = 8,
     .gridCols  = 8,
-    .spgemmFunc=NULL
 };
 
 int main(int argc, char** argv){
@@ -57,18 +63,32 @@ int main(int argc, char** argv){
     start = omp_get_wtime();
 
 
-    SP3GEMM_INTERF computeFunc;
+    SP3GEMM_INTERF computeFunc=&sp3gemmGustavsonParallelPair;
+    SPGEMM_INTERF  spgemm = &spgemmGustavson2DBlocksAllocated;
+    //TODO COMPREENSIVE UPDATE IN CMODE ... FOCUS ON TEST FILE
     switch (cmode){
-        case ROWS:          computeFunc=&sp3gemmGustavsonParallel;break;
+        case ROWS:          computeFunc=&sp3gemmGustavsonParallelPair;break;
         //TODO OTHERS
-        case SORTED_ROWS:   printf("SORTED_ROWS TODO");break;
         case TILES:         printf("TODO 2D BLOCKS");break;
     }
     
     spmat *R = NULL, *AC = NULL, *P = NULL, *out = NULL;
-    char* trgtMatrix;
+    //extra configuration
+    int maxThreads = omp_get_max_threads();
+    Conf.threadNum = (uint) maxThreads;
+    /*
+     * get exported schedule configuration, 
+     * if chunkSize == 1 set a chunk division function before omp for
+     */
+    int schedKind_chunk_monotonic[3];
+    ompGetRuntimeSchedule(schedKind_chunk_monotonic);
+    Conf.chunkDistrbFunc = chunksNOOP; 
+    if (schedKind_chunk_monotonic[1] == 1)  Conf.chunkDistrbFunc = chunkDistrbFunc;
+    if (!getConfig(&Conf)){
+        VERBOSE printf("configuration changed from env");
+    }
     ////parse sparse matrixes 
-    trgtMatrix = TMP_EXTRACTED_MARTIX;
+    char* trgtMatrix = TMP_EXTRACTED_MARTIX;
     if (extractInTmpFS(argv[1],TMP_EXTRACTED_MARTIX) < 0)   trgtMatrix = argv[1];
     if (!( R = MMtoCSR(trgtMatrix))){
         ERRPRINT("err during conversion MM -> CSR of R\n");
@@ -106,11 +126,9 @@ int main(int argc, char** argv){
     }
     
     //// PARALLEL COMPUTATION
-    int maxThreads = omp_get_max_threads();
-    Conf.threadNum = (uint) maxThreads;
     end = omp_get_wtime();elapsed = end-start;
     VERBOSE{printf("preparing time: %le\n",elapsed);print3SPGEMMCore(R,AC,P,&Conf);}
-    if (!(out = computeFunc(R,AC,P,&Conf))){
+    if (!(out = computeFunc(R,AC,P,&Conf,spgemm))){
         ERRPRINT("compute function selected failed...\n");
         goto _free;
     }
