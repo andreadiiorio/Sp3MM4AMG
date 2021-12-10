@@ -32,9 +32,12 @@ static CONFIG Conf = {
     .gridCols  = 8,
 };
 
-//wrap result check and stats gather of SpMV implementation func at (@sp3gemm,@spgemm)
-//result checked with @oracleOut or with CBLAS dense-serial implementation ifdef CBLAS_TESTS
-static inline int testSpMVImpl(SP3GEMM_INTERF sp3gemm,SPGEMM_INTERF spgemm,spmat* oracleOut,
+/*
+ * wrap result check and stats gather of Sp3GEMM implementation func at (@sp3gemm,[@spgemm])
+ * result checked with @oracleOut or with CBLAS dense-serial implementation ifdef CBLAS_TESTS
+ * @spgemm forwarded to @sp3gemm, stats printed on stdout; EXIT_FAILURE returned if any error
+ */
+static inline int testSp3GEMMImpl(SP3GEMM_INTERF sp3gemm,SPGEMM_INTERF spgemm,spmat* oracleOut,
   spmat* R,spmat* AC,spmat* P){
     int out = EXIT_FAILURE;
     spmat* outToCheck=NULL;
@@ -180,8 +183,10 @@ int main(int argc, char** argv){
     Conf.chunkDistrbFunc = &chunksNOOP; 
     if (schedKind_chunk_monotonic[0] != omp_sched_static)
         Conf.chunkDistrbFunc = chunkDistrbFunc;
+    VERBOSE 
+      printf("%s",Conf.chunkDistrbFunc == &chunksNOOP?"static schedule =>chunkDistrbFunc NOOP\n":"");
     //// PARALLEL COMPUTATIONs TO CHECK
-    SP3GEMM_INTERF sp3gemm = &sp3gemmGustavsonParallelPair;//TODO ITERATE OVER NEW POSSIBILITIES
+    SP3GEMM_INTERF sp3gemm = &sp3gemmRowByRowPair;
     end = omp_get_wtime();elapsed = end-start;
     VERBOSE printf("preparing time: %le\t",elapsed);
     print3SPGEMMCore(R,AC,P,&Conf);
@@ -191,18 +196,17 @@ int main(int argc, char** argv){
         spgemmFunc = SpgemmFuncs[f];
         hprintsf("@computing Sp3GEMM as pair of SpGEMM with func:\%u at:%p\t",
           f,spgemmFunc);
-        if (testSpMVImpl(sp3gemm,spgemmFunc,oracleOut,R,AC,P))   goto _free;
+        if (testSp3GEMMImpl(sp3gemm,spgemmFunc,oracleOut,R,AC,P))   goto _free;
     }
-    printf("\nall spgemmFuncs passed the test\n\n\n");
+    VERBOSE printf("\nall SpgemmFuncs functions passed the test\n\n\n");
     ///test SP3GEMM as merged two multiplication
-    /*
-    for (int f=0;  f<STATIC_ARR_ELEMENTS_N(Sp3gemmFuncs); f++){
+    for (uint f=0;  f<STATIC_ARR_ELEMENTS_N(Sp3gemmFuncs); f++){
         sp3gemm = Sp3gemmFuncs[f];
         hprintsf("@computing Sp3GEMM directly with func:\%u at:%p\t",
-          f,spgemmFunc);
-        if (testSpMVImpl(sp3gemm,NULL,oracleOut,R,AC,P))   goto _free;
+          f,sp3gemm);
+        if (testSp3GEMMImpl(sp3gemm,NULL,oracleOut,R,AC,P))   goto _free;
     }
-    */
+    VERBOSE printf("\nall Sp3gemmFuncs functions passed the test\n\n\n");
 
     DEBUGPRINT{
         printf("sparse matrix: AC_i\n");printSparseMatrix(outToCheck,TRUE);

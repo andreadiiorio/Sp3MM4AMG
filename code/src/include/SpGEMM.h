@@ -47,7 +47,14 @@ typedef struct{
  *  if @conf->spgemm != NULL, it will be used as spgemm function, otherwise euristics will be 
  *  used to decide wich implementation to use
  */
-SP3GEMM sp3gemmGustavsonParallelPair;
+SP3GEMM sp3gemmRowByRowPair;
+
+/*
+ * row-by-row-by-row implementation: forwarding @R*@AC rth row to P for row-by-row
+ * accumulation in preallocated space, TODO exactly determined
+ * basic parallelization: 1thread per @R's rows that will also forward the result to P
+ */
+SP3GEMM sp3gemmRowByRowMerged;
 
 ///SUB FUNCTIONS
 ///SPGEMM FUNCTIONS
@@ -56,13 +63,13 @@ SP3GEMM sp3gemmGustavsonParallelPair;
  * formulation using an aux dense vector @_auxDense
  * return resulting product matrix
  */
-SPGEMM spgemmGustavsonRows;
+SPGEMM spgemmRowByRow;
 /*
  * sparse parallel implementation of @A * @B parallelizing Gustavson 
  * with partitioning of @A in @conf->gridRows blocks of rows  
  * return resulting product matrix
  */
-SPGEMM spgemmGustavsonRowBlocks;
+SPGEMM spgemmRowByRow1DBlocks;
 
 /* 
  * sparse parallel implementation of @A * @B as Gustavson parallelizzed in 2D
@@ -70,7 +77,7 @@ SPGEMM spgemmGustavsonRowBlocks;
  * @A into rows groups, uniform rows division
  * @B into cols groups, uniform cols division, accessed by aux offsets
  */
-SPGEMM spgemmGustavson2DBlocks;
+SPGEMM spgemmRowByRow2DBlocks;
 
 /* 
  * sparse parallel implementation of @A * @B as Gustavson parallelizzed in 2D
@@ -78,14 +85,18 @@ SPGEMM spgemmGustavson2DBlocks;
  * @A into rows groups, uniform rows division
  * @B into cols groups, uniform cols division, ALLOCATED as CSR submatrixes
  */
-SPGEMM spgemmGustavson2DBlocksAllocated;
+SPGEMM spgemmRowByRow2DBlocksAllocated;
 
-///array of spgemm function pntrs
-//#pragma message "C Preprocessor got here!"
+///implementation wrappers as static array of function pointers
+//sp3gemm as pair of spgemm
 static const SPGEMM_INTERF  SpgemmFuncs[] = {
-    &spgemmGustavsonRows,
-    &spgemmGustavsonRowBlocks,
-    &spgemmGustavson2DBlocks,
-    &spgemmGustavson2DBlocksAllocated
+    &spgemmRowByRow,
+    &spgemmRowByRow1DBlocks,
+    &spgemmRowByRow2DBlocks,
+    &spgemmRowByRow2DBlocksAllocated
+};
+//sp3gemm as pair of spgemm
+static const SP3GEMM_INTERF Sp3gemmFuncs[] = {
+    &sp3gemmRowByRowMerged,
 };
 #endif
