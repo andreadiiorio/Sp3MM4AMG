@@ -54,7 +54,7 @@ objs := $(shell  grep -Eo '.*\..*:\s' Makefile | grep -v -e '@' -e PHONY | awk -
 all: $(objs)
 #FAST TESTS - PERFGATHER
 test_SpGEMM_Stats.o: $(testSrcs)
-	$(CC) -o $@ $(CFLAGS) -I$(srcDir)/include/  $(filter-out %.h,$^) $(MACROS) $(MACROS)
+	$(CC) -o $@ $(CFLAGS) -I$(srcDir)/include/  $(filter-out %.h,$^) $(MACROS) $(CONSTS)
 
 ##DEBUG BUILDS
 test_SpGEMM_DBG.o: $(testSrcs)
@@ -65,7 +65,7 @@ test_CBLAS_SpGEMM_OMP.elf: $(testSrcs) SpGEMM_CBLAS.c
 	mv *.o /tmp/oldBuilds
 	#create objectfile not linked
 	$(CC) -c $(CFLAGS) -I$(srcDir)/include/ -I$(CBLAS_INCLUDE) $(filter-out %.h,$^) \
-	  $(CONSTS) $(MACROS)  -DCBLAS_TESTS $(DBG)
+	  $(CONSTS) $(MACROS) $(DBG) -DCBLAS_TESTS 
 	#link it with static compiled cblas and source version library
 	$(FF) -O2 -frecursive -o $@ *.o  $(CBLAS_SLIB) $(BLAS_SLIB) $(EXTRALIBS)
 	rm -f *.o   #remove newly generated obj file for FF link

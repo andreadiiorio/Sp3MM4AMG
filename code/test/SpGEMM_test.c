@@ -43,7 +43,7 @@ static inline int testSp3GEMMImpl(SP3GEMM_INTERF sp3gemm,SPGEMM_INTERF spgemm,sp
     spmat* outToCheck=NULL;
     //elapsed stats aux vars
     double times[AVG_TIMES_ITERATION],  timesInteral[AVG_TIMES_ITERATION];
-    double elapsedStats[2],  elapsedInternalStats[2], start,end;
+    double deltaTStats[2],  deltaTInternalStats[2],internal_over_full,start,end;
     for (uint i=0;  i<AVG_TIMES_ITERATION; i++){
         start = omp_get_wtime();
         if (!(outToCheck = sp3gemm(R,AC,P,&Conf,spgemm))){
@@ -67,12 +67,12 @@ static inline int testSp3GEMMImpl(SP3GEMM_INTERF sp3gemm,SPGEMM_INTERF spgemm,sp
         timesInteral[i] = ElapsedInternal;
         ElapsedInternal = Elapsed = 0;
     }
-    statsAvgVar(times,AVG_TIMES_ITERATION,elapsedStats);
-    statsAvgVar(timesInteral,AVG_TIMES_ITERATION,elapsedInternalStats);
-    printf("R:%lux%lu AC:%lux%lu P:%lux%lu CSR sp.Mat ",
-      R->M,R->N,AC->M,AC->N,P->M,P->N);
-    printf("timeAvg:%le timeVar:%le\ttimeInternalAvg:%le timeInternalVar:%le \n",
-        elapsedStats[0],elapsedStats[1],elapsedInternalStats[0],elapsedInternalStats[1]);
+    statsAvgVar(times,AVG_TIMES_ITERATION,deltaTStats);
+    statsAvgVar(timesInteral,AVG_TIMES_ITERATION,deltaTInternalStats);
+    internal_over_full = deltaTInternalStats[0] / deltaTStats[0];
+    //printf("R:%lux%lu AC:%lux%lu P:%lux%lu ",R->M,R->N,AC->M,AC->N,P->M,P->N);
+    printf("timeAvg:%le timeVar:%le\ttimeInternalAvg:%le (%lf%% tot) timeInternalVar:%le \n",
+     deltaTStats[0],deltaTStats[1],deltaTInternalStats[0],internal_over_full*100,deltaTInternalStats[1]);
 
     
     out = EXIT_SUCCESS;
@@ -202,7 +202,7 @@ int main(int argc, char** argv){
     ///test SP3GEMM as merged two multiplication
     for (uint f=0;  f<STATIC_ARR_ELEMENTS_N(Sp3gemmFuncs); f++){
         sp3gemm = Sp3gemmFuncs[f];
-        hprintsf("@computing Sp3GEMM directly with func:\%u at:%p\t",
+        hprintsf("@computing Sp3GEMM directly with func:\%u at:%p\t\t",
           f,sp3gemm);
         if (testSp3GEMMImpl(sp3gemm,NULL,oracleOut,R,AC,P))   goto _free;
     }

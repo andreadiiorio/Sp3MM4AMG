@@ -777,8 +777,8 @@ spmat* spgemmRowByRow2DBlocksAllocated(spmat* A,spmat* B, CONFIG* cfg){
 ///SP3GEMM
 spmat* sp3gemmRowByRowPair(spmat* R,spmat* AC,spmat* P,CONFIG* cfg,SPGEMM_INTERF spgemm){
     
-    double end,start,partial,flops;
-    start = omp_get_wtime();
+    double end,start,elapsed,partial,flops;
+    spmat *RAC = NULL, *out = NULL;
    
     if (!spgemm){
         //TODO runtime on sizes decide witch spgemm implementation to use if not given
@@ -790,21 +790,19 @@ spmat* sp3gemmRowByRowPair(spmat* R,spmat* AC,spmat* P,CONFIG* cfg,SPGEMM_INTERF
     ulong auxVectSize = MAX(R->N,AC->N);
     auxVectSize      = MAX(auxVectSize,P->N);
     */
-    spmat *RAC = NULL, *out = NULL;
-    if (!(RAC = spgemm(R,AC,cfg)))      goto _free;
-    AUDIT_INTERNAL_TIMES    partial = End - Start;
-    if (!(out = spgemm(RAC,P,cfg)))     goto _free;
     
-    ///time accounting and prints 
+    start = omp_get_wtime();
+    /// triple product as a pair of spgemm
+    if (!(RAC = spgemm(R,AC,cfg)))      goto _free;
+    AUDIT_INTERNAL_TIMES                partial = End - Start;
+    if (!(out = spgemm(RAC,P,cfg)))     goto _free;
+    //
     end = omp_get_wtime();
-    Elapsed         = end - start;
     ElapsedInternal = End - Start + partial;
-    flops = ( 2 * R->NZ * P->NZ * AC->NZ ) / ( Elapsed );
-    DEBUG 
-      printf("sp3gemmGustavsonParallel of R:%lux%lu AC:%lux%lu P:%lux%lu CSR sp.Mat",
-        R->M,R->N,AC->M,AC->N,P->M,P->N);
     VERBOSE {
-        printf("elapsed %le - flops %le",Elapsed,flops);
+        elapsed         = end - start;
+        flops = ( 2 * R->NZ * P->NZ * AC->NZ ) / ( elapsed );
+        printf("elapsed %le - flops %le",elapsed,flops);
         AUDIT_INTERNAL_TIMES    printf("\tinternalTime: %le",ElapsedInternal);
         printf("\n");
     }
@@ -868,7 +866,10 @@ spmat* sp3gemmRowByRowMerged(spmat* R,spmat* AC,spmat* P,CONFIG* cfg,SPGEMM_INTE
     }
     ///merge sparse row computed before
     if (mergeRows(outAccumul->accs,out))    goto _err;
-    AUDIT_INTERNAL_TIMES	End=omp_get_wtime();
+    AUDIT_INTERNAL_TIMES{
+        End=omp_get_wtime();
+        ElapsedInternal = End-Start;
+    }
     DEBUG                   checkOverallocPercent(rowsSizes,out);
     goto _free;
 
