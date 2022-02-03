@@ -1,6 +1,8 @@
 #ifndef MACROS
 #define MACROS
 
+#include <stdio.h>
+#include <stdlib.h>
 
 ///aux macro-functions
 #define	ABS(a)				        ((a) > 0   ? (a) : -(a))
@@ -12,6 +14,7 @@
 #define INT_DIV_CEIL(x,y)		    ( ( (x) - 1) / (y) + 1 )
 //2D ROW MAJOR indexing wrap compute
 #define IDX2D(i,j,nCols)            ((j) + (i)*(nCols))
+
 ///distribuite reminder @rem in group givin an extra +1 to the first @rem
 #define UNIF_REMINDER_DISTRI(i,div,rem) \
     ( (div) + ( (i) < (rem) ? 1 : 0 ) )
@@ -19,9 +22,14 @@
     ( (i) * (div) + MIN( (i),(rem) ) )
 
 #define STATIC_ARR_ELEMENTS_N(arr)  (sizeof( (arr) ) / (sizeof(*(arr))))  
-///utilsPREP
-#define _STRIFY(x)  #x
-#define STRIFY(x)   _STRIFY(x)
+////STRING UTILS
+#define _STR(s) #s
+#define STR(s) _STR(s)
+///CONCATENATE
+//Concatenate preprocessor tokens A and B WITHOUT   expanding macro definitions
+#define _CAT(a,b)    a ## b
+//Concatenate preprocessor tokens A and B           EXPANDING macro definitions
+#define CAT(a,b)    _CAT(a,b)
 ////PRINTS
 #define CHIGHLIGHT                  "\33[1m\33[92m"
 #define CCC                         CHIGHLIGHT

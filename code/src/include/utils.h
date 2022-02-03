@@ -80,10 +80,7 @@ int fillRndVector(ulong size, double* v);
 int extractInTmpFS(char* path, char* tmpFsDecompressPath);
 //compute E[@values] in @out[0] and VAR[@values] in @out[1] of @numVals values
 void statsAvgVar(double* values,uint numVals, double* out);
-/*convert @sparseMat sparse matrix in dense matrix returned*/
-double* CSRToDense(spmat* sparseMat);
 void printMatrix(double* mat,ulong m,ulong n,char justNZMarkers);
-void printSparseMatrix(spmat* sparseMat,char justNZMarkers);
 void printVector(double* v,ulong size);
 
 #endif

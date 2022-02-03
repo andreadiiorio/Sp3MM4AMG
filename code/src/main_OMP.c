@@ -3,7 +3,9 @@
 #include <string.h>
 #include <omp.h>
 
-#include "SpGEMM.h"
+#include "sparseUtilsMulti.h"
+#include "SpMMMulti.h"
+
 #include "ompChunksDivide.h"
 #include "parser.h"
 #include "utils.h"
@@ -38,6 +40,8 @@ typedef enum {
 
 //global vars	-	audit
 //double Start;
+char TRGT_IMPL_START_IDX = 0; //multi implementation switch TODO C
+
 
 #define HELP "usage Matrixes: R_{i+1}, AC_{i}, P_{i+1}," \
     "in MatrixMarket_sparse_matrix_COO[compressed], [COMPUTE/PARTITION_MODE: "_ROWS","_SORTED_ROWS","_TILES" ("_ROWS")]\n"
@@ -63,15 +67,19 @@ int main(int argc, char** argv){
     start = omp_get_wtime();
 
 
-    SP3GEMM_INTERF computeFunc=&sp3gemmGustavsonParallelPair;
-    SPGEMM_INTERF  spgemm = &spgemmGustavson2DBlocksAllocated;
-    //TODO COMPREENSIVE UPDATE IN CMODE ... FOCUS ON TEST FILE
+    SP3GEMM_INTERF computeFunc = &sp3gemmRowByRowPair_0;
+    SPGEMM_INTERF  spgemm = &spgemmRowByRow2DBlocksAllocated_0;
+    if (TRGT_IMPL_START_IDX){   //1based indexing implementation
+        computeFunc = &sp3gemmRowByRowPair_1;
+        spgemm      = &spgemmRowByRow2DBlocksAllocated_1;
+    }
+    /*TODO COMPREENSIVE UPDATE IN CMODE ... FOCUS ON TEST FILE
+     **TODO check on TRGT_IMPL_START_IDX for each case to pick the trgt implentation
     switch (cmode){
         case ROWS:          computeFunc=&sp3gemmGustavsonParallelPair;break;
         //TODO OTHERS
         case TILES:         printf("TODO 2D BLOCKS");break;
-    }
-    
+    }*/
     spmat *R = NULL, *AC = NULL, *P = NULL, *out = NULL;
     //extra configuration
     int maxThreads = omp_get_max_threads();
@@ -135,12 +143,6 @@ int main(int argc, char** argv){
 
     ret = EXIT_SUCCESS;
     DEBUGPRINT {printf("sparse matrix: AC_i\n");printSparseMatrix(out,TRUE);}
-#ifdef DEBUG_TEST_CBLAS
-    DEBUG{
-        if ((ret = GEMMTripleCheckCBLAS(R,AC,P,out)))
-            ERRPRINT("LAPACK.CBLAS SERIAL, DENSE GEMM TEST FAILED!!\n");
-    }
-#endif
     _free:
     if (R)          freeSpmat(R);
     if (AC)         freeSpmat(AC);

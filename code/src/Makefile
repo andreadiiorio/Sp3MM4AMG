@@ -1,11 +1,13 @@
 CC=gcc
-CFLAGS=-Wall -Wextra -ggdb -O2 #-std=c99 #TODO reallocarray
+CFLAGS= -ggdb -O2 #-std=c99 #TODO reallocarray
 #libs
 CFLAGS+=-lm -fopenmp
 
 #TODO extra to reduce useless warnings
-CFLAGS+=-Wno-pointer-sign -Wno-unused-parameter -Wno-unused-but-set-variable
-CFLAGS+=-Wno-unused-label -Wno-switch #-Wno-unused-function
+CWALL+=-Wall -Wextra -Wno-pointer-sign -Wno-unused-parameter -Wno-unused-but-set-variable
+CWALL+=-Wno-unused-label -Wno-switch
+CWALL+=-Wno-unused-function -Wno-unused-variable
+CFLAGS+=$(RUNTIME) $(CWALL)
 ##TODO OMP CONFIG
 #OMP_CANCELLATION=true
 #export OMP_CANCELLATION
@@ -20,20 +22,24 @@ MACROS+= -DVERBOSE="if(FALSE)"
 
 UNDEF := $(shell echo $(MACROSDBG) | tr " " "\n" | grep -oe '-D.*=' | tr -d "=" |  sed s/-D/-U/ )
 
-CFLAGS+=$(RUNTIME)
-objs = SpGEMM_OMP.o #SpGEMM_CUDA.o
 
+objs = SpGEMM_OMP.o #SpGEMM_CUDA.o
 all: $(objs)
 .PHONY: all
 
-SpGEMM_OMP.o: main_OMP.c SpGEMM_*_OMP.c commons/*.c lib/*.c include/*.h
-	$(CC) $(CFLAGS) $(CONSTS) $(MACROS) -I include/ $(filter-out %.h,$^) -o $@
+coreSrcs = main_OMP.c SpGEMM*OMP*.c commons/*.c lib/*.c include/*.h
+SpGEMM_OMP.o: $(coreSrcs)
+	$(CC) -o $@ $(CFLAGS) $(CONSTS) $(MACROS) -I include/ \
+      $(filter-out %.h %Generic.c, $^)
+
 clean:
 	rm -i *.o 
 
+try: $(filter-out %_Generic.c,main_OMP.c SpGEMM*OMP_Multi.c commons/*.c lib/*.c include/*.h)
+	echo $(filter-out %Generic.c %Generic.h,$^)
 
 #MAKEFILE TESTS FEATURES
 headersAll = $(find -name "*.h")
-try: $(headersAll) main_OMP.c include/*
+try2: $(headersAll) main_OMP.c include/*
 	@echo ciao $(filter-out %.c, $^)
 	python3 -c 'from os import environ as env;print(env.get("OMP_CANCELLATION"))'

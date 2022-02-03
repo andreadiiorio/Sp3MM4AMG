@@ -10,7 +10,7 @@
 
 ////////////////////////  CSR SPECIFIC -- TODO RENAME //////////////////
 ///SPARSE MATRIX PARTITIONING
-ulong* colsOffsetsPartitioningUnifRanges(spmat* A,uint gridCols){
+ulong* CAT(colsOffsetsPartitioningUnifRanges_,OFF_F)(spmat* A,uint gridCols){
     ulong subRowsN = A->M * gridCols;
     ulong _colBlock = A->N/gridCols, _colBlockRem = A->N%gridCols;
     ulong* offsets = malloc( (subRowsN+1) * sizeof(*offsets) );
@@ -19,14 +19,14 @@ ulong* colsOffsetsPartitioningUnifRanges(spmat* A,uint gridCols){
         return NULL;
     }
     ///OFFSETS COMPUTE FOR COL GROUPS -> O( A.NZ )
-    for (ulong r=0, j=0;     r<A->M;     j=A->IRP[++r]){
+    for (ulong r=0, j=0;     r<A->M;     j=A->IRP[++r]-OFF_F){
         offsets[ IDX2D(r,0,gridCols) ] = j;  //row's first gc start is costrained
         //navigate column groups inside current row
         for (ulong gc=1,gcStartCol;  gc<gridCols;  gc++){
             gcStartCol = UNIF_REMINDER_DISTRI_STARTIDX(gc,_colBlock,_colBlockRem);
             //goto GroupCols start entry,keeping A's nnz entries navigation (idx j)
-            //for (ulong c=A->JA[j]; c<gcStartCol && j < A->IRP[r+1]; c=A->JA[++j]);
-            while ( j < A->IRP[r+1] &&  A->JA[j] < gcStartCol )  j++;
+            //for (ulong c=A->JA[j]-OFF_F; c<gcStartCol && j < A->IRP[r+1]-OFF_F; c=A->JA[++j]-OFF_F);
+            while ( j < A->IRP[r+1]-OFF_F &&  A->JA[j]-OFF_F < gcStartCol )  j++;
             offsets[ IDX2D(r,gc,gridCols) ] = j;  //row's gc group startIdx
         }
     }
@@ -34,7 +34,7 @@ ulong* colsOffsetsPartitioningUnifRanges(spmat* A,uint gridCols){
     return offsets;
 }
 
-spmat* colsPartitioningUnifRanges(spmat* A,uint gridCols){
+spmat* CAT(colsPartitioningUnifRanges_,OFF_F)(spmat* A,uint gridCols){
     spmat *colParts, *colPart;
     ulong _colBlock = A->N/gridCols, _colBlockRem = A->N%gridCols, *colPartsLens=NULL, *tmpJA;
     double* tmpAS;
@@ -72,16 +72,18 @@ spmat* colsPartitioningUnifRanges(spmat* A,uint gridCols){
      * oppure wrappare cio in static inline 
      * ed implementazione alternativa: implementazione basata su offset da colsOffsetsPartitioningUnifRanges  
      */
-    for (ulong r=0, j=0;     r<A->M;     j=A->IRP[++r]){
+    for (ulong r=0, j=0;     r<A->M;     j=A->IRP[++r]-OFF_F){
         //navigate column groups inside current row
         for (ulong gc=0,gcEndCol=0,i;  gc<gridCols ;  gc++,j+=i){
             i = 0;  //@i=len current subpartition of row @r to copy
             colPart = colParts + gc;
-            colPart->IRP[r] = colPartsLens[gc];
+			//NB: not shifting IRP because is handled as internal implementation component
+ 			//But JA idx memcopied -> kept as they were originally, handled with shift in functions
+            colPart->IRP[r] = colPartsLens[gc];	
             gcEndCol += UNIF_REMINDER_DISTRI(gc,_colBlock,_colBlockRem);
             //goto next GroupCols,keeping A's nnz entries navigation ( index j+i )
-            //for (ulong c=A->JA[j+i]; c<gcEndCol && j+i  < A->IRP[r+1]; c=A->JA[j+ ++i]);
-            while ( j+i < A->IRP[r+1] && A->JA[j+i] < gcEndCol ) i++;
+            //for (ulong c=A->JA[j+i]-OFF_F; c<gcEndCol && j+i  < A->IRP[r+1]-OFF_F; c=A->JA[j+ ++i]-OFF_F);
+            while ( j+i < A->IRP[r+1]-OFF_F && A->JA[j+i]-OFF_F < gcEndCol ) i++;
             memcpy(colPart->AS+colPart->IRP[r], A->AS+j, i*sizeof(*(A->AS)));
             memcpy(colPart->JA+colPart->IRP[r], A->JA+j, i*sizeof(*(A->JA)));
             
@@ -117,6 +119,32 @@ spmat* colsPartitioningUnifRanges(spmat* A,uint gridCols){
     return NULL;
 }
 ////////////////////////////////////////////////////////////////////////
+//no offset --> SINGLE implementation functions
+#ifndef SPARSE_UTILS_C
+#define SPARSE_UTILS_C
+void checkOverallocPercent(ulong* forecastedSizes,spmat* AB){
+    for (ulong r=0,rSize,forecastedSize; r < AB->M; r++){
+        forecastedSize = forecastedSizes[r];
+#ifdef ROWLENS
+        rSize = AB->RL[r];
+#else
+        rSize = AB->IRP[r+1] - AB->IRP[r];
+#endif
+        DEBUGCHECKS{
+            if ( forecastedSize < rSize ){
+                ERRPRINT("BAD FORECASTING\n");
+            	assert(forecastedSize >= rSize );
+            }
+        }
+        DEBUGPRINT
+            printf("extra forecastedSize of row: %lu\t=\t%lf %% \n",
+              r,100*(forecastedSize-rSize) / (double) forecastedSize);
+    }
+    ulong extraMatrix = forecastedSizes[AB->M] - AB->NZ;
+    VERBOSE
+        printf("extra forecastedSize of the matrix: \t%lu\t = %lf %% \n",
+          extraMatrix, 100*extraMatrix /(double) forecastedSizes[AB->M]);
+}
 int spmatDiff(spmat* A, spmat* B){
     if (A->NZ != B->NZ){
         ERRPRINT("NZ differ\n");
@@ -166,7 +194,7 @@ void print3SPGEMMCore(spmat* R,spmat* AC,spmat* P,CONFIG* conf){
       AC->M,AC->N, R->M,P->N, conf->gridRows,conf->gridCols,
       R->NZ,AC->NZ,P->NZ,AVG_TIMES_ITERATION);
 }
-
+#endif
 
 ///unit test embbeded
 #ifdef SPARSEUTILS_MAIN_TEST
@@ -232,7 +260,7 @@ int main(int argc, char** argv){
         return out;
     }
     ////partitioning test
-    ulong* colsPartitions = colsOffsetsPartitioningUnifRanges(mat,Conf.gridCols);
+    ulong* colsPartitions = colsOffsetsPartitioningUnifRanges_0(mat,Conf.gridCols);
     if (!colsPartitions)    goto _free;
     if (testColsOffsetsPartitioningUnifRanges(mat,Conf.gridCols,colsPartitions))  goto _free;
 

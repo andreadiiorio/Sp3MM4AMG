@@ -1,13 +1,13 @@
 CC=gcc
 FF=gfortran
-CFLAGS=-Wall -Wextra -O2 
 #libs
-CFLAGS+=-lm -fopenmp
 #extra to reduce useless warnings
-CFLAGS+=-Wno-pointer-sign -Wno-unused-parameter -Wno-unused-but-set-variable -Wno-switch
-CFLAGS+=-Wno-unused-function -Wno-unused-variable       #TODO CLEAN USELESS FUNCTIONS / VARIABLES
-CFLAGS+=-Wno-unused-label
-CFLAGS+=$(RUNTIME)
+CWALL =-Wall -Wextra
+CWALL+=-Wno-pointer-sign -Wno-unused-parameter -Wno-unused-but-set-variable -Wno-switch
+CWALL+=-Wno-unused-function -Wno-unused-variable       #TODO CLEAN USELESS FUNCTIONS / VARIABLES
+CWALL+=-Wno-unused-label
+CFLAGS=-O2 $(RUNTIME) $(CWALL)
+CFLAGS+=-lm -fopenmp
 
 #SYSTEM CONFIGURATION
 UNAME=$(shell uname -a | tr -c -d \[:alnum:\] | tr \[:lower:\] \[:upper:\] ) #upper uname-a
@@ -17,14 +17,14 @@ CONSTS = -DTMPDIR='"$(TMPDIR)"'  -DAVG_TIMES_ITERATION=25   #TODO PUT IN /raccol
 MACROS = -DDEBUGPRINT="if(FALSE)" -DDEBUG="if(FALSE)" -DCONSISTENCY_CHECKS="if(FALSE)" -DVERBOSE="if(FALSE)"  -DDEBUGCHECKS="if(FALSE)" 
 MACROSDBG = -DCONSISTENCY_CHECKS="if(TRUE)"  -DDEBUGCHECKS="if(TRUE)" -DVERBOSE="if(TRUE)" -DDEBUG="if(TRUE)"
 UNDEF := $(shell echo $(MACROSDBG) | tr " " "\n" | grep -oe '-D.*=' | tr -d "=" |  sed s/-D/-U/ )
-CFLAGSDBG = -ggdb #-Og #-O0	#TODO -O0 cause REDUCTION MISWRITE...FAULTY RESOULT (OR SERIAL ERROR)
+CFLAGSDBG = -ggdb -O0 #-Og 	#TODO -O0 cause REDUCTION MISWRITE...FAULTY RESOULT (OR SERIAL ERROR)
 #GATHER ALL DEBUG STUFF IN A VAR
 DBG=$(CFLAGSDBG) $(UNDEF) -UAVG_TIMES_ITERATION -DAVG_TIMES_ITERATION=1 $(MACROSDBG)  
 
 #bind to source original project
 srcDir=$(realpath ../src)
 srcInclDir=$(realpath ../src/include)
-coreSrcs:=$(srcDir)/SpGEMM_*_OMP.c $(srcDir)/commons/*.c  $(srcDir)/lib/*.c $(srcInclDir)/*.h 
+coreSrcs:=$(srcDir)/SpGEM*OMP*.c $(srcDir)/commons/*.c  $(srcDir)/lib/*.c $(srcInclDir)/*.h 
 testSrcs:=SpGEMM_test.c  $(coreSrcs)
 
 ##CBLAS BUILD NEEDED
@@ -50,21 +50,25 @@ endif
 CBLAS_SLIB=CBLAS_LAPACK/$(STATIC_LIBS_DIR)/libcblas.a
 BLAS_SLIB=CBLAS_LAPACK/$(STATIC_LIBS_DIR)/librefblas.a
 
-objs := $(shell  grep -Eo '.*\..*:\s' Makefile | grep -v -e '@' -e PHONY | awk -F: '{print $1}' | tr '\n:' ' ' )
+objs := $(shell  grep -Eo '.*\.o:\s' Makefile | grep -v -e '@' -e PHONY | awk -F: '{print $1}' | tr '\n:' ' ' )
+
+
 all: $(objs)
 #FAST TESTS - PERFGATHER
 test_SpGEMM_Stats.o: $(testSrcs)
-	$(CC) -o $@ $(CFLAGS) -I$(srcDir)/include/  $(filter-out %.h,$^) $(MACROS) $(CONSTS)
+	$(CC) -o $@ $(CFLAGS) -I$(srcDir)/include/  $(filter-out %.h %Generic.c,$^) $(MACROS) $(CONSTS)
 
 ##DEBUG BUILDS
 test_SpGEMM_DBG.o: $(testSrcs)
-	$(CC) -o $@ $(CFLAGS)  -I$(srcDir)/include/  $(filter-out %.h,$^) $(CONSTS) $(MACROS) $(DBG)
+	$(CC) -o $@ $(CFLAGS)  -I$(srcDir)/include/  $(filter-out %.h %Generic.c,$^) $(CONSTS) $(MACROS) $(DBG)
+test_SpGEMM_FORTRAN_INTEGRATE_DBG.o: $(testSrcs)
+	$(CC) -o $@ $(CFLAGS)  -I$(srcDir)/include/  $(filter-out %.h %Generic.c,$^) $(CONSTS) $(MACROS) $(DBG) -DMOCK_FORTRAN_INDEXING
 
 test_CBLAS_SpGEMM_OMP.elf: $(testSrcs) SpGEMM_CBLAS.c
 	mkdir -p /tmp/oldBuilds
 	mv *.o /tmp/oldBuilds
 	#create objectfile not linked
-	$(CC) -c $(CFLAGS) -I$(srcDir)/include/ -I$(CBLAS_INCLUDE) $(filter-out %.h,$^) \
+	$(CC) -c $(CFLAGS) -I$(srcDir)/include/ -I$(CBLAS_INCLUDE) $(filter-out %.h %Generic.c,$^) \
 	  $(CONSTS) $(MACROS) $(DBG) -DCBLAS_TESTS 
 	#link it with static compiled cblas and source version library
 	$(FF) -O2 -frecursive -o $@ *.o  $(CBLAS_SLIB) $(BLAS_SLIB) $(EXTRALIBS)
@@ -72,18 +76,18 @@ test_CBLAS_SpGEMM_OMP.elf: $(testSrcs) SpGEMM_CBLAS.c
 	mv /tmp/oldBuilds/* . 
 
 test_utils.o: 	$(srcDir)/commons/*.c $(srcDir)/lib/*.c $(srcInclDir)/*.h 
-	$(CC) -o $@  $(CFLAGS) -I$(srcDir)/include/  $(filter-out %.h,$^) $(CONSTS) $(MACROS) $(DBG) \
+	$(CC) -o $@  $(CFLAGS) -I$(srcDir)/include/  $(filter-out %.h %Generic.c,$^) $(CONSTS) $(MACROS) $(DBG) \
 	-DSPARSEUTILS_MAIN_TEST -O0
 
 ompGetICV.o:	$(srcDir)/commons/ompGetICV.c $(srcInclDir)/ompGetICV.h
-	$(CC) -o $@ $(CFLAGS) $(filter-out %.h,$^) -ggdb -D OMP_GET_ICV_MAIN 
+	$(CC) -o $@ $(CFLAGS) $(filter-out %.h %Generic.c,$^) -ggdb -D OMP_GET_ICV_MAIN 
 
 testAll:
 	$(shell bash ../scripts/testAllMatrixGroups.sh | tee - > log/testAll$GRID_ROWSXGRID_COLS )
 	#$(shell cat ../../data/matrixGroups.list | xargs -L 1 sh -c 'echo $0 ${@};./test_CBLAS_SpGEMV_OMP.o $0 ${@}' ) #TODO FIX
 
 sparseMatrixToImage.o:	sparseMatrixToImage.c sparseMatrixToImage.h $(coreSrcs)
-	$(CC) -o $@ $(CFLAGS) -I$(srcDir)/include -I. $(filter-out %.h,$^) $(CONSTS) $(MACROS) \
+	$(CC) -o $@ $(CFLAGS) -I$(srcDir)/include -I. $(filter-out %.h %Generic.c,$^) $(CONSTS) $(MACROS) \
 	    -D MAIN_SPMAT_IMG 
 sparseMatrixToImageTest.o:	sparseMatrixToImage.c sparseMatrixToImage.h $(coreSrcs)
 	$(CC) -o $@ $(CFLAGS) -I$(srcDir)/include -I. $(filter-out %.h,$^) $(CONSTS) $(MACROS) \

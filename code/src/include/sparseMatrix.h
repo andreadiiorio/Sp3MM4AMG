@@ -1,7 +1,8 @@
 //sparse matrix def & aux
-//TODO adapt to work on both CUDA->ELL and std CSR
 #ifndef SPARSEMATRIX
 #define SPARSEMATRIX 
+
+#include <stdlib.h>
 
 #include "macros.h"
 #include "config.h"
@@ -112,72 +113,4 @@ inline spmat* allocSpMatrix(ulong rows, ulong cols){
     return mat;
 }
 
-//////////////////////////////// CSR SPECIFIC /////////////////////////////////
-///SPARSE MATRIX PARTITIONING
-/*
- * partition CSR sparse matrix @A in @gridCols columns partitions 
- * returning an offsets matrix out[i][j] = start of jth colPartition of row i
- * subdivide @A columns in uniform cols ranges in the output 
- */
-ulong* colsOffsetsPartitioningUnifRanges(spmat* A,uint gridCols);
-
-/*
- * partition CSR sparse matrix @A in @gridCols columns partitions as 
- * indipended and allocated sparse matrixes and return them
- * subdivide @A columns in uniform cols ranges in the output 
- */
-spmat* colsPartitioningUnifRanges(spmat* A,uint gridCols);
-///////////////////////////////////////////////////////////////////////////////
-
-/*  
-    check if sparse matrixes A<->B differ up to 
-    DOUBLE_DIFF_THREASH per element
-*/
-int spmatDiff(spmat* A, spmat* B);
-////dyn alloc of spGEMM output matrix
-/*
-///size prediction of AB = @A * @B
-inline ulong SpGEMMPreAlloc(spmat* A,spmat* B){
-    //TODO BETTER PREALLOC HEURISTICS HERE 
-    return MAX(A->NZ,B->NZ);
-}
-//init a sparse matrix AB=@A * @B with a initial allocated space by an euristic
-inline spmat* initSpMatrixSpGEMM(spmat* A, spmat* B){
-    spmat* out;
-    if (!(out = allocSpMatrix(A->M,B->N)))  return NULL;
-    out -> NZ = SpGEMMPreAlloc(A,B);
-    if (!(out->AS = malloc(out->NZ*sizeof(*(out->AS))))){
-        ERRPRINT("initSpMatrix: out->AS malloc errd\n");
-        free(out);
-        return NULL;
-    }
-    if (!(out->JA = malloc(out->NZ*sizeof(*(out->JA))))){
-        ERRPRINT("initSpMatrix: out->JA malloc errd\n");
-        freeSpmat(out);
-        return NULL;
-    }
-    return out;
-}
-
-#define REALLOC_FACTOR  1.5
-//realloc sparse matrix NZ arrays
-inline int reallocSpMatrix(spmat* mat,ulong newSize){
-    mat->NZ *= newSize;
-    void* tmp;
-    if (!(tmp = realloc(mat->AS,mat->NZ * sizeof(*(mat->AS))))){
-        ERRPRINT("reallocSpMatrix:  realloc AS errd\n");
-        return EXIT_FAILURE;
-    }
-    mat->AS = tmp;
-    if (!(tmp = realloc(mat->JA,mat->NZ * sizeof(*(mat->JA))))){
-        ERRPRINT("reallocSpMatrix:  realloc JA errd\n");
-        return EXIT_FAILURE;
-    }
-    mat->JA = tmp;
-    return EXIT_SUCCESS;
-}
-*/
-////MISC
-//print useful information about 3SPGEMM about to compute
-void print3SPGEMMCore(spmat* R,spmat* AC,spmat* P,CONFIG* conf);
 #endif
