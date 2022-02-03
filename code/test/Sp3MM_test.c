@@ -13,13 +13,13 @@
 #include "ompGetICV.h"  //ICV - RUNTIME information audit auxs
 
 #ifdef CBLAS_TESTS
-#include "SpGEMM_CBLAS.h"
+#include "SpMM_CBLAS.h"
 #endif
 
 ////inline exports
 spmat*  allocSpMatrix(ulong rows, ulong cols);
 int     allocSpMatrixInternal(ulong rows, ulong cols, spmat* mat);
-spmat*  initSpMatrixSpGEMM(spmat* A, spmat* B);
+spmat*  initSpMatrixSpMM(spmat* A, spmat* B);
 void    freeSpmatInternal(spmat* mat);
 void    freeSpmat(spmat* mat);
 ////inline exports
@@ -28,11 +28,11 @@ void    freeSpmat(spmat* mat);
 //void CAT(scSparseVectMulPart_,OFF_F)(double scalar,double* vectVals,ulong* vectIdxs,ulong vectLen,ulong startIdx,THREAD_AUX_VECT* aux);
 //void CAT(_scRowMul_,OFF_F)(double scalar,spmat* mat,ulong trgtR, THREAD_AUX_VECT* aux);
 //void CAT(scSparseRowMul_,OFF_F)(double scalar,spmat* mat,ulong trgtR, THREAD_AUX_VECT* aux);
-//ulong* CAT(spGEMMSizeUpperbound_,OFF_F)(spmat* A,spmat* B);
+//ulong* CAT(spMMSizeUpperbound_,OFF_F)(spmat* A,spmat* B);
 
 ///single implmentation functions
-//void freeSpGEMMAcc(SPGEMM_ACC* acc);
-//void sparsifyDenseVect(SPGEMM_ACC* acc,THREAD_AUX_VECT* accV,SPACC* accSparse, ulong startColAcc);
+//void freeSpMMAcc(SPMM_ACC* acc);
+//void sparsifyDenseVect(SPMM_ACC* acc,THREAD_AUX_VECT* accV,SPACC* accSparse, ulong startColAcc);
 int mergeRowsPartitions(SPACC* rowsParts,spmat* mat,CONFIG* conf);
 //int mergeRows(SPACC* rows,spmat* mat);
 //THREAD_AUX_VECT* _initAccVectors_monoalloc(ulong num,ulong size); //TODO PERF WITH NEXT
@@ -56,11 +56,11 @@ static CONFIG Conf = {
 };
 
 /*
- * wrap result check and stats gather of Sp3GEMM implementation func at (@sp3gemm,[@spgemm])
+ * wrap result check and stats gather of Sp3MM implementation func at (@sp3mm,[@spmm])
  * result checked with @oracleOut or with CBLAS dense-serial implementation ifdef CBLAS_TESTS
- * @spgemm forwarded to @sp3gemm, stats printed on stdout; EXIT_FAILURE returned if any error
+ * @spmm forwarded to @sp3mm, stats printed on stdout; EXIT_FAILURE returned if any error
  */
-static inline int testSp3GEMMImpl(SP3GEMM_INTERF sp3gemm,SPGEMM_INTERF spgemm,spmat* oracleOut,
+static inline int testSp3MMImpl(SP3MM_INTERF sp3mm,SPMM_INTERF spmm,spmat* oracleOut,
   spmat* R,spmat* AC,spmat* P){
     int out = EXIT_FAILURE;
     spmat* outToCheck=NULL;
@@ -69,16 +69,16 @@ static inline int testSp3GEMMImpl(SP3GEMM_INTERF sp3gemm,SPGEMM_INTERF spgemm,sp
     double deltaTStats[2],  deltaTInternalStats[2],internal_over_full,start,end;
     for (uint i=0;  i<AVG_TIMES_ITERATION; i++){
         start = omp_get_wtime();
-        if (!(outToCheck = sp3gemm(R,AC,P,&Conf,spgemm))){
-            ERRPRINTS("compute sp3gemm at:%p with spgemm at:%p failed...\n",sp3gemm,spgemm);
+        if (!(outToCheck = sp3mm(R,AC,P,&Conf,spmm))){
+            ERRPRINTS("compute sp3mm at:%p with spmm at:%p failed...\n",sp3mm,spmm);
             return EXIT_FAILURE;
         }
         end = omp_get_wtime();
 
         #ifdef CBLAS_TESTS
         if (GEMMTripleCheckCBLAS(R,AC,P,outToCheck)){
-             ERRPRINTS("compute sp3gemm at:%p with spgemm at:%p "
-               "diff with CBLAS implementation...\n",sp3gemm,spgemm);
+             ERRPRINTS("compute sp3mm at:%p with spmm at:%p "
+               "diff with CBLAS implementation...\n",sp3mm,spmm);
              goto _free;
         }
         #else
@@ -107,7 +107,7 @@ static inline int testSp3GEMMImpl(SP3GEMM_INTERF sp3gemm,SPGEMM_INTERF spgemm,sp
 #define TESTTESTS "TESTTESTS"
 #define HELP "usage Matrixes: R_{i+1}, AC_{i}, P_{i+1},[AC_{i+1}," TESTTESTS "(requires -DCBLAS_TEST)]"\
 "all matriexes in MatrixMarket_sparse_matrix_COO[.compressed]\n" \
-"giving AC_{i+1} the outputs of the 3SPGEMM will be matched with the given result as an oracle" \
+"giving AC_{i+1} the outputs of the 3SPMM will be matched with the given result as an oracle" \
 "\ngiving" TESTTESTS "the tests function output over the given inputs will be used to check if match the given result AC_{i+1}\n" 
 
 
@@ -208,46 +208,46 @@ int main(int argc, char** argv){
         Conf.chunkDistrbFunc = chunkDistrbFunc;
     VERBOSE 
       printf("%s",Conf.chunkDistrbFunc == &chunksNOOP?"static schedule =>chunkDistrbFunc NOOP\n":"");
-    print3SPGEMMCore(R,AC,P,&Conf);
+    print3SPMMCore(R,AC,P,&Conf);
     //// PARALLEL COMPUTATIONs TO CHECK
     end = omp_get_wtime();elapsed = end-start;
     VERBOSE printf("preparing time: %le\t",elapsed);
 
-    uint spMMFuncsN 		     = STATIC_ARR_ELEMENTS_N(SpgemmFuncs_0);
-	SPGEMM_INTERF*  spMMFuncs  	 = SpgemmFuncs_0;
-    SP3GEMM_INTERF  spMMWrapPair = sp3gemmRowByRowPair_0;	//compute sp3MM in 2 steps
-    uint sp3MMFuncsN 			 = STATIC_ARR_ELEMENTS_N(Sp3gemmFuncs_0);
-	SP3GEMM_INTERF* sp3MMFuncs 	 = Sp3gemmFuncs_0;
+    uint spMMFuncsN 		     = STATIC_ARR_ELEMENTS_N(SpmmFuncs_0);
+	SPMM_INTERF*  spMMFuncs  	 = SpmmFuncs_0;
+    SP3MM_INTERF  spMMWrapPair 	 = sp3mmRowByRowPair_0;	//compute sp3MM in 2 steps
+    uint sp3MMFuncsN 			 = STATIC_ARR_ELEMENTS_N(Sp3mmFuncs_0);
+	SP3MM_INTERF* sp3MMFuncs 	 = Sp3mmFuncs_0;
 	#ifdef MOCK_FORTRAN_INDEXING //test fortran integration
-    spMMFuncsN 					 = STATIC_ARR_ELEMENTS_N(SpgemmFuncs_1);
-	spMMFuncs  					 = SpgemmFuncs_1;
-    spMMWrapPair 				 = sp3gemmRowByRowPair_1;	//compute sp3MM in 2 steps
-    sp3MMFuncsN 				 = STATIC_ARR_ELEMENTS_N(Sp3gemmFuncs_1);
-	sp3MMFuncs 					 = Sp3gemmFuncs_1;
+    spMMFuncsN 					 = STATIC_ARR_ELEMENTS_N(SpmmFuncs_1);
+	spMMFuncs  					 = SpmmFuncs_1;
+    spMMWrapPair 				 = sp3mmRowByRowPair_1;	//compute sp3MM in 2 steps
+    sp3MMFuncsN 				 = STATIC_ARR_ELEMENTS_N(Sp3mmFuncs_1);
+	sp3MMFuncs 					 = Sp3mmFuncs_1;
 	//mock fortran app matrix passing shifting every nnz index
 	C_FortranShiftIdxs(R); C_FortranShiftIdxs(AC); C_FortranShiftIdxs(P);  
 	if(oracleOut)	C_FortranShiftIdxs(oracleOut); 
 	#endif
 
-    SPGEMM_INTERF	spMMFunc;
-    ///test SP3GEMM as pair of SPGEMM: RAC = R * AC; RACP = RAC * P
+    SPMM_INTERF	spMMFunc;
+    ///test SP3MM as pair of SPMM: RAC = R * AC; RACP = RAC * P
     for (uint f = 0;  f < spMMFuncsN; f++){
         spMMFunc = spMMFuncs[f];
-        hprintsf("@computing Sp3GEMM as pair of SpGEMM with func:\%u at:%p\t",
+        hprintsf("@computing Sp3MM as pair of SpMM with func:\%u at:%p\t",
           f,spMMFunc);
-        if (testSp3GEMMImpl(spMMWrapPair,spMMFunc,oracleOut,R,AC,P))   goto _free;
+        if (testSp3MMImpl(spMMWrapPair,spMMFunc,oracleOut,R,AC,P))   goto _free;
     }
     VERBOSE printf("\nall pairs of SpMM functions passed the test\n\n\n");
 
-	SP3GEMM_INTERF  sp3MMFunc;
-    ///test SP3GEMM as merged two multiplication
+	SP3MM_INTERF  sp3MMFunc;
+    ///test SP3MM as merged two multiplication
     for (uint f = 0;  f < sp3MMFuncsN; f++){
         sp3MMFunc = sp3MMFuncs[f];
-        hprintsf("@computing Sp3GEMM directly with func:\%u at:%p\t\t",
+        hprintsf("@computing Sp3MM directly with func:\%u at:%p\t\t",
           f,sp3MMFunc);
-        if (testSp3GEMMImpl(sp3MMFunc,NULL,oracleOut,R,AC,P))   goto _free;
+        if (testSp3MMImpl(sp3MMFunc,NULL,oracleOut,R,AC,P))   goto _free;
     }
-    VERBOSE printf("\nall Sp3gemmFuncs functions passed the test\n\n\n");
+    VERBOSE printf("\nall Sp3mmFuncs functions passed the test\n\n\n");
 
     DEBUGPRINT{
         printf("sparse matrix: AC_i\n");printSparseMatrix(outToCheck,TRUE);

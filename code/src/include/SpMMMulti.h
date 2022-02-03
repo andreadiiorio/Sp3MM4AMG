@@ -1,6 +1,6 @@
 //CORE IMPLEMENTATIONS HEADER
-#ifndef SPGEMM_MULTI_H
-#define SPGEMM_MULTI_H
+#ifndef SPMM_MULTI_H
+#define SPMM_MULTI_H
 
 extern char TRGT_IMPL_START_IDX; //multi implementation switch
 

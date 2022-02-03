@@ -4,24 +4,24 @@
 #include "utils.h"
 
 ////partial [dense] results merging
-///SpGEMM holder of accumulats 
-inline SPGEMM_ACC* initSpGEMMAcc(ulong entriesNum, ulong accumulatorsNum){
-    SPGEMM_ACC* out = calloc(1,sizeof(*out));
+///SpMM holder of accumulats 
+inline SPMM_ACC* initSpMMAcc(ulong entriesNum, ulong accumulatorsNum){
+    SPMM_ACC* out = calloc(1,sizeof(*out));
     if (!out){
-        ERRPRINT("initSpGEMMAcc:    out calloc errd\n");
+        ERRPRINT("initSpMMAcc:    out calloc errd\n");
         return NULL;
     }
     out->size = entriesNum;
     if (!(out->JA = malloc(entriesNum * sizeof(*(out->JA))))){
-        ERRPRINT("initSpGEMMAcc:    JA malloc errd\n");
+        ERRPRINT("initSpMMAcc:    JA malloc errd\n");
         goto _err;
     }
     if (!(out->AS = malloc(entriesNum * sizeof(*(out->AS))))){
-        ERRPRINT("initSpGEMMAcc:    AS malloc errd\n");
+        ERRPRINT("initSpMMAcc:    AS malloc errd\n");
         goto _err;
     }
     if (!(out->accs = malloc(accumulatorsNum * sizeof(*(out->accs))))){
-        ERRPRINT("initSpGEMMAcc:    accs malloc errd\n");
+        ERRPRINT("initSpMMAcc:    accs malloc errd\n");
         goto _err;
     }
     return out;
@@ -33,7 +33,7 @@ inline SPGEMM_ACC* initSpGEMMAcc(ulong entriesNum, ulong accumulatorsNum){
     if (out)        free(out);
     return NULL;
 }
-inline void freeSpGEMMAcc(SPGEMM_ACC* acc){
+inline void freeSpMMAcc(SPMM_ACC* acc){
     free(acc->JA);
     free(acc->AS);
     free(acc->accs);
@@ -44,7 +44,7 @@ inline void freeSpGEMMAcc(SPGEMM_ACC* acc){
  * sparsify dense accumulated vector @accV (with shifted of @startColAcc) 
  * into sparse accumulator @accSparse that'll use space for nnz entries from @acc
 */
-inline void sparsifyDenseVect(SPGEMM_ACC* acc,THREAD_AUX_VECT* accV,
+inline void sparsifyDenseVect(SPMM_ACC* acc,THREAD_AUX_VECT* accV,
   SPACC* accSparse, ulong startColAcc){
     //sort nnz indexes of dense accumulator
     ulong nnz = accV -> nnzIdxLast;
@@ -398,17 +398,17 @@ inline void CAT(scSparseRowMul_,OFF_F)(double scalar,spmat* mat,ulong trgtR, THR
 
 
 /*
- * return for each spGEMM output matrix row -> upper bound size
+ * return for each spMM output matrix row -> upper bound size
  * also an extra position at the end for the cumulative total size of the 
  * output matrix AB = A*B
  * O(A.NZ)
  */
 ///OUTPUT SIZE PREDICTION
-inline ulong* CAT(spGEMMSizeUpperbound_,OFF_F)(spmat* A,spmat* B){
+inline ulong* CAT(spMMSizeUpperbound_,OFF_F)(spmat* A,spmat* B){
     AUDIT_INTERNAL_TIMES    Start = omp_get_wtime();
     ulong* rowSizes = calloc((A->M+1), sizeof(*rowSizes));
     if (!rowSizes){
-        ERRPRINT("spGEMMSizeUpperbound: rowSizes calloc errd\n");
+        ERRPRINT("spMMSizeUpperbound: rowSizes calloc errd\n");
         return NULL;
     }
     ulong fullMatBound = 0;
@@ -429,7 +429,7 @@ inline ulong* CAT(spGEMMSizeUpperbound_,OFF_F)(spmat* A,spmat* B){
     rowSizes[A->M]  = fullMatBound;
     AUDIT_INTERNAL_TIMES    End= omp_get_wtime();
     VERBOSE 
-        printf("spGEMMSizeUpperbound:%lu\t%le s\n",rowSizes[A->M],End-Start);
+        printf("spMMSizeUpperbound:%lu\t%le s\n",rowSizes[A->M],End-Start);
     return rowSizes;
 }
 

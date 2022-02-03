@@ -4,7 +4,7 @@
 #include "macros.h"
 #include "sparseMatrix.h"
 #include "utils.h"
-#include "SpGEMM_CBLAS.h"
+#include "SpMM_CBLAS.h"
 
 #include <cblas.h>
 ////CBLAS - DENSE CHECKs

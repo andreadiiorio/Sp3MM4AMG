@@ -24,8 +24,8 @@ DBG=$(CFLAGSDBG) $(UNDEF) -UAVG_TIMES_ITERATION -DAVG_TIMES_ITERATION=1 $(MACROS
 #bind to source original project
 srcDir=$(realpath ../src)
 srcInclDir=$(realpath ../src/include)
-coreSrcs:=$(srcDir)/SpGEM*OMP*.c $(srcDir)/commons/*.c  $(srcDir)/lib/*.c $(srcInclDir)/*.h 
-testSrcs:=SpGEMM_test.c  $(coreSrcs)
+coreSrcs:=$(srcDir)/Sp3MM*OMP*.c $(srcDir)/commons/*.c  $(srcDir)/lib/*.c $(srcInclDir)/*.h 
+testSrcs:=Sp3MM_test.c  $(coreSrcs)
 
 ##CBLAS BUILD NEEDED
 CBLAS_INCLUDE=CBLAS_LAPACK/include 
@@ -55,16 +55,16 @@ objs := $(shell  grep -Eo '.*\.o:\s' Makefile | grep -v -e '@' -e PHONY | awk -F
 
 all: $(objs)
 #FAST TESTS - PERFGATHER
-test_SpGEMM_Stats.o: $(testSrcs)
+test_Sp3MM_Stats.o: $(testSrcs)
 	$(CC) -o $@ $(CFLAGS) -I$(srcDir)/include/  $(filter-out %.h %Generic.c,$^) $(MACROS) $(CONSTS)
 
 ##DEBUG BUILDS
-test_SpGEMM_DBG.o: $(testSrcs)
+test_Sp3MM_DBG.o: $(testSrcs)
 	$(CC) -o $@ $(CFLAGS)  -I$(srcDir)/include/  $(filter-out %.h %Generic.c,$^) $(CONSTS) $(MACROS) $(DBG)
-test_SpGEMM_FORTRAN_INTEGRATE_DBG.o: $(testSrcs)
+test_Sp3MM_FORTRAN_INTEGRATE_DBG.o: $(testSrcs)
 	$(CC) -o $@ $(CFLAGS)  -I$(srcDir)/include/  $(filter-out %.h %Generic.c,$^) $(CONSTS) $(MACROS) $(DBG) -DMOCK_FORTRAN_INDEXING
 
-test_CBLAS_SpGEMM_OMP.elf: $(testSrcs) SpGEMM_CBLAS.c
+test_CBLAS_Sp3MM_OMP.elf: $(testSrcs) Sp3MM_CBLAS.c
 	mkdir -p /tmp/oldBuilds
 	mv *.o /tmp/oldBuilds
 	#create objectfile not linked
@@ -75,8 +75,8 @@ test_CBLAS_SpGEMM_OMP.elf: $(testSrcs) SpGEMM_CBLAS.c
 	rm -f *.o   #remove newly generated obj file for FF link
 	mv /tmp/oldBuilds/* . 
 
-test_utils.o: 	$(srcDir)/commons/*.c $(srcDir)/lib/*.c $(srcInclDir)/*.h 
-	$(CC) -o $@  $(CFLAGS) -I$(srcDir)/include/  $(filter-out %.h %Generic.c,$^) $(CONSTS) $(MACROS) $(DBG) \
+test_utils.elf: 	$(srcDir)/commons/*.c $(srcDir)/lib/*.c $(srcInclDir)/*.h 
+	$(CC) -o $@  $(CFLAGS) -I$(srcDir)/include/  $(filter-out %.h %Generic.c %Multi.c,$^) $(CONSTS) $(MACROS) $(DBG) \
 	-DSPARSEUTILS_MAIN_TEST -O0
 
 ompGetICV.o:	$(srcDir)/commons/ompGetICV.c $(srcInclDir)/ompGetICV.h
@@ -84,12 +84,11 @@ ompGetICV.o:	$(srcDir)/commons/ompGetICV.c $(srcInclDir)/ompGetICV.h
 
 testAll:
 	$(shell bash ../scripts/testAllMatrixGroups.sh | tee - > log/testAll$GRID_ROWSXGRID_COLS )
-	#$(shell cat ../../data/matrixGroups.list | xargs -L 1 sh -c 'echo $0 ${@};./test_CBLAS_SpGEMV_OMP.o $0 ${@}' ) #TODO FIX
 
-sparseMatrixToImage.o:	sparseMatrixToImage.c sparseMatrixToImage.h $(coreSrcs)
+sparseMatrixToImage.elf:	sparseMatrixToImage.c sparseMatrixToImage.h $(coreSrcs)
 	$(CC) -o $@ $(CFLAGS) -I$(srcDir)/include -I. $(filter-out %.h %Generic.c,$^) $(CONSTS) $(MACROS) \
 	    -D MAIN_SPMAT_IMG 
-sparseMatrixToImageTest.o:	sparseMatrixToImage.c sparseMatrixToImage.h $(coreSrcs)
+sparseMatrixToImageTest.elf:	sparseMatrixToImage.c sparseMatrixToImage.h $(coreSrcs)
 	$(CC) -o $@ $(CFLAGS) -I$(srcDir)/include -I. $(filter-out %.h,$^) $(CONSTS) $(MACROS) \
 	    -D MAIN_SPMAT_IMG 	-DTEST  $(CFLAGSDBG)
 clean:

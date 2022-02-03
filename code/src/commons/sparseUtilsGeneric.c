@@ -188,7 +188,7 @@ void printSparseMatrix(spmat* spMatrix,char justNZMarkers){
     free(denseMat);
 }
 
-void print3SPGEMMCore(spmat* R,spmat* AC,spmat* P,CONFIG* conf){
+void print3SPMMCore(spmat* R,spmat* AC,spmat* P,CONFIG* conf){
     printf("@COARSENING AC: %lux%lu ---> %lux%lu\t"
       "conf grid: %ux%u,\tNNZ:%lu-%lu-%lu\t AVG_TIMES_ITERATION:%u\n",
       AC->M,AC->N, R->M,P->N, conf->gridRows,conf->gridCols,

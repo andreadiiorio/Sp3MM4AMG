@@ -47,18 +47,18 @@ void checkOverallocPercent(ulong* forecastedSizes,spmat* AB);
     DOUBLE_DIFF_THREASH per element
 */
 int spmatDiff(spmat* A, spmat* B);
-////dyn alloc of spGEMM output matrix
+////dyn alloc of spMM output matrix
 /*
 ///size prediction of AB = @A * @B
-inline ulong SpGEMMPreAlloc(spmat* A,spmat* B){
+inline ulong SpMMPreAlloc(spmat* A,spmat* B){
     //TODO BETTER PREALLOC HEURISTICS HERE 
     return MAX(A->NZ,B->NZ);
 }
 //init a sparse matrix AB=@A * @B with a initial allocated space by an euristic
-inline spmat* initSpMatrixSpGEMM(spmat* A, spmat* B){
+inline spmat* initSpMatrixSpMM(spmat* A, spmat* B){
     spmat* out;
     if (!(out = allocSpMatrix(A->M,B->N)))  return NULL;
-    out -> NZ = SpGEMMPreAlloc(A,B);
+    out -> NZ = SpMMPreAlloc(A,B);
     if (!(out->AS = malloc(out->NZ*sizeof(*(out->AS))))){
         ERRPRINT("initSpMatrix: out->AS malloc errd\n");
         free(out);
@@ -91,8 +91,8 @@ inline int reallocSpMatrix(spmat* mat,ulong newSize){
 }
 */
 ////MISC
-//print useful information about 3SPGEMM about to compute
-void print3SPGEMMCore(spmat* R,spmat* AC,spmat* P,CONFIG* conf);
+//print useful information about 3SPMM about to compute
+void print3SPMMCore(spmat* R,spmat* AC,spmat* P,CONFIG* conf);
 void printSparseMatrix(spmat* sparseMat,char justNZMarkers);
 /*convert @sparseMat sparse matrix in dense matrix returned*/
 double* CSRToDense(spmat* sparseMat);

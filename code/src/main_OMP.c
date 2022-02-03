@@ -13,14 +13,14 @@
 
 #include "sparseMatrix.h"
 #ifdef DEBUG_TEST_CBLAS
-    #include "SpGEMM_OMP_test.h"
+    #include "SpMM_OMP_test.h"
 #endif
 
 //inline funcs
 CHUNKS_DISTR    chunksFair,chunksFairFolded,chunksNOOP;
 spmat*  allocSpMatrix(ulong rows, ulong cols);
 int     allocSpMatrixInternal(ulong rows, ulong cols, spmat* mat);
-spmat*  initSpMatrixSpGEMM(spmat* A, spmat* B);
+spmat*  initSpMatrixSpMM(spmat* A, spmat* B);
 void    freeSpmatInternal(spmat* mat);
 void    freeSpmat(spmat* mat);
 
@@ -67,16 +67,16 @@ int main(int argc, char** argv){
     start = omp_get_wtime();
 
 
-    SP3GEMM_INTERF computeFunc = &sp3gemmRowByRowPair_0;
-    SPGEMM_INTERF  spgemm = &spgemmRowByRow2DBlocksAllocated_0;
+    SP3MM_INTERF computeFunc = &sp3mmRowByRowPair_0;
+    SPMM_INTERF  spmm = &spmmRowByRow2DBlocksAllocated_0;
     if (TRGT_IMPL_START_IDX){   //1based indexing implementation
-        computeFunc = &sp3gemmRowByRowPair_1;
-        spgemm      = &spgemmRowByRow2DBlocksAllocated_1;
+        computeFunc = &sp3mmRowByRowPair_1;
+        spmm      	= &spmmRowByRow2DBlocksAllocated_1;
     }
     /*TODO COMPREENSIVE UPDATE IN CMODE ... FOCUS ON TEST FILE
      **TODO check on TRGT_IMPL_START_IDX for each case to pick the trgt implentation
     switch (cmode){
-        case ROWS:          computeFunc=&sp3gemmGustavsonParallelPair;break;
+        case ROWS:          computeFunc=&sp3mmGustavsonParallelPair;break;
         //TODO OTHERS
         case TILES:         printf("TODO 2D BLOCKS");break;
     }*/
@@ -135,8 +135,8 @@ int main(int argc, char** argv){
     
     //// PARALLEL COMPUTATION
     end = omp_get_wtime();elapsed = end-start;
-    VERBOSE{printf("preparing time: %le\n",elapsed);print3SPGEMMCore(R,AC,P,&Conf);}
-    if (!(out = computeFunc(R,AC,P,&Conf,spgemm))){
+    VERBOSE{printf("preparing time: %le\n",elapsed);print3SPMMCore(R,AC,P,&Conf);}
+    if (!(out = computeFunc(R,AC,P,&Conf,spmm))){
         ERRPRINT("compute function selected failed...\n");
         goto _free;
     }

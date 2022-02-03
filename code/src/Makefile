@@ -23,19 +23,19 @@ MACROS+= -DVERBOSE="if(FALSE)"
 UNDEF := $(shell echo $(MACROSDBG) | tr " " "\n" | grep -oe '-D.*=' | tr -d "=" |  sed s/-D/-U/ )
 
 
-objs = SpGEMM_OMP.o #SpGEMM_CUDA.o
+objs = SpMM_OMP.o #SpMM_CUDA.o
 all: $(objs)
 .PHONY: all
 
-coreSrcs = main_OMP.c SpGEMM*OMP*.c commons/*.c lib/*.c include/*.h
-SpGEMM_OMP.o: $(coreSrcs)
+coreSrcs = main_OMP.c SpMM*OMP*.c commons/*.c lib/*.c include/*.h
+Sp3MM_OMP.o: $(coreSrcs)
 	$(CC) -o $@ $(CFLAGS) $(CONSTS) $(MACROS) -I include/ \
       $(filter-out %.h %Generic.c, $^)
 
 clean:
 	rm -i *.o 
 
-try: $(filter-out %_Generic.c,main_OMP.c SpGEMM*OMP_Multi.c commons/*.c lib/*.c include/*.h)
+try: $(filter-out %_Generic.c,main_OMP.c SpMM*OMP_Multi.c commons/*.c lib/*.c include/*.h)
 	echo $(filter-out %Generic.c %Generic.h,$^)
 
 #MAKEFILE TESTS FEATURES

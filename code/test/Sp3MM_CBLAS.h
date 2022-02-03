@@ -1,5 +1,5 @@
-#ifndef SpGEMM_CBLAS_H
-#define SpGEMM_CBLAS_H
+#ifndef SpMM_CBLAS_H
+#define SpMM_CBLAS_H
 
 /*
  * wrap CBLAS calls to compute @A * @B
