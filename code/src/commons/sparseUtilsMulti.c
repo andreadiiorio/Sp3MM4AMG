@@ -1,4 +1,4 @@
-//#include "sparseUtilsMulti.h"
+#include "sparseUtilsMulti.h"
 
 #define OFF_F 0 
 #include "sparseUtilsGeneric.c"

@@ -4,7 +4,7 @@
 #include <omp.h>
 
 #include "sparseUtilsMulti.h"
-#include "SpMMMulti.h"
+#include "Sp3MM_CSR_OMP_Multi.h"
 
 #include "ompChunksDivide.h"
 #include "parser.h"

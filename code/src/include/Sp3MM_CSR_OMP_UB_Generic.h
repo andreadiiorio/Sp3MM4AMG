@@ -11,11 +11,11 @@
 //hold SPMM result over a unpartitionated space among threads-row[s' blocks]
 typedef struct{
     //space to hold SPMM output
-    ulong    size;
-    ulong*   JA;
+    ulong*  JA;
     double* AS;
-    ulong    lastAssigned;   //last JA&AS assigned index to an accumulator //TODO OMP ATOMIC
-    SPACC*  accs;
+    ulong   size;			//num of entries allocated -> only dbg checks
+    ulong   lastAssigned;	//last JA&AS assigned index to an accumulator(atom)
+    SPACC*  accs;			//SPARSIFIED ACC POINTERS
 } SPMM_ACC; //accumulator for SPMM
 ///compute function interface and its pointer definitions
 typedef spmat* ( SPMM        )  (spmat*,spmat*,CONFIG*);

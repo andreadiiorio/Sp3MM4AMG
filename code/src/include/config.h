@@ -1,6 +1,5 @@
 #ifndef CONFIG_H
 #define CONFIG_H
-
 typedef struct{
     ushort gridRows;
     ushort gridCols;
@@ -9,8 +8,11 @@ typedef struct{
     void* chunkDistrbFunc;  //CHUNKS_DISTR_INTERF func pntr
 } CONFIG;  
 ///Smart controls
-#define FALSE                       ( 0 )
-#define TRUE                        ( ! FALSE )
+typedef unsigned long idx_t;	//spmat indexes
+#include "macros.h"
+#ifndef SPARSIFY_PRE_PARTITIONING
+	#define SPARSIFY_PRE_PARTITIONING TRUE	//u.b. implementation will sparsify dense acc in a pre splitted mem area
+#endif
 ///AUDIT&CHECKS
 //debug checks and tmp stuff
 #ifndef DEBUG 
@@ -40,6 +42,8 @@ typedef struct{
 #ifdef ROWLENS
 #pragma message("ROW_LENS ARRAY ENABLED")
 #endif
+
+//#define USE_RB_ROOT_CACHE_LMOST //use leftmost leaf cached in rbtree in sym mul
 ///CONSTS
 #define ELL_MAX_ENTRIES ( 100l << 20 )  //ell max (padded) entries supported in a matrix 
 #define ELL_AS_FILLER       (0 )        //handled with calloc
@@ -65,10 +69,10 @@ typedef struct{
 #ifndef SIMD_ROWS_REDUCTION
     #define SIMD_ROWS_REDUCTION         TRUE
 #endif
-#if SIMD_ROWS_REDUCTION == TRUE
+/*#if SIMD_ROWS_REDUCTION == TRUE
     #pragma message("SIMD_ROWS_REDUCTION enabled")
     //TODO SOME TRICK TO HAVE 1! PRINT
-#endif
+#endif*/
 extern double Start,End,Elapsed,ElapsedInternal;
 #define DOUBLE_DIFF_THREASH         7e-5
 #define DRNG_DEVFILE                "/dev/urandom"

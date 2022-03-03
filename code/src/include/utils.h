@@ -4,6 +4,7 @@
 #include <stddef.h> 
 #include "macros.h"
 
+#include "linuxK_rbtree_minimalized.h"
 extern int urndFd;	//file pointer to DRNG_DEVFILE O_RDONLY opened
 int init_urndfd(); // wrap init urndFd
 
@@ -55,8 +56,67 @@ typedef struct{
 //TODO inline int appendArr(ulong val,APPENDARRAY* list);
 
 void sortuint(uint* arr, uint len);     //sort uint array @arr of @len elements
-void sortulong(ulong* arr, ulong len);   //sort ulong array @arr of @len elements
+void sort_idx_t(idx_t* arr, idx_t len); 
+void sortulong(ulong* arr, ulong len);
+void sortRbNode(rbNode* arr,idx_t len);
 
+///ranges functions 
+/*
+ * considering @rangesN uniform ranges from [0,rangesEnd)
+ * return the rangeId that element @i is in
+ */
+inline ushort matchingUnifRangeIdxLinear(idx_t i,idx_t rangesEnd,ushort rangesN){
+	double rangeW = rangesEnd / (double) rangesN;
+	for(idx_t rEnd = rangeW,j=0; j < rangesN; rEnd = rangeW * (j++)){
+		if( i < rEnd )	return j;
+	}
+	assert( FALSE );	//i should be in a range!
+	return EXIT_FAILURE;
+}
+/*
+ * find which range @idx match among 
+ * a uniform range divion of @size element in @rangesN ranges with carried reminder
+ * return 0based idx of matched range
+ */
+inline ushort matchingUnifRangeIdx(idx_t idx, idx_t size, ushort rangesN){
+	idx_t rangeW = size/rangesN, rangeRem = size%rangesN;
+	idx_t searchStart,searchEnd;
+	//!IN_RANGE(idx,unifRemShareBlock(idx,rangeW,rangeRem)) && IN_RANGE(r,0,rangesN);){
+	for(ushort r=rangesN/2-1, hMoveWidth=rangesN/2; hMoveWidth>0;hMoveWidth/=2){
+		searchStart = unifRemShareStart(idx,rangeW,rangeRem);
+		searchEnd	= unifRemShareEnd(idx,rangeW,rangeRem);
+		if 		(IN_RANGE(idx,searchStart,searchEnd))	return r;
+		else if	(idx < searchStart)						r = AVG(0,r);
+		else											r = AVG(r,rangesN-1);
+	}
+	assert(FALSE);
+}
+
+///reductionUtils
+inline idx_t reductionSumSeq(idx_t* arr,idx_t arrLen){
+	idx_t i,out;
+	for(i=0,out=0; i<arrLen; out += arr[i++] );
+	return out;
+}
+inline idx_t reductionMaxSeq(idx_t* arr,idx_t arrLen){
+	idx_t i,out;
+	for( i=0,out=0; i<arrLen; i++,out=out<arr[i]?arr[i]:out );
+	return out;
+}
+inline idx_t reductionSumOmp(idx_t* arr,idx_t arrLen){
+	idx_t out;
+	#pragma omp parallel for reduction(+:out)
+	for(idx_t i=0; i<arrLen; i++){
+		out += arr[i];
+	}
+	return out;
+}
+inline idx_t reductionMaxOmp(idx_t* arr,idx_t arrLen){
+	idx_t out;
+	#pragma omp parallel for reduction(max:out)
+	for(idx_t i=0; i<arrLen; i++){	out=out<arr[i]?arr[i]:out;	}
+	return out;	
+}
 
 /*
  * return 0 if vectors a and b has elements that differ at most of DOUBLE_DIFF_THREASH 

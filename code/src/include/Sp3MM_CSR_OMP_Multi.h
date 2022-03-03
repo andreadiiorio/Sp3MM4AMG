@@ -2,8 +2,8 @@
 #ifndef SPMM_MULTI_H
 #define SPMM_MULTI_H
 
-extern char TRGT_IMPL_START_IDX; //multi implementation switch
-
+//extern char TRGT_IMPL_START_IDX; //multi implementation switch
+#include "sparseUtilsMulti.h"
 #ifdef OFF_F	//save "includer" OFF_F value before overwriting it
 	#pragma push_macro("OFF_F")
 	#define _OFF_F_OLD
@@ -11,11 +11,11 @@ extern char TRGT_IMPL_START_IDX; //multi implementation switch
 #endif
 
 #define OFF_F 0
-#include "SpMMGeneric.h"
+#include "Sp3MM_CSR_OMP_UB_Generic.h"
 #undef OFF_F
 
 #define OFF_F 1
-#include "SpMMGeneric.h"
+#include "Sp3MM_CSR_OMP_UB_Generic.h"
 #undef OFF_F
 
 #ifdef _OFF_F_OLD

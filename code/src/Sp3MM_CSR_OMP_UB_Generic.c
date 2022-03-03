@@ -1,71 +1,40 @@
 //Developped by     Andrea Di Iorio - 0277550
-#include <stdlib.h>
-#include <stdio.h>
-#include <string.h>
-#include <alloca.h> //TODO quick hold few CSR cols partition sizes
-#include <omp.h>
-
-#include "SpMMMulti.h"
-#include "SpMMUtilsMulti.h"
-#include "sparseUtilsMulti.h"
-#include "ompChunksDivide.h"
-#include "parser.h"
-#include "utils.h"
-#include "macros.h"
-#include "sparseMatrix.h"
-
 #pragma message( "compiling SpMM_CSR_OMP_Generic.c with OFF_F as:" STR(OFF_F) )
 #ifndef OFF_F
     #error generic implementation requires OFF_F defined
 #endif
 
-////inline exports
-///multi implmentation functions
-void CAT(scSparseVectMul_,OFF_F)(double scalar,double* vectVals,ulong* vectIdxs,ulong vectLen, THREAD_AUX_VECT* aux);
-void CAT(scSparseVectMulPart_,OFF_F)(double scalar,double* vectVals,ulong* vectIdxs,ulong vectLen,ulong startIdx,THREAD_AUX_VECT* aux);
-void CAT(_scRowMul_,OFF_F)(double scalar,spmat* mat,ulong trgtR, THREAD_AUX_VECT* aux);
-void CAT(scSparseRowMul_,OFF_F)(double scalar,spmat* mat,ulong trgtR, THREAD_AUX_VECT* aux);
-ulong* CAT(spMMSizeUpperbound_,OFF_F)(spmat* A,spmat* B);
 
-///single implmentation functions
-SPMM_ACC* initSpMMAcc(ulong entriesNum, ulong accumulatorsNum);
-void freeSpMMAcc(SPMM_ACC* acc);
-void sparsifyDenseVect(SPMM_ACC* acc,THREAD_AUX_VECT* accV,SPACC* accSparse, ulong startColAcc);
-int mergeRowsPartitions(SPACC* rowsParts,spmat* mat,CONFIG* conf);
-int mergeRows(SPACC* rows,spmat* mat);
-THREAD_AUX_VECT* _initAccVectors_monoalloc(ulong num,ulong size); //TODO PERF WITH NEXT
-int _allocAuxVect(THREAD_AUX_VECT* v,ulong size);
-void _resetAccVect(THREAD_AUX_VECT* acc);
-void _freeAccVectorsChecks(THREAD_AUX_VECT* vectors,ulong num); 
-void freeAccVectors(THREAD_AUX_VECT* vectors,ulong num);
 
-//void C_FortranShiftIdxs(spmat* outMat);
-//void Fortran_C_ShiftIdxs(spmat* m);
-
-//global vars	->	audit
-double Start,End,Elapsed,ElapsedInternal;
-
-//////////////////////// COMPUTE CORE /////////////////////////////////////////
+//////////////////// COMPUTE CORE Sp[3]MM Upperbound //////////////////////////
 ////////Sp3MM as 2 x SpMM
-/////UpperBound 
 ///1D
 spmat* CAT(spmmRowByRow_,OFF_F)(spmat* A,spmat* B, CONFIG* cfg){
     DEBUG printf("spmm\trows of A,\tfull B\tM=%lu x N=%lu\n",A->M,B->N);
     ///thread aux
     THREAD_AUX_VECT *accVects = NULL,*acc;
     SPMM_ACC* outAccumul=NULL;
-    ulong* rowsSizes = NULL;
+    idx_t* rowsSizes = NULL;
     ///init AB matrix with SPMM heuristic preallocation
     spmat* AB = allocSpMatrix(A->M,B->N);
     if (!AB)    goto _err;
     if (!(rowsSizes = CAT(spMMSizeUpperbound_,OFF_F) (A,B)))   goto _err;
-    
     ///aux structures alloc 
     if (!(accVects = _initAccVectors(cfg->threadNum,AB->N))){
         ERRPRINT("accVects init failed\n");
         goto _err;
     }
     if (!(outAccumul = initSpMMAcc(rowsSizes[AB->M],AB->M)))  goto _err;
+    #if SPARSIFY_PRE_PARTITIONING == T
+	//prepare sparse accumulators with U.Bounded rows[parts] starts
+	SPACC* accSp;
+	for( idx_t r=0,rSizeCumul=0; r<AB->M; rSizeCumul += rowsSizes[r++]){
+		accSp 		= outAccumul->accs+r;
+		accSp->JA 	= outAccumul->JA + rSizeCumul;
+		accSp->AS 	= outAccumul->AS + rSizeCumul;
+		//accSp->len	= rowsSizes[r];
+	}
+	#endif
 
     ((CHUNKS_DISTR_INTERF)	cfg->chunkDistrbFunc) (AB->M,AB,cfg);
     AUDIT_INTERNAL_TIMES	Start=omp_get_wtime();
@@ -76,7 +45,11 @@ spmat* CAT(spmmRowByRow_,OFF_F)(spmat* A,spmat* B, CONFIG* cfg){
         for (ulong c=A->IRP[r]-OFF_F; c<A->IRP[r+1]-OFF_F; c++) //row-by-row formul
             CAT(scSparseRowMul_,OFF_F)(A->AS[c], B, A->JA[c]-OFF_F, acc);
         //trasform accumulated dense vector to a CSR row
-        sparsifyDenseVect(outAccumul,acc,outAccumul->accs + r,0);
+        #if SPARSIFY_PRE_PARTITIONING == T
+		_sparsifyUB(acc,outAccumul->accs+r,0);
+		#else
+        sparsifyUBNoPartsBounds(outAccumul,acc,outAccumul->accs + r,0);
+		#endif
         _resetAccVect(acc);   //rezero for the next A row
     }
     ///merge sparse row computed before
@@ -104,7 +77,7 @@ spmat* CAT(spmmRowByRow1DBlocks_,OFF_F)(spmat* A,spmat* B, CONFIG* cfg){
     ///thread aux
     THREAD_AUX_VECT *accVects = NULL,*acc;
     SPMM_ACC* outAccumul=NULL;
-    ulong* rowsSizes = NULL;
+    idx_t* rowsSizes = NULL;
     ///init AB matrix with SPMM heuristic preallocation
     spmat* AB = allocSpMatrix(A->M,B->N);
     if (!AB)    goto _err;
@@ -115,6 +88,15 @@ spmat* CAT(spmmRowByRow1DBlocks_,OFF_F)(spmat* A,spmat* B, CONFIG* cfg){
         goto _err;
     }
     if (!(outAccumul = initSpMMAcc(rowsSizes[AB->M],AB->M)))  goto _err;
+    #if SPARSIFY_PRE_PARTITIONING == T
+	//prepare sparse accumulators with U.Bounded rows[parts] starts
+	SPACC* accSp;
+	for( idx_t r=0,rSizeCumul=0; r<AB->M; rSizeCumul += rowsSizes[r++]){
+		accSp = outAccumul->accs+r;
+		accSp->JA = outAccumul->JA + rSizeCumul;
+		accSp->AS = outAccumul->AS + rSizeCumul;
+	}
+	#endif
    
     //perform Gustavson over rows blocks -> M / @cfg->gridRows
     ulong rowBlock = AB->M/cfg->gridRows, rowBlockRem = AB->M%cfg->gridRows;
@@ -138,7 +120,11 @@ spmat* CAT(spmmRowByRow1DBlocks_,OFF_F)(spmat* A,spmat* B, CONFIG* cfg){
             for (ulong c=A->IRP[r]-OFF_F; c<A->IRP[r+1]-OFF_F; c++) 
                 CAT(scSparseRowMul_,OFF_F)(A->AS[c], B, A->JA[c]-OFF_F, acc);
             //trasform accumulated dense vector to a CSR row
-            sparsifyDenseVect(outAccumul,acc,outAccumul->accs + r,0);
+        	#if SPARSIFY_PRE_PARTITIONING == T
+			_sparsifyUB(acc,outAccumul->accs+r,0);
+			#else
+        	sparsifyUBNoPartsBounds(outAccumul,acc,outAccumul->accs + r,0);
+			#endif
             _resetAccVect(acc);   //rezero for the next A row
         }
     }
@@ -166,37 +152,54 @@ spmat* CAT(spmmRowByRow1DBlocks_,OFF_F)(spmat* A,spmat* B, CONFIG* cfg){
 //PARTITIONS NOT ALLOCATED
 spmat* CAT(spmmRowByRow2DBlocks_,OFF_F)(spmat* A,spmat* B, CONFIG* cfg){ 
     DEBUG printf("spmm\trowBlocks of A ,\tcolBlocks of B\tM=%luxN=%lu\n",A->M,B->N);
-    ulong* offsets = NULL;   //B group columns starting offset for each row
+    idx_t* bColOffsets = NULL;   //B group columns starting offset for each row
     THREAD_AUX_VECT *accVectors=NULL,*accV;
     SPACC* accRowPart;
     spmat* AB = allocSpMatrix(A->M,B->N);
     SPMM_ACC* outAccumul=NULL;
-    ulong*   rowsSizes=NULL;
+    idx_t*    rowsPartsSizes=NULL;
     if (!AB)    goto _err;
-    if (!(rowsSizes = CAT(spMMSizeUpperbound_,OFF_F)(A,B)))   goto _err;
-     
     //2D indexing aux vars
-    ulong gridSize=cfg->gridRows*cfg->gridCols, subRowsN=B->M*cfg->gridCols;
+    ulong gridSize=cfg->gridRows*cfg->gridCols, aSubRowsN=A->M*cfg->gridCols;
     ulong _rowBlock = AB->M/cfg->gridRows, _rowBlockRem = AB->M%cfg->gridRows;
     ulong _colBlock = AB->N/cfg->gridCols, _colBlockRem = AB->N%cfg->gridCols;
     ulong startRow,startCol,rowBlock,colBlock; //data division aux variables
+    ////get bColOffsets for B column groups 
+    if (!(bColOffsets = CAT(colsOffsetsPartitioningUnifRanges_,OFF_F)(B,cfg->gridCols)))
+		goto _err;
+	#if SPARSIFY_PRE_PARTITIONING == T
+	uint rowsPartsSizesN = aSubRowsN;
+    if (!(rowsPartsSizes = CAT(spMMSizeUpperboundColParts_,OFF_F)(A,B,cfg->gridCols,bColOffsets)))
+	#else
+	uint rowsPartsSizesN = AB->M;
+    if (!(rowsPartsSizes = CAT(spMMSizeUpperbound_,OFF_F)(A,B)))
+	#endif
+		goto _err;
+     
     //aux vectors  
-    ////get offsets for B column groups 
-    if (!(offsets = CAT(colsOffsetsPartitioningUnifRanges_,OFF_F)(B,cfg->gridCols)))
-        goto _err;
 
     ///other AUX struct alloc
     if (!(accVectors = _initAccVectors(gridSize,_colBlock+(_colBlockRem?1:0)))){
         ERRPRINT("accVectors calloc failed\n");
         goto _err;
     }
-    if (!(outAccumul = initSpMMAcc(rowsSizes[AB->M],subRowsN)))   goto _err;
-
-    ulong bPartLen,bPartID,bPartOffset;//B partition acces aux vars
+    if (!(outAccumul = initSpMMAcc(rowsPartsSizes[rowsPartsSizesN],aSubRowsN)))   
+		goto _err;
+	#if SPARSIFY_PRE_PARTITIONING == T
+	//prepare sparse accumulators with U.Bounded rows[parts] starts
+	SPACC* accSp;
+	for( idx_t i=0,rSizeCumul=0; i<aSubRowsN; rSizeCumul += rowsPartsSizes[i++]){
+		accSp 		= outAccumul->accs+i;
+		accSp->JA 	= outAccumul->JA + rSizeCumul;
+		accSp->AS 	= outAccumul->AS + rSizeCumul;
+	}
+	//memset(outAccumul->AS,0,sizeof(double)*rowsSizes[AB->M]);memset(outAccumul->JA,0,sizeof(idx_t)*rowsSizes[AB->M]);
+	#endif
     
     ((CHUNKS_DISTR_INTERF) cfg->chunkDistrbFunc) (gridSize,AB,cfg);
     AUDIT_INTERNAL_TIMES	Start=omp_get_wtime();
     ulong tileID,t_i,t_j;                            //for aux vars
+    ulong bPartLen,bPartID,bPartOffset;//B partition acces aux vars
     #pragma omp parallel for schedule(runtime) \
       private(accV,accRowPart,rowBlock,colBlock,startRow,startCol,\
       bPartLen,bPartID,bPartOffset,t_i,t_j)
@@ -227,15 +230,19 @@ spmat* CAT(spmmRowByRow2DBlocks_,OFF_F)(spmat* A,spmat* B, CONFIG* cfg){
                 //get start of B[A->JA[j]][:colBlock:]
                 c = A->JA[j]-OFF_F; // col of nnz in A[r][:] <-> target B row
                 bPartID     = IDX2D(c,t_j,cfg->gridCols); 
-                bPartOffset = offsets[ bPartID ];
-                bPartLen    = offsets[ bPartID + 1 ] - bPartOffset;
+                bPartOffset = bColOffsets[ bPartID ];
+                bPartLen    = bColOffsets[ bPartID + 1 ] - bPartOffset;
 
                 CAT(scSparseVectMulPart_,OFF_F)(A->AS[j],B->AS+bPartOffset,
                   B->JA+bPartOffset,bPartLen,startCol,accV);
             }
 
             accRowPart = outAccumul->accs + IDX2D(r,t_j,cfg->gridCols);
-            sparsifyDenseVect(outAccumul,accV,accRowPart,startCol);
+			#if SPARSIFY_PRE_PARTITIONING == T
+			_sparsifyUB(accV,accRowPart,startCol);
+			#else
+            sparsifyUBNoPartsBounds(outAccumul,accV,accRowPart,startCol);
+			#endif
             _resetAccVect(accV);
         }
     }
@@ -244,15 +251,16 @@ spmat* CAT(spmmRowByRow2DBlocks_,OFF_F)(spmat* A,spmat* B, CONFIG* cfg){
 	C_FortranShiftIdxs(AB);
 	#endif
     AUDIT_INTERNAL_TIMES	End=omp_get_wtime();
-    DEBUG                   checkOverallocPercent(rowsSizes,AB);
+    DEBUG                   
+	  checkOverallocRowPartsPercent(rowsPartsSizes,AB,cfg->gridCols,bColOffsets);
     goto _free;
 
     _err:
     if (AB) freeSpmat(AB);
     AB = NULL; 
     _free:
-    if (rowsSizes)   free(rowsSizes);
-    if (offsets)     free(offsets);
+    free(rowsPartsSizes);
+    free(bColOffsets);
     if (accVectors)  freeAccVectors(accVectors,gridSize);
     if (outAccumul)  freeSpMMAcc(outAccumul);
     
@@ -263,26 +271,47 @@ spmat* CAT(spmmRowByRow2DBlocks_,OFF_F)(spmat* A,spmat* B, CONFIG* cfg){
 spmat* CAT(spmmRowByRow2DBlocksAllocated_,OFF_F)(spmat* A,spmat* B, CONFIG* cfg){
     DEBUG printf("spmm\trowBlocks of A,\tcolBlocks (allcd) of B\tM=%luxN=%lu\n",A->M,B->N);
     spmat *AB = NULL, *colPartsB = NULL, *colPart;
-    ulong*   rowsSizes=NULL;
+    idx_t*   rowsPartsSizes=NULL;
     //aux vectors  
     SPMM_ACC* outAccumul=NULL;
     THREAD_AUX_VECT *accVectors=NULL,*accV;
     SPACC* accRowPart;
     if (!(AB = allocSpMatrix(A->M,B->N)))           goto _err;
-    if (!(rowsSizes = CAT(spMMSizeUpperbound_,OFF_F)(A,B)))   goto _err;
+
     //2D indexing aux vars
-    ulong gridSize=cfg->gridRows*cfg->gridCols, subRowsN=B->M*cfg->gridCols;
+    idx_t gridSize=cfg->gridRows*cfg->gridCols, aSubRowsN=A->M*cfg->gridCols;
+	idx_t* bColOffsets = NULL;
     ulong _rowBlock = AB->M/cfg->gridRows, _rowBlockRem = AB->M%cfg->gridRows;
     ulong _colBlock = AB->N/cfg->gridCols, _colBlockRem = AB->N%cfg->gridCols;
     ulong startRow,startCol,rowBlock,colBlock; //data division aux variables
     ////B cols  partition in CSRs
-    if (!(colPartsB = CAT(colsPartitioningUnifRanges_,OFF_F)(B,cfg->gridCols)))  goto _err;
+    //if (!(colPartsB = CAT(colsPartitioningUnifRanges_,OFF_F)(B,cfg->gridCols)))  goto _err;
+    if (!(colPartsB = CAT(colsPartitioningUnifRangesOffsetsAux_,OFF_F)(B,cfg->gridCols,&bColOffsets)))  goto _err;
+	#if SPARSIFY_PRE_PARTITIONING == T
+	uint rowsPartsSizesN = aSubRowsN;
+    if (!(rowsPartsSizes = CAT(spMMSizeUpperboundColParts_,OFF_F)
+	  (A,B,cfg->gridCols,bColOffsets)))   
+	#else
+	uint rowsPartsSizesN = AB->M;
+    if (!(rowsPartsSizes = CAT(spMMSizeUpperbound_,OFF_F)(A,B)))
+	#endif
+		goto _err;
     ///other AUX struct alloc
     if (!(accVectors = _initAccVectors(gridSize,_colBlock+(_colBlockRem?1:0)))){
         ERRPRINT("accVectors calloc failed\n");
         goto _err;
     }
-    if (!(outAccumul = initSpMMAcc(rowsSizes[AB->M],subRowsN)))   goto _err;
+    if (!(outAccumul = initSpMMAcc(rowsPartsSizes[rowsPartsSizesN],aSubRowsN)))
+		goto _err;
+	#if SPARSIFY_PRE_PARTITIONING == T
+	//prepare sparse accumulators with U.Bounded rows[parts] starts
+	SPACC* accSp;
+	for( idx_t i=0,rLenCumul=0; i<aSubRowsN; rLenCumul += rowsPartsSizes[i++]){
+		accSp 		= outAccumul->accs+i;
+		accSp->JA 	= outAccumul->JA + rLenCumul;
+		accSp->AS 	= outAccumul->AS + rLenCumul;
+	}
+	#endif
     
     ((CHUNKS_DISTR_INTERF) cfg->chunkDistrbFunc) (gridSize,AB,cfg);
     AUDIT_INTERNAL_TIMES	Start=omp_get_wtime();
@@ -328,7 +357,11 @@ spmat* CAT(spmmRowByRow2DBlocksAllocated_,OFF_F)(spmat* A,spmat* B, CONFIG* cfg)
             }
 
             accRowPart = outAccumul->accs + IDX2D(r,t_j,cfg->gridCols);
-            sparsifyDenseVect(outAccumul,accV,accRowPart,startCol);
+			#if SPARSIFY_PRE_PARTITIONING == T
+			_sparsifyUB(accV,accRowPart,startCol);
+			#else
+            sparsifyUBNoPartsBounds(outAccumul,accV,accRowPart,startCol);
+			#endif
             _resetAccVect(accV);
         }
     }
@@ -337,7 +370,8 @@ spmat* CAT(spmmRowByRow2DBlocksAllocated_,OFF_F)(spmat* A,spmat* B, CONFIG* cfg)
 	C_FortranShiftIdxs(AB);
 	#endif
     AUDIT_INTERNAL_TIMES	End=omp_get_wtime();
-    DEBUG                   checkOverallocPercent(rowsSizes,AB);
+    DEBUG                   
+	  checkOverallocRowPartsPercent(rowsPartsSizes,AB,cfg->gridCols,bColOffsets);
     goto _free;
 
     _err:
@@ -349,7 +383,8 @@ spmat* CAT(spmmRowByRow2DBlocksAllocated_,OFF_F)(spmat* A,spmat* B, CONFIG* cfg)
         for (ulong i=0; i<cfg->gridCols; i++)   freeSpmatInternal(colPartsB+i);
         free(colPartsB);
     }
-    if (rowsSizes)   free(rowsSizes);
+    free(rowsPartsSizes);
+    free(bColOffsets);
     if (accVectors)  freeAccVectors(accVectors,gridSize);
     if (outAccumul)  freeSpMMAcc(outAccumul);
     
@@ -395,10 +430,9 @@ spmat* CAT(sp3mmRowByRowPair_,OFF_F)(spmat* R,spmat* AC,spmat* P,CONFIG* cfg,SPM
 }
 
 ////////Sp3MM direct
-/////Precise
 ///1D
 spmat* CAT(sp3mmRowByRowMerged_,OFF_F)(spmat* R,spmat* AC,spmat* P,CONFIG* cfg,SPMM_INTERF spmm){
-    ulong* rowsSizes = NULL;
+    ulong* rowSizes = NULL;
     SPMM_ACC* outAccumul=NULL;
     THREAD_AUX_VECT *accVectorsR_AC=NULL,*accVectorsRAC_P=NULL,*accRAC,*accRACP;
     ///init AB matrix with SPMM heuristic preallocation
@@ -414,9 +448,9 @@ spmat* CAT(sp3mmRowByRowMerged_,OFF_F)(spmat* R,spmat* AC,spmat* P,CONFIG* cfg,S
      *          2) pre riservazione spazio righe diretamente in out CSR
                     -> probabili cache blocks overlap; salvo costo di P.M memcpy
     */
-    if (!(rowsSizes = CAT(spMMSizeUpperbound_,OFF_F)(R,AC)))   goto _err;	///TODO TOO LOOSE UB...INTEGRATE RBTREE FOR SYM->PRECISE
+    if (!(rowSizes = CAT(spMMSizeUpperbound_,OFF_F)(R,AC)))   goto _err;	///TODO TOO LOOSE UB...INTEGRATE RBTREE FOR SYM->PRECISE
     ///aux structures alloc 
-    if (!(outAccumul = initSpMMAcc(rowsSizes[R->M],P->M)))  goto _err; //TODO size estimated with RAC mat
+    if (!(outAccumul = initSpMMAcc(rowSizes[R->M],P->M)))  goto _err; //TODO size estimated with RAC mat
     if (!(accVectorsR_AC = _initAccVectors(cfg->threadNum,AC->N))){ //TODO LESS || REUSE
         ERRPRINT("accVectorsR_AC init failed\n");
         goto _err;
@@ -443,7 +477,7 @@ spmat* CAT(sp3mmRowByRowMerged_,OFF_F)(spmat* R,spmat* AC,spmat* P,CONFIG* cfg,S
             CAT(scSparseRowMul_,OFF_F)(accRAC->v[c],P,c,accRACP);
         }
         //trasform accumulated dense vector to a CSR row TODO in UB buff
-        sparsifyDenseVect(outAccumul,accRACP,outAccumul->accs+r,0);
+        sparsifyUBNoPartsBounds(outAccumul,accRACP,outAccumul->accs+r,0);
         _resetAccVect(accRAC);
         _resetAccVect(accRACP);
     }
@@ -456,20 +490,17 @@ spmat* CAT(sp3mmRowByRowMerged_,OFF_F)(spmat* R,spmat* AC,spmat* P,CONFIG* cfg,S
         End=omp_get_wtime();
         ElapsedInternal = End-Start;
     }
-    DEBUG                   checkOverallocPercent(rowsSizes,out);
+    DEBUG                   checkOverallocPercent(rowSizes,out);
     goto _free;
 
     _err:
     if(out) freeSpmat(out);
     out = NULL;
     _free:
-    if(rowsSizes)       free(rowsSizes);
+    if(rowSizes)       free(rowSizes);
     if(accVectorsR_AC)  freeAccVectors(accVectorsR_AC,cfg->threadNum);
     if(accVectorsRAC_P) freeAccVectors(accVectorsRAC_P,cfg->threadNum);
     if(outAccumul)      freeSpMMAcc(outAccumul);
     
     return out;
 }
-
-/////Precise
-///1D

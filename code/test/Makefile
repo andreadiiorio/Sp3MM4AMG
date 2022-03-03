@@ -13,7 +13,7 @@ CFLAGS+=-lm -fopenmp
 UNAME=$(shell uname -a | tr -c -d \[:alnum:\] | tr \[:lower:\] \[:upper:\] ) #upper uname-a
 TMPDIR=/run/user/$(shell id -u)/
 #MACROS
-CONSTS = -DTMPDIR='"$(TMPDIR)"'  -DAVG_TIMES_ITERATION=25   #TODO PUT IN /raccolta
+CONSTS = -DTMPDIR='"$(TMPDIR)"'  -DAVG_TIMES_ITERATION=25  -DDOUBLE_VECT_DIFF_EARLY_EXIT 
 MACROS = -DDEBUGPRINT="if(FALSE)" -DDEBUG="if(FALSE)" -DCONSISTENCY_CHECKS="if(FALSE)" -DVERBOSE="if(FALSE)"  -DDEBUGCHECKS="if(FALSE)" 
 MACROSDBG = -DCONSISTENCY_CHECKS="if(TRUE)"  -DDEBUGCHECKS="if(TRUE)" -DVERBOSE="if(TRUE)" -DDEBUG="if(TRUE)"
 UNDEF := $(shell echo $(MACROSDBG) | tr " " "\n" | grep -oe '-D.*=' | tr -d "=" |  sed s/-D/-U/ )
@@ -57,8 +57,14 @@ all: $(objs)
 #FAST TESTS - PERFGATHER
 test_Sp3MM_Stats.o: $(testSrcs)
 	$(CC) -o $@ $(CFLAGS) -I$(srcDir)/include/  $(filter-out %.h %Generic.c,$^) $(MACROS) $(CONSTS)
+test_Sp3MM_Stats_UB_NN_TID_RESERVED.o: $(testSrcs)
+	$(CC) -o $@ $(CFLAGS) -I$(srcDir)/include/  $(filter-out %.h %Generic.c,$^) \
+	$(MACROS) $(CONSTS) -DSPARSIFY_PRE_PARTITIONING=F
 
 ##DEBUG BUILDS
+test_Sp3MM_DBG_UB_NN_TID_RESERVED.o: $(testSrcs)
+	$(CC) -o $@ $(CFLAGS)  -I$(srcDir)/include/  $(filter-out %.h %Generic.c,$^) \
+	$(CONSTS) $(MACROS) $(DBG) -DSPARSIFY_PRE_PARTITIONING=F
 test_Sp3MM_DBG.o: $(testSrcs)
 	$(CC) -o $@ $(CFLAGS)  -I$(srcDir)/include/  $(filter-out %.h %Generic.c,$^) $(CONSTS) $(MACROS) $(DBG)
 test_Sp3MM_FORTRAN_INTEGRATE_DBG.o: $(testSrcs)

@@ -3,7 +3,7 @@
 #include <sys/types.h>
 #include <sys/stat.h>
 #include <fcntl.h>
-#include <stddef.h>
+//#include <stddef.h>
 #include <stdlib.h>
 #include <stdio.h>
 #include <string.h>
@@ -204,23 +204,39 @@ int getConfig(CONFIG* conf){
     }
     return changes;
 }
+
 /////LIB-SORTING -- WRAPPERS
 //comparing functions
-int cmpulong(const void* a, const void*b){
+static inline int cmp_idx_t(const void* a, const void*b){
+    idx_t aa=*((ulong*) a), bb = *((ulong*) b);
+    return aa==bb?0:aa>bb?1:-1;
+}
+static inline int cmpulong(const void* a, const void*b){
     ulong aa=*((ulong*) a), bb = *((ulong*) b);
     return aa==bb?0:aa>bb?1:-1;
 }
-int cmpuint(const void* a, const void*b){
+static inline int cmpuint(const void* a, const void*b){
     uint aa=*((uint*) a), bb = *((uint*) b);
     return aa==bb?0:aa>bb?1:-1;
 }
+static inline int cmpRbNode(const void* a, const void* b){
+    rbNode *aa=(rbNode*) a, *bb = (rbNode*) b;
+	return cmp_idx_t(&aa->key,&bb->key);
+}
 //sorting functions 
+void sort_idx_t(idx_t* arr, idx_t len){
+    qsort(arr,len,sizeof(*arr),cmp_idx_t);
+}
 void sortulong(ulong* arr, ulong len){
     qsort(arr,len,sizeof(*arr),cmpulong);
 }
 void sortuint(uint* arr, uint len){
     qsort(arr,len,sizeof(*arr),cmpuint);
 }
+void sortRbNode(rbNode* arr, idx_t len){
+    qsort(arr,len,sizeof(*arr),cmpRbNode);
+}
+
 ///MATH UTILS
 
 static inline int rndDouble_sinAll(double* d){

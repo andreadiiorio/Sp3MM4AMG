@@ -40,17 +40,33 @@ inline void freeSpMMAcc(SPMM_ACC* acc){
     free(acc);
 }
 
+///// dense acc sparsify functions
 /*
  * sparsify dense accumulated vector @accV (with shifted of @startColAcc) 
  * into sparse accumulator @accSparse that'll use space for nnz entries from @acc
 */
-inline void sparsifyDenseVect(SPMM_ACC* acc,THREAD_AUX_VECT* accV,
-  SPACC* accSparse, ulong startColAcc){
+
+//internal sparsivy dense acc inside (prepared) sparse acc struct
+static inline void _sparsifyUB(THREAD_AUX_VECT* accV,SPACC* accSparse,idx_t startColAcc){
+	idx_t nnz = accV->nnzIdxLast;
+    sort_idx_t(accV->nnzIdx,nnz); //sort nnz idx for ordered write
+    for (idx_t i=0,j;    i < nnz;   i++){ 
+        j = accV -> nnzIdx[i];   //shifted idx of a nnz of sp.Vect accumulator
+		//DEBUG{ assert(	!accSparse->JA[i] );assert(	!accSparse->AS[i] ); }
+        accSparse -> JA[i] = j + startColAcc;
+        accSparse -> AS[i] = accV->v[j];
+    }
+    accSparse -> len = accV->nnzIdxLast;
+	//DEBUG{ assert(accSparse->len >= accV->nnzIdxLast); }
+    //TODO USED TO BE A CONSISTENCY CHECK HERE
+}
+
+//row[Part] sparsified in a thread safe (exactly long) reserved area using atomics
+static inline void sparsifyUBNoPartsBounds
+  (SPMM_ACC* acc,THREAD_AUX_VECT* accV,SPACC* accSparse, ulong startColAcc){
     //sort nnz indexes of dense accumulator
-    ulong nnz = accV -> nnzIdxLast;
-    sortulong(accV->nnzIdx,nnz); //sort nnz idx for ordered write
-    accSparse -> len = nnz;
-    ulong sparsifyStartV;		 //start index(inside @accSparse) of @accV to sparsify
+    idx_t nnz = accV -> nnzIdxLast;
+    idx_t sparsifyStartV;		 //start index(inside @accSparse) of @accV to sparsify
     //sparsifyStartV = __atomic_fetch_add(&(acc->lastAssigned),nnz,__ATOMIC_ACQ_REL); 
     #pragma omp atomic capture
     {   //fetch and add like .... 
@@ -66,15 +82,8 @@ inline void sparsifyDenseVect(SPMM_ACC* acc,THREAD_AUX_VECT* accV,
     //
     accSparse -> AS = acc->AS + sparsifyStartV; 
     accSparse -> JA = acc->JA + sparsifyStartV; 
-    ///sparsify dense acc.v into row
-    for (ulong i=0,j;    i<nnz;   i++){ 
-        j = accV -> nnzIdx[i];        //shifted idx of a nnz of sp.Vect accumulator
-        accSparse -> JA[i] = j + startColAcc;
-        accSparse -> AS[i] = accV->v[j];
-    }
-    //TODO USED TO BE A CONSISTENCY CHECK
+    _sparsifyUB(accV,accSparse,startColAcc);
 }
-
 ////output-gather functons
 /*
  * merge @conf->gridCols*@mat->M sparse rows partitions into @mat
@@ -164,8 +173,8 @@ inline int mergeRows(SPACC* rows,spmat* mat){
     //TODO PARALLEL COPY
     #pragma omp parallel for schedule(static)
     for (ulong r=0; r<mat->M; r++){
-        memcpy(mat->AS + mat->IRP[r],rows[r].AS,rows[r].len*sizeof(*(mat->AS)));
-        memcpy(mat->JA + mat->IRP[r],rows[r].JA,rows[r].len*sizeof(*(mat->JA)));
+        memcpy(mat->AS+mat->IRP[r], rows[r].AS, rows[r].len*sizeof(*(mat->AS)));
+        memcpy(mat->JA+mat->IRP[r], rows[r].JA, rows[r].len*sizeof(*(mat->JA)));
     }
     CONSISTENCY_CHECKS{ //TODO REMOVE written nnz check manually
         for (ulong r=0,i=0; r<mat->M; r++){
@@ -291,7 +300,7 @@ inline void CAT(scSparseVectMul_,OFF_F)(double scalar,
     for (ulong i=0,j; i<vectLen; i++){
         j = vectIdxs[i]-OFF_F;
         DEBUGCHECKS{
-            if (j>aux->vLen){
+            if (j>=aux->vLen){
                 fprintf(stderr,"index %lu outside vLen %lu\n",j,aux->vLen);
                 assert(j < aux->vLen);
             }
@@ -397,24 +406,23 @@ inline void CAT(scSparseRowMul_,OFF_F)(double scalar,spmat* mat,ulong trgtR, THR
 }
 
 
-/*
- * return for each spMM output matrix row -> upper bound size
- * also an extra position at the end for the cumulative total size of the 
- * output matrix AB = A*B
- * O(A.NZ)
+///OUTPUT SIZE PREDICTION	
+
+/*			O(A.NZ [+B.M] )
+ * return array of upper bounded row sizes of the product @A * @B
+ * also appended at the end for the cumulative total size of the matrix AB = A*B
  */
-///OUTPUT SIZE PREDICTION
-inline ulong* CAT(spMMSizeUpperbound_,OFF_F)(spmat* A,spmat* B){
+inline idx_t* CAT(spMMSizeUpperbound_,OFF_F)(spmat* A,spmat* B){
     AUDIT_INTERNAL_TIMES    Start = omp_get_wtime();
-    ulong* rowSizes = calloc((A->M+1), sizeof(*rowSizes));
+    idx_t* rowSizes = calloc((A->M+1),  sizeof(*rowSizes));
     if (!rowSizes){
         ERRPRINT("spMMSizeUpperbound: rowSizes calloc errd\n");
         return NULL;
     }
-    ulong fullMatBound = 0;
+    idx_t fullMatBound = 0;
     #pragma omp parallel for schedule(static) reduction(+:fullMatBound)
-    for (ulong r=0;  r<A->M; r++){
-        for (ulong jj=A->IRP[r] - OFF_F,j,rlen;  jj<A->IRP[r+1] - OFF_F; jj++){
+    for (idx_t r=0;  r<A->M; r++){
+        for (idx_t jj=A->IRP[r] - OFF_F,j,rlen;  jj<A->IRP[r+1] - OFF_F; jj++){
             j = A->JA[jj] - OFF_F;
 			#ifdef ROWLENS
             rlen = B->RL[j];
@@ -423,7 +431,7 @@ inline ulong* CAT(spMMSizeUpperbound_,OFF_F)(spmat* A,spmat* B){
 			#endif 
             rowSizes[r]     += rlen;
             fullMatBound    += rlen;
-            //rowSizes[A->M]  += rlen;    //TODO OMP REDUCTION SUM LIKE TO PARALLELIZE
+            //rowSizes[A->M]  += rlen;    //just below omp reduction sum
         }
     }
     rowSizes[A->M]  = fullMatBound;
@@ -433,3 +441,37 @@ inline ulong* CAT(spMMSizeUpperbound_,OFF_F)(spmat* A,spmat* B){
     return rowSizes;
 }
 
+/*	O(A.NZ + B.NZ)
+ * return matrix @A.M x gridCols of upper bound 
+ * for each of the @gridCols col partitions of the output matrix AB = @A * @B 
+ * also appended at the end for the cumulative total size of the matrix AB 
+ */
+inline idx_t* CAT(spMMSizeUpperboundColParts_,OFF_F)
+  (spmat* A,spmat* B,ushort gridCols,idx_t* bColPartOffsets){
+    AUDIT_INTERNAL_TIMES    Start = omp_get_wtime();
+	
+    idx_t* rowPartsSizes = calloc((A->M*gridCols +1),  sizeof(*rowPartsSizes));
+    if (!rowPartsSizes){
+        ERRPRINT("spMMSizeUpperbound: rowPartsSizes calloc errd\n");
+        return NULL;
+    }
+
+    idx_t fullMatBound = 0;
+    #pragma omp parallel for schedule(static) reduction(+:fullMatBound)
+    for (idx_t r=0;  r<A->M; r++){
+		//for each A.row -> sum B.colParts lens		
+    	for (idx_t jj=A->IRP[r]-OFF_F,j,rlen;  jj<A->IRP[r+1]-OFF_F; jj++){
+            j = A->JA[jj] - OFF_F;
+    		for (idx_t gc=0,bPartID=IDX2D(j,gc,gridCols);  gc < gridCols; gc++,bPartID++){
+            	rlen = bColPartOffsets[bPartID+1] - bColPartOffsets[bPartID];
+            	rowPartsSizes[ IDX2D(r,gc,gridCols) ]	+= rlen;
+            	fullMatBound    += rlen;
+			}
+        }
+    }
+    rowPartsSizes[ A->M*gridCols ]  = fullMatBound;
+    AUDIT_INTERNAL_TIMES    End= omp_get_wtime();
+    VERBOSE 
+     printf("spMMSizeUpperboundColParts_:%lu\t%le s\n",rowPartsSizes[A->M],End-Start);
+    return rowPartsSizes;
+}

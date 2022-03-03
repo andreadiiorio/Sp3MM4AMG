@@ -11,7 +11,7 @@
  * returning an offsets matrix out[i][j] = start of jth colPartition of row i
  * subdivide @A columns in uniform cols ranges in the output 
  */
-ulong* CAT(colsOffsetsPartitioningUnifRanges_,OFF_F)(spmat* A,uint gridCols);
+idx_t* CAT(colsOffsetsPartitioningUnifRanges_,OFF_F)(spmat* A,uint gridCols);
 
 /*
  * partition CSR sparse matrix @A in @gridCols columns partitions as 
@@ -19,6 +19,8 @@ ulong* CAT(colsOffsetsPartitioningUnifRanges_,OFF_F)(spmat* A,uint gridCols);
  * subdivide @A columns in uniform cols ranges in the output 
  */
 spmat* CAT(colsPartitioningUnifRanges_,OFF_F)(spmat* A,uint gridCols);
+//same as above but with (aux) use of offsets partitoning (also returned if colOffsets!=NULL
+spmat* CAT(colsPartitioningUnifRangesOffsetsAux_,OFF_F)(spmat* A,uint gridCols,idx_t** colPartsOffsets);
 ///////////////////////////////////////////////////////////////////////////////
 
 #ifndef SPARSEUTILS_H_COMMON_IDX_IMPLS
@@ -42,6 +44,9 @@ inline void Fortran_C_ShiftIdxs(spmat* m){	//TODO DBG ONLY and compleatness
  * and in the last entry the cumulative of the whole matrix
  */
 void checkOverallocPercent(ulong* forecastedSizes,spmat* AB);
+//same as above but with 2D partitioning - CSR col partitioning
+void checkOverallocRowPartsPercent(ulong* forecastedSizes,spmat* AB,
+  idx_t gridCols,idx_t* bColOffsets);
 /*  
     check if sparse matrixes A<->B differ up to 
     DOUBLE_DIFF_THREASH per element

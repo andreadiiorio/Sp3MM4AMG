@@ -9,28 +9,32 @@
 
 typedef struct{
     ulong NZ,M,N;
+    double *AS; 
     ulong* JA;
     //CSR SPECIFIC
+    ulong* IRP;
 #ifdef ROWLENS
     ulong* RL;   //row lengths
 #endif
-    ulong* IRP;
     //CUDA SPECIFIC
     ulong MAX_ROW_NZ;
 
-    double *AS; 
 } spmat; //describe a sparse matrix
 
 ////Sparse vector accumulator -- corresponding to a matrix portion
 typedef struct{
     //ulong    r;     //row index in the corresponding matrix
     //ulong    c;     //col index in the corresponding matrix
-    ulong   len;   //rowLen
+    idx_t   len;   //rowLen
     double* AS;    //row nnz    values
-    ulong*  JA;    //row nnz    colIndexes
+    idx_t*  JA;    //row nnz    colIndexes
 } SPACC; 
 
-//TODO ASSERT LEN>0 ommitted
+
+/*
+ * ARRAY BISECTION - RECURSIVE VERSION
+ * TODO ASSERT LEN>0 ommitted
+ */
 inline int BISECT_ARRAY(ulong target, ulong* arr, ulong len){
     //if (len == 0)              return FALSE;
     if (len <= 1)              return *arr == target; 
