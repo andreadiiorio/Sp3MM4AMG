@@ -45,9 +45,20 @@ inline void freeSpMMAcc(SPMM_ACC* acc){
  * sparsify dense accumulated vector @accV (with shifted of @startColAcc) 
  * into sparse accumulator @accSparse that'll use space for nnz entries from @acc
 */
+///DIRECT OUT MATRIX SPARSIFY
+/*
+ * sparsify @accV directly inside row @rowIdx of matrix @m
+ * considering, if given not NULL, 2D partitioning with 
+ * @gridCols cols groups and colGroups offsets per row matrix @colPartsOffsets
+ * :Returns	inplace modify of @m
+ */
+static inline void sparsifyDirect(ACC_DENSE* accV,spmat* m,idx_t rowIdx,
+  ushort gridCols, idx_t* colPartsOffsets){
 
+}
+///UB SPACE SPARSIFY
 //internal sparsivy dense acc inside (prepared) sparse acc struct
-static inline void _sparsifyUB(THREAD_AUX_VECT* accV,SPACC* accSparse,idx_t startColAcc){
+static inline void _sparsifyUB(ACC_DENSE* accV,SPACC* accSparse,idx_t startColAcc){
 	idx_t nnz = accV->nnzIdxLast;
     sort_idx_t(accV->nnzIdx,nnz); //sort nnz idx for ordered write
     for (idx_t i=0,j;    i < nnz;   i++){ 
@@ -63,7 +74,7 @@ static inline void _sparsifyUB(THREAD_AUX_VECT* accV,SPACC* accSparse,idx_t star
 
 //row[Part] sparsified in a thread safe (exactly long) reserved area using atomics
 static inline void sparsifyUBNoPartsBounds
-  (SPMM_ACC* acc,THREAD_AUX_VECT* accV,SPACC* accSparse, ulong startColAcc){
+  (SPMM_ACC* acc,ACC_DENSE* accV,SPACC* accSparse, ulong startColAcc){
     //sort nnz indexes of dense accumulator
     idx_t nnz = accV -> nnzIdxLast;
     idx_t sparsifyStartV;		 //start index(inside @accSparse) of @accV to sparsify
@@ -196,8 +207,8 @@ inline int mergeRows(SPACC* rows,spmat* mat){
  * alloc threads' aux arrays once and split them in threads' structures
  * so free them once from the first thread struct, with the original pointers returned from the alloc
  */
-inline THREAD_AUX_VECT* _initAccVectors_monoalloc(ulong num,ulong size){ //TODO PERF WITH NEXT
-    THREAD_AUX_VECT* out    = NULL;
+inline ACC_DENSE* _initAccVectors_monoalloc(ulong num,ulong size){ //TODO PERF WITH NEXT
+    ACC_DENSE* out    = NULL;
     double* vAll            = NULL;
     ulong* vAllNzIdx         = NULL;
     if (!(out = calloc(num,sizeof(*out)))){
@@ -226,7 +237,7 @@ inline THREAD_AUX_VECT* _initAccVectors_monoalloc(ulong num,ulong size){ //TODO 
     if (vAllNzIdx)   free(vAllNzIdx);
     return NULL;
 }
-inline int _allocAuxVect(THREAD_AUX_VECT* v,ulong size){
+inline int _allocAuxVect(ACC_DENSE* v,ulong size){
         v->vLen = size; 
         if (!(v->v = calloc(size,sizeof(*(v->v))))) {
             ERRPRINT("_initAccVectors aux dense vector alloc failed\n");
@@ -240,8 +251,8 @@ inline int _allocAuxVect(THREAD_AUX_VECT* v,ulong size){
         return EXIT_SUCCESS;
 }
 //alloc threads' rows accumulators vectors
- THREAD_AUX_VECT* _initAccVectors(ulong num,ulong size){
-    THREAD_AUX_VECT* out    = NULL;
+ ACC_DENSE* _initAccVectors(ulong num,ulong size){
+    ACC_DENSE* out    = NULL;
     if (!(out = calloc(num,sizeof(*out)))){
         ERRPRINT("_initAccVectors aux struct alloc failed\n");
         return NULL;
@@ -259,12 +270,12 @@ inline int _allocAuxVect(THREAD_AUX_VECT* v,ulong size){
     free(out);
     return NULL;
 }
-inline void _resetAccVect(THREAD_AUX_VECT* acc){
+inline void _resetAccVect(ACC_DENSE* acc){
     memset(acc->v,0,acc->vLen * sizeof(*(acc->v)));
     memset(acc->nnzIdx,0,acc->vLen * sizeof(*(acc->nnzIdx)));
     acc->nnzIdxLast = 0;
 }
-inline void _freeAccVectorsChecks(THREAD_AUX_VECT* vectors,ulong num){ 
+inline void _freeAccVectorsChecks(ACC_DENSE* vectors,ulong num){ 
     if (!vectors)   return;
     for (ulong i=0; i<num; i++){
         if(vectors[i].v)        free(vectors[i].v);
@@ -272,7 +283,7 @@ inline void _freeAccVectorsChecks(THREAD_AUX_VECT* vectors,ulong num){
     }
     free(vectors);
 }
-inline void freeAccVectors(THREAD_AUX_VECT* vectors,ulong num){
+inline void freeAccVectors(ACC_DENSE* vectors,ulong num){
     for (ulong i=0; i<num; i++){
         free(vectors[i].v);
         free(vectors[i].nnzIdx);
@@ -296,7 +307,7 @@ inline void freeAccVectors(THREAD_AUX_VECT* vectors,ulong num){
  * both of accumulator's dense array and nnzIdx in @aux and has to be big @vectLen
  */
 inline void CAT(scSparseVectMul_,OFF_F)(double scalar,
-  double* vectVals,ulong* vectIdxs,ulong vectLen, THREAD_AUX_VECT* aux){
+  double* vectVals,ulong* vectIdxs,ulong vectLen, ACC_DENSE* aux){
     for (ulong i=0,j; i<vectLen; i++){
         j = vectIdxs[i]-OFF_F;
         DEBUGCHECKS{
@@ -324,7 +335,7 @@ inline void CAT(scSparseVectMul_,OFF_F)(double scalar,
  */
 //inline void scSparseVectMulPart(double scalar,double* vectVals,
 inline void CAT(scSparseVectMulPart_,OFF_F)(double scalar,double* vectVals,
-  ulong* vectIdxs,ulong vectLen,ulong startIdx,THREAD_AUX_VECT* aux){
+  ulong* vectIdxs,ulong vectLen,ulong startIdx,ACC_DENSE* aux){
     for (ulong i=0,j; i<vectLen; i++){
         j = vectIdxs[i]-OFF_F - startIdx; //shift back nnz value index for the accumul
         DEBUGCHECKS{ //TODO REMOVE
@@ -343,7 +354,7 @@ inline void CAT(scSparseVectMulPart_,OFF_F)(double scalar,double* vectVals,
 /////////////SIMD - REDUCTION version of aboves
 #define S_VECT_PROD_SIMD_NO_BRANCH
 inline void scSparseVectMulReduction(double scalar,
-  double* vectVals,ulong* vectIdxs,ulong vectLen, THREAD_AUX_VECT* aux){
+  double* vectVals,ulong* vectIdxs,ulong vectLen, ACC_DENSE* aux){
     double* v = aux->v;
     //#pragma omp parallel for reduction (+:v[:vectLen])
     #pragma omp simd reduction (+:v[:vectLen])
@@ -362,7 +373,7 @@ inline void scSparseVectMulReduction(double scalar,
     #endif
 }
 inline void scSparseVectMulPartReduction(double scalar,double* vectVals,
-  ulong* vectIdxs,ulong vectLen,ulong startIdx,THREAD_AUX_VECT* aux){
+  ulong* vectIdxs,ulong vectLen,ulong startIdx,ACC_DENSE* aux){
     double* v = aux->v;
     //#pragma omp parallel for reduction (+:v[:vectLen])
     #pragma omp simd reduction (+:v[:vectLen])
@@ -383,7 +394,7 @@ inline void scSparseVectMulPartReduction(double scalar,double* vectVals,
 */
 /////////////
 ///TODO OLD DIRECT USE OF SCALAR<->ROW MULTIPLICATION -- REMOVABLE
-inline void CAT(_scRowMul_,OFF_F)(double scalar,spmat* mat,ulong trgtR, THREAD_AUX_VECT* aux){
+inline void CAT(_scRowMul_,OFF_F)(double scalar,spmat* mat,ulong trgtR, ACC_DENSE* aux){
     for (ulong c=mat->IRP[trgtR]-OFF_F,j;  c<mat->IRP[trgtR+1]-OFF_F;  c++){
         j = mat->JA[c] - OFF_F;
         //append new nonzero index to auxVNNZeroIdxs for quick sparsify
@@ -392,8 +403,8 @@ inline void CAT(_scRowMul_,OFF_F)(double scalar,spmat* mat,ulong trgtR, THREAD_A
     }
 }
 ///TODO IMPLEMENT SCALAR<->ROW MUL AS GENERIC SPARSE VECTOR<->SCALAR MUL
-//inline void scSparseRowMul(double scalar,spmat* mat,ulong trgtR, THREAD_AUX_VECT* aux){
-inline void CAT(scSparseRowMul_,OFF_F)(double scalar,spmat* mat,ulong trgtR, THREAD_AUX_VECT* aux){
+//inline void scSparseRowMul(double scalar,spmat* mat,ulong trgtR, ACC_DENSE* aux){
+inline void CAT(scSparseRowMul_,OFF_F)(double scalar,spmat* mat,ulong trgtR, ACC_DENSE* aux){
     ulong  rowStartIdx = mat->IRP[trgtR]-OFF_F,rowLen;
 	#ifdef ROWLENS
     rowLen = mat->RL[trgtR];

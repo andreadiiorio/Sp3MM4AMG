@@ -12,7 +12,7 @@
 spmat* CAT(spmmRowByRow_,OFF_F)(spmat* A,spmat* B, CONFIG* cfg){
     DEBUG printf("spmm\trows of A,\tfull B\tM=%lu x N=%lu\n",A->M,B->N);
     ///thread aux
-    THREAD_AUX_VECT *accVects = NULL,*acc;
+    ACC_DENSE *accVects = NULL,*acc;
     SPMM_ACC* outAccumul=NULL;
     idx_t* rowsSizes = NULL;
     ///init AB matrix with SPMM heuristic preallocation
@@ -75,7 +75,7 @@ spmat* CAT(spmmRowByRow_,OFF_F)(spmat* A,spmat* B, CONFIG* cfg){
 spmat* CAT(spmmRowByRow1DBlocks_,OFF_F)(spmat* A,spmat* B, CONFIG* cfg){
     DEBUG printf("spmm\trowBlocks of A,\tfull B\tM=%lu x N=%lu\n",A->M,B->N);
     ///thread aux
-    THREAD_AUX_VECT *accVects = NULL,*acc;
+    ACC_DENSE *accVects = NULL,*acc;
     SPMM_ACC* outAccumul=NULL;
     idx_t* rowsSizes = NULL;
     ///init AB matrix with SPMM heuristic preallocation
@@ -153,7 +153,7 @@ spmat* CAT(spmmRowByRow1DBlocks_,OFF_F)(spmat* A,spmat* B, CONFIG* cfg){
 spmat* CAT(spmmRowByRow2DBlocks_,OFF_F)(spmat* A,spmat* B, CONFIG* cfg){ 
     DEBUG printf("spmm\trowBlocks of A ,\tcolBlocks of B\tM=%luxN=%lu\n",A->M,B->N);
     idx_t* bColOffsets = NULL;   //B group columns starting offset for each row
-    THREAD_AUX_VECT *accVectors=NULL,*accV;
+    ACC_DENSE *accVectors=NULL,*accV;
     SPACC* accRowPart;
     spmat* AB = allocSpMatrix(A->M,B->N);
     SPMM_ACC* outAccumul=NULL;
@@ -274,7 +274,7 @@ spmat* CAT(spmmRowByRow2DBlocksAllocated_,OFF_F)(spmat* A,spmat* B, CONFIG* cfg)
     idx_t*   rowsPartsSizes=NULL;
     //aux vectors  
     SPMM_ACC* outAccumul=NULL;
-    THREAD_AUX_VECT *accVectors=NULL,*accV;
+    ACC_DENSE *accVectors=NULL,*accV;
     SPACC* accRowPart;
     if (!(AB = allocSpMatrix(A->M,B->N)))           goto _err;
 
@@ -434,7 +434,7 @@ spmat* CAT(sp3mmRowByRowPair_,OFF_F)(spmat* R,spmat* AC,spmat* P,CONFIG* cfg,SPM
 spmat* CAT(sp3mmRowByRowMerged_,OFF_F)(spmat* R,spmat* AC,spmat* P,CONFIG* cfg,SPMM_INTERF spmm){
     ulong* rowSizes = NULL;
     SPMM_ACC* outAccumul=NULL;
-    THREAD_AUX_VECT *accVectorsR_AC=NULL,*accVectorsRAC_P=NULL,*accRAC,*accRACP;
+    ACC_DENSE *accVectorsR_AC=NULL,*accVectorsRAC_P=NULL,*accRAC,*accRACP;
     ///init AB matrix with SPMM heuristic preallocation
     spmat* out = allocSpMatrix(R->M,P->N);
     if (!out)   goto _err;

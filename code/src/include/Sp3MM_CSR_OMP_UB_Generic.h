@@ -29,7 +29,7 @@ typedef struct{
     ulong    vLen;       //size of the aux dense vector //TODO USELESS?
     ulong*   nnzIdx;     //v, nonzero accumulated values
     ulong    nnzIdxLast; //last appended non zero index
-} THREAD_AUX_VECT;
+} ACC_DENSE;
 
 #endif //SPMM_GENERIC_H  	////-> end multiImplementation common part
 

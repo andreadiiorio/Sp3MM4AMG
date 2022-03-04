@@ -25,22 +25,22 @@ void    freeSpmatInternal(spmat* mat);
 void    freeSpmat(spmat* mat);
 ////inline exports
 ///multi implmentation functions
-//void CAT(scSparseVectMul_,OFF_F)(double scalar,double* vectVals,ulong* vectIdxs,ulong vectLen, THREAD_AUX_VECT* aux);
-//void CAT(scSparseVectMulPart_,OFF_F)(double scalar,double* vectVals,ulong* vectIdxs,ulong vectLen,ulong startIdx,THREAD_AUX_VECT* aux);
-//void CAT(_scRowMul_,OFF_F)(double scalar,spmat* mat,ulong trgtR, THREAD_AUX_VECT* aux);
-//void CAT(scSparseRowMul_,OFF_F)(double scalar,spmat* mat,ulong trgtR, THREAD_AUX_VECT* aux);
+//void CAT(scSparseVectMul_,OFF_F)(double scalar,double* vectVals,ulong* vectIdxs,ulong vectLen, ACC_DENSE* aux);
+//void CAT(scSparseVectMulPart_,OFF_F)(double scalar,double* vectVals,ulong* vectIdxs,ulong vectLen,ulong startIdx,ACC_DENSE* aux);
+//void CAT(_scRowMul_,OFF_F)(double scalar,spmat* mat,ulong trgtR, ACC_DENSE* aux);
+//void CAT(scSparseRowMul_,OFF_F)(double scalar,spmat* mat,ulong trgtR, ACC_DENSE* aux);
 //ulong* CAT(spMMSizeUpperbound_,OFF_F)(spmat* A,spmat* B);
 
 ///single implmentation functions
 //void freeSpMMAcc(SPMM_ACC* acc);
-//void sparsifyDenseVect(SPMM_ACC* acc,THREAD_AUX_VECT* accV,SPACC* accSparse, ulong startColAcc);
+//void sparsifyDenseVect(SPMM_ACC* acc,ACC_DENSE* accV,SPACC* accSparse, ulong startColAcc);
 int mergeRowsPartitions(SPACC* rowsParts,spmat* mat,CONFIG* conf);
 //int mergeRows(SPACC* rows,spmat* mat);
-//THREAD_AUX_VECT* _initAccVectors_monoalloc(ulong num,ulong size); //TODO PERF WITH NEXT
-//int _allocAuxVect(THREAD_AUX_VECT* v,ulong size);
-//void _resetAccVect(THREAD_AUX_VECT* acc);
-//void _freeAccVectorsChecks(THREAD_AUX_VECT* vectors,ulong num); 
-//void freeAccVectors(THREAD_AUX_VECT* vectors,ulong num);
+//ACC_DENSE* _initAccVectors_monoalloc(ulong num,ulong size); //TODO PERF WITH NEXT
+//int _allocAuxVect(ACC_DENSE* v,ulong size);
+//void _resetAccVect(ACC_DENSE* acc);
+//void _freeAccVectorsChecks(ACC_DENSE* vectors,ulong num); 
+//void freeAccVectors(ACC_DENSE* vectors,ulong num);
 
 void C_FortranShiftIdxs(spmat* outMat);
 void Fortran_C_ShiftIdxs(spmat* m);
