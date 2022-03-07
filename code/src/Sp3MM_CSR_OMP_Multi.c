@@ -25,6 +25,7 @@ int _allocAuxVect(ACC_DENSE* v,ulong size);
 void _resetAccVect(ACC_DENSE* acc);
 void _freeAccVectorsChecks(ACC_DENSE* vectors,ulong num); 
 void freeAccVectors(ACC_DENSE* vectors,ulong num);
+void assertArrNoRepetitions(idx_t* arrSorted, idx_t arrLen);
 //void C_FortranShiftIdxs(spmat* outMat);
 //void Fortran_C_ShiftIdxs(spmat* m);
 
@@ -39,11 +40,11 @@ double Start,End,Elapsed,ElapsedInternal;
 #define OFF_F 0
 #include "inlineExports_Generic.c"
 #include "Sp3MM_CSR_OMP_UB_Generic.c"
-//#include "Sp3MM_CSR_OMP_Symb_Generic.c"
+#include "Sp3MM_CSR_OMP_Symb_Generic.c"
 #undef OFF_F
 
 #define OFF_F 1
 #include "inlineExports_Generic.c"
 #include "Sp3MM_CSR_OMP_UB_Generic.c"
-//#include "Sp3MM_CSR_OMP_Symb_Generic.c"
+#include "Sp3MM_CSR_OMP_Symb_Generic.c"
 #undef OFF_F

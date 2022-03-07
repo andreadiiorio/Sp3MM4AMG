@@ -143,4 +143,5 @@ void statsAvgVar(double* values,uint numVals, double* out);
 void printMatrix(double* mat,ulong m,ulong n,char justNZMarkers);
 void printVector(double* v,ulong size);
 
+void assertArrNoRepetitions(idx_t* arrSorted, idx_t arrLen);
 #endif

@@ -42,6 +42,13 @@ spmat* CAT(spmmRowByRow_,OFF_F)(spmat* A,spmat* B, CONFIG* cfg){
     for (ulong r=0;  r<A->M; r++){    //row-by-row formulation
         //iterate over nz entry index c inside current row r
         acc = accVects + omp_get_thread_num();
+		/* direct use of sparse scalar vector multiplication
+        for (idx_t ja=A->IRP[r]-OFF_F,ca,jb,bRowLen; ja<A->IRP[r+1]-OFF_F; ja++){
+			ca = A->JA[ja]  - OFF_F;
+			jb = B->IRP[ca] - OFF_F;
+			bRowLen = B->IRP[ca+1] - B->IRP[ca];
+            CAT(scSparseVectMul_,OFF_F)(A->AS[ja],B->AS+jb,B->JA+jb,bRowLen,acc);
+		}*/
         for (ulong c=A->IRP[r]-OFF_F; c<A->IRP[r+1]-OFF_F; c++) //row-by-row formul
             CAT(scSparseRowMul_,OFF_F)(A->AS[c], B, A->JA[c]-OFF_F, acc);
         //trasform accumulated dense vector to a CSR row
@@ -345,7 +352,6 @@ spmat* CAT(spmmRowByRow2DBlocksAllocated_,OFF_F)(spmat* A,spmat* B, CONFIG* cfg)
             for (ulong j=A->IRP[r]-OFF_F,c,bRowStart,bRowLen; j<A->IRP[r+1]-OFF_F; j++){
                 //get start of B[A->JA[j]][:colBlock:]
                 c = A->JA[j]-OFF_F; // column of nnz entry in A[r][:] <-> target B row
-                //CAT(scSparseRowMul_,OFF_F)(A->AS[j],colPart,c,accV);//TODO GENERIC VERSION USEFUL
                 bRowStart = colPart->IRP[c];
 				#ifdef ROWLENS
                 bRowLen   = colPart->RL[c];
@@ -469,10 +475,10 @@ spmat* CAT(sp3mmRowByRowMerged_,OFF_F)(spmat* R,spmat* AC,spmat* P,CONFIG* cfg,S
         accRAC  = accVectorsR_AC  + omp_get_thread_num();
         accRACP = accVectorsRAC_P + omp_get_thread_num();
 		//computing (tmp) R*AC r-th row
-        for (ulong j=R->IRP[r]-OFF_F; j<R->IRP[r+1]-OFF_F; j++)
+        for (idx_t j=R->IRP[r]-OFF_F; j<R->IRP[r+1]-OFF_F; j++)
             CAT(scSparseRowMul_,OFF_F)(R->AS[j], AC, R->JA[j]-OFF_F, accRAC);
         //forward the computed row
-        for (ulong j=0; j<accRAC->nnzIdxLast; j++){
+        for (idx_t j=0; j<accRAC->nnzIdxLast; j++){
             c = accRAC->nnzIdx[j];    
             CAT(scSparseRowMul_,OFF_F)(accRAC->v[c],P,c,accRACP);
         }

@@ -43,6 +43,7 @@ typedef unsigned long idx_t;	//spmat indexes
 #pragma message("ROW_LENS ARRAY ENABLED")
 #endif
 
+#define RB_CACHED_INSERT	//use cached insert
 //#define USE_RB_ROOT_CACHE_LMOST //use leftmost leaf cached in rbtree in sym mul
 ///CONSTS
 #define ELL_MAX_ENTRIES ( 100l << 20 )  //ell max (padded) entries supported in a matrix 

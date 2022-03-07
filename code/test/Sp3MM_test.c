@@ -212,43 +212,77 @@ int main(int argc, char** argv){
     print3SPMMCore(R,AC,P,&Conf);
     //// PARALLEL COMPUTATIONs TO CHECK
     end = omp_get_wtime();elapsed = end-start;
-    VERBOSE printf("preparing time: %le\t",elapsed);
-
-    uint spMMFuncsN 		     = STATIC_ARR_ELEMENTS_N(SpmmFuncs_0);
-	SPMM_INTERF*  spMMFuncs  	 = SpmmFuncs_0;
-    SP3MM_INTERF  spMMWrapPair 	 = sp3mmRowByRowPair_0;	//compute sp3MM in 2 steps
-    uint sp3MMFuncsN 			 = STATIC_ARR_ELEMENTS_N(Sp3mmFuncs_0);
-	SP3MM_INTERF* sp3MMFuncs 	 = Sp3mmFuncs_0;
+    VERBOSE printf("preparing time: %le\n",elapsed);
+	
+	//UB 		versions
+    uint 			spMM_UB_FuncsN	 		= STATIC_ARR_ELEMENTS_N(Spmm_UB_Funcs_0);
+	SPMM_INTERF*  	spMM_UB_Funcs  	 		= Spmm_UB_Funcs_0;
+    SP3MM_INTERF  	sp3MM_UB_WrapPair 		= sp3mmRowByRowPair_0;	//compute sp3MM in 2 steps
+    uint 			sp3MM_UB_Direct_FuncsN  = STATIC_ARR_ELEMENTS_N(Sp3mm_UB_Funcs_0);
+	SP3MM_INTERF* 	sp3MM_UB_Direct_Funcs	= Sp3mm_UB_Funcs_0;
+	//symb-num	versions
+    uint 			spMM_SymbNum_FuncsN	 	= STATIC_ARR_ELEMENTS_N(Spmm_SymbNum_Funcs_0);
+	SPMM_INTERF*  	spMM_SymbNum_Funcs		= Spmm_SymbNum_Funcs_0;
+    SP3MM_INTERF  	sp3MM_SymbNum_WrapPair	= sp3mmRowByRowPair_0;	//compute sp3MM in 2 steps
+    uint 			sp3MM_SymbNum_Direct_FuncsN  = STATIC_ARR_ELEMENTS_N(Sp3mm_SymbNum_Funcs_0);
+	SP3MM_INTERF* 	sp3MM_SymbNum_Direct_Funcs	 = Sp3mm_SymbNum_Funcs_0;
 	#ifdef MOCK_FORTRAN_INDEXING //test fortran integration
-    spMMFuncsN 					 = STATIC_ARR_ELEMENTS_N(SpmmFuncs_1);
-	spMMFuncs  					 = SpmmFuncs_1;
-    spMMWrapPair 				 = sp3mmRowByRowPair_1;	//compute sp3MM in 2 steps
-    sp3MMFuncsN 				 = STATIC_ARR_ELEMENTS_N(Sp3mmFuncs_1);
-	sp3MMFuncs 					 = Sp3mmFuncs_1;
 	//mock fortran app matrix passing shifting every nnz index
+	//UB 		versions
+    uint 			spMM_UB_FuncsN	 		= STATIC_ARR_ELEMENTS_N(Spmm_UB_Funcs_1);
+	SPMM_INTERF*  	spMM_UB_Funcs  	 		= Spmm_UB_Funcs_1;
+    SP3MM_INTERF  	sp3MM_UB_WrapPair 		= sp3mmRowByRowPair_1;	//compute sp3MM in 2 steps
+    uint 			sp3MM_UB_Direct_FuncsN  = STATIC_ARR_ELEMENTS_N(Sp3mm_UB_Funcs_1);
+	SP3MM_INTERF* 	sp3MM_UB_Direct_Funcs	= Sp3mm_UB_Funcs_1;
+	//symb-num	versions
+    uint 			spMM_SymbNum_FuncsN	 	= STATIC_ARR_ELEMENTS_N(Spmm_SymbNum_Funcs_1);
+	SPMM_INTERF*  	spMM_SymbNum_Funcs		= Spmm_SymbNum_Funcs_1;
+    SP3MM_INTERF  	sp3MM_SymbNum_WrapPair	= sp3mmRowByRowPair_1;	//compute sp3MM in 2 steps
+    uint 			sp3MM_SymbNum_Direct_FuncsN  = STATIC_ARR_ELEMENTS_N(Sp3mm_SymbNum_Funcs_1);
+	SP3MM_INTERF* 	sp3MM_SymbNum_Direct_Funcs	 = Sp3mm_SymbNum_Funcs_1;
+
 	C_FortranShiftIdxs(R); C_FortranShiftIdxs(AC); C_FortranShiftIdxs(P);  
 	if(oracleOut)	C_FortranShiftIdxs(oracleOut); 
 	#endif
+    SPMM_INTERF		spMMFunc;
+	SP3MM_INTERF  	sp3MMFunc;
 
-    SPMM_INTERF	spMMFunc;
-    ///test SP3MM as pair of SPMM: RAC = R * AC; RACP = RAC * P
-    for (uint f = 0;  f < spMMFuncsN; f++){
-        spMMFunc = spMMFuncs[f];
+	//goto symbNum;	//TODO TODO
+	///UB
+	VERBOSE	hprintf("CHECKING UPPER BOUND IMPLEMENTATIONS\n");
+    //test SP3MM as pair of SPMM: RAC = R * AC; RACP = RAC * P
+    for (uint f = 0;  f < spMM_UB_FuncsN; f++){
+        spMMFunc = spMM_UB_Funcs[f];
         hprintsf("@computing Sp3MM as pair of SpMM with func:\%u at:%p\t",
           f,spMMFunc);
-        if (testSp3MMImpl(spMMWrapPair,spMMFunc,oracleOut,R,AC,P))   goto _free;
+        if (testSp3MMImpl(sp3MM_UB_WrapPair,spMMFunc,oracleOut,R,AC,P))   goto _free;
     }
-    VERBOSE printf("\nall pairs of SpMM functions passed the test\n\n\n");
-
-	SP3MM_INTERF  sp3MMFunc;
-    ///test SP3MM as merged two multiplication
-    for (uint f = 0;  f < sp3MMFuncsN; f++){
-        sp3MMFunc = sp3MMFuncs[f];
+    //test SP3MM as merged two multiplication
+    for (uint f = 0;  f < sp3MM_UB_Direct_FuncsN; f++){
+        sp3MMFunc = sp3MM_UB_Direct_Funcs[f];
         hprintsf("@computing Sp3MM directly with func:\%u at:%p\t\t",
           f,sp3MMFunc);
         if (testSp3MMImpl(sp3MMFunc,NULL,oracleOut,R,AC,P))   goto _free;
     }
-    VERBOSE printf("\nall Sp3mmFuncs functions passed the test\n\n\n");
+    VERBOSE printf("\nall pairs of SpMM functions passed the test\n\n\n");
+	///SYMB-NUM
+	symbNum:
+	VERBOSE	hprintf("CHECKING SYMBOLIC-NUMERIC IMPLEMENTATIONS\n");
+    //test SP3MM as pair of SPMM: RAC = R * AC; RACP = RAC * P
+    for (uint f = 0;  f < spMM_SymbNum_FuncsN; f++){
+        spMMFunc = spMM_SymbNum_Funcs[f];
+        hprintsf("@computing Sp3MM as pair of SpMM with func:\%u at:%p\t",
+          f,spMMFunc);
+        if (testSp3MMImpl(sp3MM_SymbNum_WrapPair,spMMFunc,oracleOut,R,AC,P))   goto _free;
+    }
+    //test SP3MM as merged two multiplication
+    for (uint f = 0;  f < sp3MM_SymbNum_Direct_FuncsN; f++){
+        sp3MMFunc = sp3MM_SymbNum_Direct_Funcs[f];
+        hprintsf("@computing Sp3MM directly with func:\%u at:%p\t\t",
+          f,sp3MMFunc);
+        if (testSp3MMImpl(sp3MMFunc,NULL,oracleOut,R,AC,P))   goto _free;
+    }
+    VERBOSE hprintf("\nall sp3MM_SymbNum_Direct_Funcs functions passed the test\n\n\n");
 
     DEBUGPRINT{
         printf("sparse matrix: AC_i\n");printSparseMatrix(outToCheck,TRUE);

@@ -55,6 +55,9 @@ objs := $(shell  grep -Eo '.*\.o:\s' Makefile | grep -v -e '@' -e PHONY | awk -F
 
 all: $(objs)
 #FAST TESTS - PERFGATHER
+test_Sp3MM.o: $(testSrcs)
+	$(CC) -o $@ $(CFLAGS) -I$(srcDir)/include/  $(filter-out %.h %Generic.c,$^) \
+	$(MACROS) $(CONSTS) -UAVG_TIMES_ITERATION -DAVG_TIMES_ITERATION=1
 test_Sp3MM_Stats.o: $(testSrcs)
 	$(CC) -o $@ $(CFLAGS) -I$(srcDir)/include/  $(filter-out %.h %Generic.c,$^) $(MACROS) $(CONSTS)
 test_Sp3MM_Stats_UB_NN_TID_RESERVED.o: $(testSrcs)

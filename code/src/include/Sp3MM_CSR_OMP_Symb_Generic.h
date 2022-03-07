@@ -1,8 +1,10 @@
+
 #ifndef OFF_F
     //#pragma message("generic implementation requires OFF_F defined")
     #error generic implementation requires OFF_F defined
 #endif
 
+/////SYMBOLIC - NUMERIC IMPLEMENTATIONS
 ///SP3MM FUNCTIONS
 /*
  *  triple matrix multiplication among @R * @AC * @P using gustavson parallel implementation
@@ -10,14 +12,14 @@
  *  if @conf->spmm != NULL, it will be used as spmm function, otherwise euristics will be 
  *  used to decide wich implementation to use
  */
-SP3MM CAT(sp3mmRowByRowPair_,OFF_F);
+SP3MM CAT(sp3mmRowByRowPair_SymbNum_,OFF_F);
 
 /*
  * row-by-row-by-row implementation: forwarding @R*@AC rth row to P for row-by-row
  * accumulation in preallocated space, TODO exactly determined
  * basic parallelization: 1thread per @R's rows that will also forward the result to P
  */
-SP3MM CAT(sp3mmRowByRowMerged_,OFF_F);
+SP3MM CAT(sp3mmRowByRowMerged_SymbNum_,OFF_F);
 
 ///SUB FUNCTIONS
 ///SPMM FUNCTIONS
@@ -26,13 +28,13 @@ SP3MM CAT(sp3mmRowByRowMerged_,OFF_F);
  * formulation using an aux dense vector @_auxDense
  * return resulting product matrix
  */
-SPMM CAT(spmmRowByRow_,OFF_F);
+SPMM CAT(spmmRowByRow_SymbNum_,OFF_F);
 /*
  * sparse parallel implementation of @A * @B parallelizing Gustavson 
  * with partitioning of @A in @conf->gridRows blocks of rows  
  * return resulting product matrix
  */
-SPMM CAT(spmmRowByRow1DBlocks_,OFF_F);
+SPMM CAT(spmmRowByRow1DBlocks_SymbNum_,OFF_F);
 
 /* 
  * sparse parallel implementation of @A * @B as Gustavson parallelizzed in 2D
@@ -40,7 +42,7 @@ SPMM CAT(spmmRowByRow1DBlocks_,OFF_F);
  * @A into rows groups, uniform rows division
  * @B into cols groups, uniform cols division, accessed by aux offsets
  */
-SPMM CAT(spmmRowByRow2DBlocks_,OFF_F);
+SPMM CAT(spmmRowByRow2DBlocks_SymbNum_,OFF_F);
 
 /* 
  * sparse parallel implementation of @A * @B as Gustavson parallelizzed in 2D
@@ -48,17 +50,17 @@ SPMM CAT(spmmRowByRow2DBlocks_,OFF_F);
  * @A into rows groups, uniform rows division
  * @B into cols groups, uniform cols division, ALLOCATED as CSR submatrixes
  */
-SPMM CAT(spmmRowByRow2DBlocksAllocated_,OFF_F);
+SPMM CAT(spmmRowByRow2DBlocksAllocated_SymbNum_,OFF_F);
 
-///implementation wrappers as static array of function pointers
+///implementation wrappers as static array of function pointers 
 //sp3mm as pair of spmm
-static SPMM_INTERF  CAT(Spmm_UB_Funcs_,OFF_F)[] = {
-    & CAT(spmmRowByRow_,OFF_F),
-    & CAT(spmmRowByRow1DBlocks_,OFF_F),
-    & CAT(spmmRowByRow2DBlocks_,OFF_F),
-    & CAT(spmmRowByRow2DBlocksAllocated_,OFF_F)
+static SPMM_INTERF  CAT(Spmm_SymbNum_Funcs_,OFF_F)[] = {
+    & CAT(spmmRowByRow_SymbNum_,OFF_F),
+    & CAT(spmmRowByRow1DBlocks_SymbNum_,OFF_F),
+    //& CAT(spmmRowByRow2DBlocks_SymbNum_,OFF_F),
+    //& CAT(spmmRowByRow2DBlocksAllocated_SymbNum_,OFF_F)
 };
-//sp3mm as direct product
-static SP3MM_INTERF CAT(Sp3mm_UB_Funcs_,OFF_F)[] = {
-    & CAT(sp3mmRowByRowMerged_,OFF_F)
+//sp3mm as pair of spmm
+static SP3MM_INTERF CAT(Sp3mm_SymbNum_Funcs_,OFF_F)[] = {
+    //& CAT(sp3mmRowByRowMerged_SymbNum_,OFF_F)
 };

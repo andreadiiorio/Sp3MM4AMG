@@ -1,4 +1,5 @@
 data/
+.code/
 code/**/*.o
 code/**/*.elf
 articoli/**/*.txt
@@ -7,3 +8,10 @@ doc/**/*.aux
 doc/**/*.log
 doc/**/*.bbl
 doc/**/*.out
+
+**/*.out
+**/*.vim
+**/*.list
+**/*.log
+**/*tags
+**/*.a

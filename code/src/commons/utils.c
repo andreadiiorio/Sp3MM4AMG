@@ -179,7 +179,7 @@ double* readDoubleVector(char* fpath,ulong* size){
     return out;
 }
 
-///VAR
+///CFG-AUX
 int getConfig(CONFIG* conf){
     int changes=EXIT_FAILURE;
     char *varVal,*ptr;
@@ -237,6 +237,12 @@ void sortRbNode(rbNode* arr, idx_t len){
     qsort(arr,len,sizeof(*arr),cmpRbNode);
 }
 
+////Tests AUX
+inline void assertArrNoRepetitions(idx_t* arrSorted, idx_t arrLen){
+	if (arrLen > 0 )	return;
+	for (idx_t i=1,last=arrSorted[0]; i<arrLen; last = arrSorted[i++]) 
+		assert( arrSorted[i] != last );
+}
 ///MATH UTILS
 
 static inline int rndDouble_sinAll(double* d){
@@ -347,6 +353,10 @@ static inline char* searchPatternInStrs(char* pattern,char** strings){
     return out;
 }
 
+inline int appendArr(ulong val,APPENDARRAY* list){
+    return 0;   //TODO
+}
+
 ///DECOMPRESSION IN TMPFS  ; TODO vector not puttable here... figure out nicer way..
 char* COMPRESS_EXTENSIONS[] = { ".gz", ".xz", ".bz2", ".zip", NULL};
 #define STD_DECOMPR_FLAGS " -d -c "
@@ -379,6 +389,3 @@ int extractInTmpFS(char* path, char* tmpFsDecompressPath){
     return system(decompressCmd);
 }
 
-inline int appendArr(ulong val,APPENDARRAY* list){
-    return 0;   //TODO
-}

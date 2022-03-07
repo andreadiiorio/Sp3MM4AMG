@@ -47,29 +47,54 @@ inline void freeSpMMAcc(SPMM_ACC* acc){
 */
 ///DIRECT OUT MATRIX SPARSIFY
 /*
- * sparsify @accV directly inside row @rowIdx of matrix @m
+ * sparsify @accV directly inside row @row of matrix @m
  * considering, if given not NULL, 2D partitioning with 
  * @gridCols cols groups and colGroups offsets per row matrix @colPartsOffsets
  * :Returns	inplace modify of @m
  */
-static inline void sparsifyDirect(ACC_DENSE* accV,spmat* m,idx_t rowIdx,
-  ushort gridCols, idx_t* colPartsOffsets){
+static inline void sparsifyDirect(ACC_DENSE* accV,spmat* m,idx_t row){
+	idx_t nnz = accV->nnzIdxLast, sparsifyStart = m->IRP[row], sparsifyEnd = m->IRP[row+1];
+    sort_idx_t(accV->nnzIdx,nnz); //sort nnz idx for ordered write
+	DEBUGCHECKS		assertArrNoRepetitions(accV->nnzIdx,nnz);
+	DEBUGCHECKS		assert( nnz == sparsifyEnd - sparsifyStart );
 
+    for (idx_t i=0,j;    i < nnz;   i++){ 
+        j =  accV->nnzIdx[i];
+        m -> JA[sparsifyStart + i] = j; //+ startColAcc;
+        m -> AS[sparsifyStart + i] = accV->v[j];
+    }
 }
+//TODO 2D partitioning - colParts version of above...best to use multi impl trick of symbStep
+static inline void sparsifyDirectColParts(ACC_DENSE* accV,spmat* m,idx_t row,
+  ushort colGroupId,ushort gridCols, idx_t* colPartsOffsets,idx_t startCol){
+	idx_t nnz = accV->nnzIdxLast;
+	ushort partID = IDX2D(row,colGroupId,gridCols);
+	idx_t sparsifyStart = colPartsOffsets[partID], sparsifyEnd = colPartsOffsets[partID+1];
+    sort_idx_t(accV->nnzIdx,nnz); //sort nnz idx for ordered write
+	DEBUGCHECKS		assertArrNoRepetitions(accV->nnzIdx,nnz);
+	DEBUGCHECKS		assert( nnz == sparsifyEnd - sparsifyStart );
+    sort_idx_t(accV->nnzIdx,nnz); //sort nnz idx for ordered write
+
+    for (idx_t i=0,j;    i < nnz;   i++){ 
+        j =  accV->nnzIdx[i];
+        m -> JA[sparsifyStart + i] = j + startCol;
+        m -> AS[sparsifyStart + i] = accV->v[j];
+    }
+	
+}	
+
 ///UB SPACE SPARSIFY
 //internal sparsivy dense acc inside (prepared) sparse acc struct
 static inline void _sparsifyUB(ACC_DENSE* accV,SPACC* accSparse,idx_t startColAcc){
 	idx_t nnz = accV->nnzIdxLast;
     sort_idx_t(accV->nnzIdx,nnz); //sort nnz idx for ordered write
+	DEBUGCHECKS		assertArrNoRepetitions(accV->nnzIdx,nnz);
     for (idx_t i=0,j;    i < nnz;   i++){ 
-        j = accV -> nnzIdx[i];   //shifted idx of a nnz of sp.Vect accumulator
-		//DEBUG{ assert(	!accSparse->JA[i] );assert(	!accSparse->AS[i] ); }
+        j =  accV->nnzIdx[i];
         accSparse -> JA[i] = j + startColAcc;
         accSparse -> AS[i] = accV->v[j];
     }
     accSparse -> len = accV->nnzIdxLast;
-	//DEBUG{ assert(accSparse->len >= accV->nnzIdxLast); }
-    //TODO USED TO BE A CONSISTENCY CHECK HERE
 }
 
 //row[Part] sparsified in a thread safe (exactly long) reserved area using atomics
@@ -271,9 +296,9 @@ inline int _allocAuxVect(ACC_DENSE* v,ulong size){
     return NULL;
 }
 inline void _resetAccVect(ACC_DENSE* acc){
-    memset(acc->v,0,acc->vLen * sizeof(*(acc->v)));
-    memset(acc->nnzIdx,0,acc->vLen * sizeof(*(acc->nnzIdx)));
-    acc->nnzIdxLast = 0;
+    memset(acc->v,		0,	acc->vLen * sizeof(*(acc->v)));
+    memset(acc->nnzIdx,	0,	acc->vLen * sizeof(*(acc->nnzIdx)));
+    acc->nnzIdxLast = 	0;
 }
 inline void _freeAccVectorsChecks(ACC_DENSE* vectors,ulong num){ 
     if (!vectors)   return;
@@ -306,8 +331,8 @@ inline void freeAccVectors(ACC_DENSE* vectors,ulong num){
  * resulting vector accumulated in a dense array in @aux->v, along with nnzIdx
  * both of accumulator's dense array and nnzIdx in @aux and has to be big @vectLen
  */
-inline void CAT(scSparseVectMul_,OFF_F)(double scalar,
-  double* vectVals,ulong* vectIdxs,ulong vectLen, ACC_DENSE* aux){
+inline void CAT(scSparseVectMul_,OFF_F)
+  (double scalar,double* vectVals,ulong* vectIdxs,ulong vectLen, ACC_DENSE* aux){
     for (ulong i=0,j; i<vectLen; i++){
         j = vectIdxs[i]-OFF_F;
         DEBUGCHECKS{
@@ -322,8 +347,7 @@ inline void CAT(scSparseVectMul_,OFF_F)(double scalar,
     }
 }
 
-
-/*
+/* Same as above scSparseVectMul_ , but consider an initial offset to remove from each idx
  * Sparse vector part <->scalar multiplication in a dense output
  * @vectVals:	sparse vector part values	( from spmat.AS )
  * with [at least] @vectLen corresponding 
@@ -333,7 +357,6 @@ inline void CAT(scSparseVectMul_,OFF_F)(double scalar,
  * all nnz values indexes will be shifted back of @startIdx in @aux
  * both of accumulator's dense array and nnzIdx in @aux and has to be big @vectLen
  */
-//inline void scSparseVectMulPart(double scalar,double* vectVals,
 inline void CAT(scSparseVectMulPart_,OFF_F)(double scalar,double* vectVals,
   ulong* vectIdxs,ulong vectLen,ulong startIdx,ACC_DENSE* aux){
     for (ulong i=0,j; i<vectLen; i++){
@@ -393,15 +416,6 @@ inline void scSparseVectMulPartReduction(double scalar,double* vectVals,
 }
 */
 /////////////
-///TODO OLD DIRECT USE OF SCALAR<->ROW MULTIPLICATION -- REMOVABLE
-inline void CAT(_scRowMul_,OFF_F)(double scalar,spmat* mat,ulong trgtR, ACC_DENSE* aux){
-    for (ulong c=mat->IRP[trgtR]-OFF_F,j;  c<mat->IRP[trgtR+1]-OFF_F;  c++){
-        j = mat->JA[c] - OFF_F;
-        //append new nonzero index to auxVNNZeroIdxs for quick sparsify
-        if (!(aux->v[j]))    aux->nnzIdx[ aux->nnzIdxLast++ ] = j;
-        aux->v[j] += mat->AS[c] * scalar;  //accumulate
-    }
-}
 ///TODO IMPLEMENT SCALAR<->ROW MUL AS GENERIC SPARSE VECTOR<->SCALAR MUL
 //inline void scSparseRowMul(double scalar,spmat* mat,ulong trgtR, ACC_DENSE* aux){
 inline void CAT(scSparseRowMul_,OFF_F)(double scalar,spmat* mat,ulong trgtR, ACC_DENSE* aux){
@@ -409,11 +423,10 @@ inline void CAT(scSparseRowMul_,OFF_F)(double scalar,spmat* mat,ulong trgtR, ACC
 	#ifdef ROWLENS
     rowLen = mat->RL[trgtR];
 	#else
-    rowLen = mat->IRP[trgtR+1]-OFF_F - rowStartIdx;
+    rowLen = mat->IRP[trgtR+1] - mat->IRP[trgtR];
 	#endif
     CAT(scSparseVectMul_,OFF_F)(scalar,mat->AS+rowStartIdx,mat->JA+rowStartIdx,rowLen,aux);
-    //scSparseVectMulPart(scalar,mat->AS+rowStartIdx,mat->JA+rowStartIdx,rowLen,0,aux);
-    //TODO TODO check impact of generic version use
+    //TODO check impact of generic version use
 }
 
 
