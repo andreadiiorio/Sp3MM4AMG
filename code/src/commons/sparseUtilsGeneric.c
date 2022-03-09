@@ -11,6 +11,106 @@
 ///////////////   no offset --> SINGLE implementation functions
 #ifndef SPARSE_UTILS_C
 #define SPARSE_UTILS_C
+///DENSE accumulator utils
+/*
+ * alloc threads' aux arrays once and split them in threads' structures
+ * so free them once from the first thread struct, with the original pointers returned from the alloc
+ */
+ACC_DENSE* _initAccVectors_monoalloc(ulong num,ulong size){ //TODO PERF WITH NEXT
+    ACC_DENSE* out    = NULL;
+    double* vAll            = NULL;
+    ulong* vAllNzIdx         = NULL;
+    if (!(out = calloc(num,sizeof(*out)))){
+        ERRPRINT("_initAccVectors aux struct alloc failed\n");
+        return NULL;
+    }
+    if (!(vAll = calloc(num*size,sizeof(*vAll)))) {
+        ERRPRINT("_initAccVectors aux dense vectors alloc failed\n");
+        goto err;
+    }
+    if (!(vAllNzIdx = calloc(num*size,sizeof(*vAllNzIdx)))) {
+        ERRPRINT("_initAccVectors aux dense vectors' idx alloc failed\n");
+        goto err;
+    }
+    for (ulong i=0; i<num; i++){
+        out[i].vLen        = size; //TODO USELESS INFO?
+        out[i].v           = vAll      + i*size;  
+        out[i].nnzIdx      = vAllNzIdx + i*size;;
+        out[i].nnzIdxMap.len  = 0;
+    }
+    return out;
+    
+    err:
+    free(out);
+    if (vAll)        free(vAll);
+    if (vAllNzIdx)   free(vAllNzIdx);
+    return NULL;
+}
+int allocAccDense(ACC_DENSE* v,ulong size){
+        v->vLen = size; 
+        if (!(v->v = calloc(size,sizeof(*(v->v))))) {
+            ERRPRINT("_initAccVectors aux dense vector alloc failed\n");
+            return EXIT_FAILURE;
+        }
+        if (!(v->nnzIdx = calloc(size,sizeof(*(v->nnzIdx))))) {
+            ERRPRINT("_initAccVectors aux dense vector' idx alloc failed\n");
+            return EXIT_FAILURE;
+        }
+		if (initSpVectIdxDenseAcc(size, &v->nnzIdxMap))	return EXIT_FAILURE;
+
+        return EXIT_SUCCESS;
+}
+ ACC_DENSE* _initAccVectors(ulong num,ulong size){
+    ACC_DENSE* out    = NULL;
+    if (!(out = calloc(num,sizeof(*out)))){
+        ERRPRINT("_initAccVectors aux struct alloc failed\n");
+        return NULL;
+    }
+    for (ulong i=0; i<num; i++){
+        if (allocAccDense(out+i,size))   goto _err;
+    }
+    return out;
+    
+    _err:
+    for (ulong i=0; i<num; i++){
+        if (out[i].v)       free(out[i].v);
+        if (out[i].nnzIdx)  free(out[i].nnzIdx);
+    }
+    free(out);
+    return NULL;
+}
+
+void freeAccsDense(ACC_DENSE* vectors,ulong num){
+    for (ulong i=0; i<num; i++){
+        free(vectors[i].v);
+        free(vectors[i].nnzIdx);
+    }
+    free(vectors);
+}
+void _freeAccsDenseChecks(ACC_DENSE* vectors,ulong num){ 
+    if (!vectors)   return;
+    for (ulong i=0; i<num; i++){
+        if(vectors[i].v)        free(vectors[i].v);
+        if(vectors[i].nnzIdx)   free(vectors[i].nnzIdx);
+    }
+    free(vectors);
+}
+
+int initSpVectIdxDenseAcc(idx_t idxMax,SPVECT_IDX_DENSE_MAP* vectIdxsMap){
+	vectIdxsMap->len = 0;
+	nnz_idxs_flags_t* idxMaps = &vectIdxsMap->idxsMap;
+	#if SPVECT_IDX_BITWISE == TRUE //nnz presence falgs as bitflags in limbs
+	vectIdxsMap->idxsMapN = INT_DIV_CEIL(idxMax, sizeof(**idxMaps));
+	#else	//nnz presence falgs in a single array
+	vectIdxsMap->idxsMapN = idxMaps;
+	#endif //SPVECT_IDX_BITWISE == TRUE
+	if (!(*idxMaps = calloc(vectIdxsMap->idxsMapN, sizeof(**idxMaps)))) {
+		ERRPRINT("initSpVectIdxDenseAcc\tidxMaps SPVECT_IDX_BITWISE callc err\n");
+		return EXIT_FAILURE;
+	}
+	return EXIT_SUCCESS;
+}
+
 void checkOverallocRowPartsPercent(ulong* forecastedSizes,spmat* AB,
   idx_t gridCols,idx_t* bColOffsets){
 	idx_t* abColOffsets = colsOffsetsPartitioningUnifRanges_0(AB,gridCols);

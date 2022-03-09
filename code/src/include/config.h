@@ -8,7 +8,9 @@ typedef struct{
     void* chunkDistrbFunc;  //CHUNKS_DISTR_INTERF func pntr
 } CONFIG;  
 ///Smart controls
-typedef unsigned long idx_t;	//spmat indexes
+typedef unsigned long 		idx_t;	//spmat indexes
+typedef unsigned __int128	uint128;
+
 #include "macros.h"
 #ifndef SPARSIFY_PRE_PARTITIONING
 	#define SPARSIFY_PRE_PARTITIONING TRUE	//u.b. implementation will sparsify dense acc in a pre splitted mem area
@@ -37,6 +39,19 @@ typedef unsigned long idx_t;	//spmat indexes
 #ifndef CONSISTENCY_CHECKS
     #define CONSISTENCY_CHECKS          if( TRUE )
 #endif
+#ifndef SPVECT_IDX_BITWISE 	//SPVECT_IDX_DENSE_ACC.nnzIdxsFlags will be an array of bitflags
+	#define SPVECT_IDX_BITWISE TRUE
+#endif
+#if SPVECT_IDX_BITWISE == TRUE
+	#ifndef LIMB_T
+		#define LIMB_T uint128
+	#endif
+	typedef LIMB_T limb_t;
+	typedef limb_t* nnz_idxs_flags_t;
+#else //nnz idxs ar flags in a byte arry
+	typedef uchar* nnz_idxs_flags_t;
+#endif
+
 ///AUDIT extra configuration
 //#define ROWLENS
 #ifdef ROWLENS

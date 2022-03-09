@@ -3,28 +3,77 @@
 #define SPARSEMATRIX 
 
 #include <stdlib.h>
+#include <string.h>
 
 #include "macros.h"
 #include "config.h"
 
-typedef struct{
-    ulong NZ,M,N;
+typedef struct {
+    idx_t NZ,M,N;
     double *AS; 
-    ulong* JA;
+    idx_t* JA;
     //CSR SPECIFIC
-    ulong* IRP;
-#ifdef ROWLENS
-    ulong* RL;   //row lengths
-#endif
+    idx_t* IRP;
+	#ifdef ROWLENS
+    idx_t* RL;   //row lengths
+	#endif
     //CUDA SPECIFIC
-    ulong MAX_ROW_NZ;
+    idx_t MAX_ROW_NZ;
 
 } spmat; //describe a sparse matrix
 
+//smart index keeping in a dense map
+typedef struct{
+	idx_t	len;				//num of nnz idx accumulated
+	/* nnz index presence packing, implict space enough for all possible indexes*/
+	nnz_idxs_flags_t idxsMap;
+	uint idxsMapN;	//either num of limbs or len of char flag array
+} SPVECT_IDX_DENSE_MAP;
+//aux struct for sparse vector-scalar product accumualtion
+typedef struct{ 
+    double*  v;          			//aux accumulating dense vector (sparse)
+    idx_t*   nnzIdx;     			//v nnz value's indexes 		(contiguos)
+    idx_t    vLen;       			//size of the aux dense vector //TODO USELESS?
+    SPVECT_IDX_DENSE_MAP nnzIdxMap;	//
+} ACC_DENSE;
+int allocAccDense(ACC_DENSE* v, ulong size);
+
+/*  
+ **** NNZ IDXS PRESENCE FLAGS ACCESS INTERFACE:  ***
+ *    sp_vect_idx_set(idx,SPVECT_IDX_DENSE_MAP)
+ *    	-> return 0 if idx isn't already setted and in case set it
+ */
+static inline int spVect_idx_in(idx_t idx, nnz_idxs_flags_t idxsMap){
+	#if SPVECT_IDX_BITWISE == TRUE
+	uint limbID 	= idx / (sizeof(*idxsMap) * 8); //idx's limb id
+	uint limbIdxID	= idx % (sizeof(*idxsMap) * 8); //idx's pos in limb
+	limb_t idxPos   = ((limb_t) 1) << limbIdxID;
+	if (!( idxsMap[limbID] & idxPos) ){
+		idxsMap[limbID] |= idxPos;
+		return 0;
+	}
+	#else	
+	if (!(nnzIdxsF lags[idx])){
+		idxsMap[idx] = 1;
+		return 0;
+	}
+	#endif //SPVECT_IDX_BITWISE == TRUE
+	return 1;
+}	
+int initSpVectIdxDenseAcc(idx_t idxMax, SPVECT_IDX_DENSE_MAP* );  
+inline void _resetIdxMap(SPVECT_IDX_DENSE_MAP* acc){
+	acc->len = 0;
+	memset(acc->idxsMap,0,sizeof(*acc->idxsMap)*acc->idxsMapN);
+}
+inline void _resetAccVect(ACC_DENSE* acc){
+    memset(acc->v,		 0,	acc->vLen * sizeof(*(acc->v)));
+    memset(acc->nnzIdx,	 0,	acc->vLen * sizeof(*(acc->nnzIdx)));
+    _resetIdxMap(&acc->nnzIdxMap);
+}
 ////Sparse vector accumulator -- corresponding to a matrix portion
 typedef struct{
-    //ulong    r;     //row index in the corresponding matrix
-    //ulong    c;     //col index in the corresponding matrix
+    //idx_t    r;     //row index in the corresponding matrix
+    //idx_t    c;     //col index in the corresponding matrix
     idx_t   len;   //rowLen
     double* AS;    //row nnz    values
     idx_t*  JA;    //row nnz    colIndexes
@@ -35,11 +84,11 @@ typedef struct{
  * ARRAY BISECTION - RECURSIVE VERSION
  * TODO ASSERT LEN>0 ommitted
  */
-inline int BISECT_ARRAY(ulong target, ulong* arr, ulong len){
+inline int BISECT_ARRAY(idx_t target, idx_t* arr, idx_t len){
     //if (len == 0)              return FALSE;
     if (len <= 1)              return *arr == target; 
-    ulong middleIdx = (len-1) / 2;  //len=5-->2, len=4-->1
-    ulong middle    = arr[ middleIdx ];
+    idx_t middleIdx = (len-1) / 2;  //len=5-->2, len=4-->1
+    idx_t middle    = arr[ middleIdx ];
     if      (target == middle)  return TRUE;
     else if (target <  middle)  return BISECT_ARRAY(target,arr,middleIdx); 
     else    return BISECT_ARRAY(target,arr+middleIdx+1,middleIdx + (len-1)%2);
@@ -49,15 +98,15 @@ inline int BISECT_ARRAY(ulong target, ulong* arr, ulong len){
  * return !0 if col @j idx is in row @i of sparse mat @smat
  * bisection used --> O(log_2(ROWLENGHT))
  */
-inline int IS_NNZ(spmat* smat,ulong i,ulong j){
-    ulong rStart = smat->IRP[i];
-    ulong rLen   = smat->IRP[i+1] - rStart;
+inline int IS_NNZ(spmat* smat,idx_t i,idx_t j){
+    idx_t rStart = smat->IRP[i];
+    idx_t rLen   = smat->IRP[i+1] - rStart;
     if (!rLen)  return FALSE;
     return BISECT_ARRAY(j,smat->JA + rStart,rLen);
 }
-inline int IS_NNZ_linear(spmat* smat,ulong i,ulong j){    //linear -> O(ROWLENGHT)
+inline int IS_NNZ_linear(spmat* smat,idx_t i,idx_t j){    //linear -> O(ROWLENGHT)
     int out = 0;
-    for (ulong x=smat->IRP[i]; x<smat->IRP[i+1] && !out; x++){
+    for (idx_t x=smat->IRP[i]; x<smat->IRP[i+1] && !out; x++){
         out = (j == smat->JA[x]); 
     } 
     return out;
@@ -84,7 +133,7 @@ inline void freeSpAcc(SPACC* r){
 }
 ////alloc&init functions
 //alloc&init internal structures only dependent of dimensions @rows,@cols
-inline int allocSpMatrixInternal(ulong rows, ulong cols, spmat* mat){
+inline int allocSpMatrixInternal(idx_t rows, idx_t cols, spmat* mat){
     mat -> M = rows;
     mat -> N = cols;
     if (!(mat->IRP=calloc(mat->M+1,sizeof(*(mat->IRP))))){ //calloc only for 0th
@@ -103,7 +152,7 @@ inline int allocSpMatrixInternal(ulong rows, ulong cols, spmat* mat){
 }
 
 //alloc a sparse matrix of @rows rows and @cols cols 
-inline spmat* allocSpMatrix(ulong rows, ulong cols){
+inline spmat* allocSpMatrix(idx_t rows, idx_t cols){
 
     spmat* mat;
     if (!(mat = calloc(1,sizeof(*mat)))) { 

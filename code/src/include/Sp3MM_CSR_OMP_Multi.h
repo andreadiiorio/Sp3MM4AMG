@@ -6,13 +6,6 @@
 #include "macros.h"
 #include "sparseMatrix.h"
 
-//aux struct for sparse vector-scalar product accumualtion
-typedef struct{
-    double*  v;          //aux accumulating dense vector
-    ulong    vLen;       //size of the aux dense vector //TODO USELESS?
-    ulong*   nnzIdx;     //v, nonzero accumulated values
-    ulong    nnzIdxLast; //last appended non zero index
-} ACC_DENSE;
 ///aux structures
 //hold SPMM result over a unpartitionated space among threads-row[s' blocks]
 typedef struct{
@@ -22,6 +15,7 @@ typedef struct{
     ulong   size;			//num of entries allocated -> only dbg checks
     ulong   lastAssigned;	//last JA&AS assigned index to an accumulator(atom)
     SPACC*  accs;			//SPARSIFIED ACC POINTERS
+	uint	accsNum;	
 } SPMM_ACC; //accumulator for SPMM
 ///compute function interface and its pointer definitions
 typedef spmat* ( SPMM        )  (spmat*,spmat*,CONFIG*);

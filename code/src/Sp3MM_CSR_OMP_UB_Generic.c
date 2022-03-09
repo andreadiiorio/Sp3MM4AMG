@@ -73,7 +73,7 @@ spmat* CAT(spmmRowByRow_,OFF_F)(spmat* A,spmat* B, CONFIG* cfg){
     AB=NULL;    //nothing'll be returned
     _free:
     if(rowsSizes)   free(rowsSizes);
-    if(accVects)    freeAccVectors(accVects,cfg->threadNum);
+    if(accVects)    freeAccsDense(accVects,cfg->threadNum);
     if(outAccumul)  freeSpMMAcc(outAccumul);
 
     return AB;
@@ -149,7 +149,7 @@ spmat* CAT(spmmRowByRow1DBlocks_,OFF_F)(spmat* A,spmat* B, CONFIG* cfg){
     AB=NULL;    //nothing'll be returned
     _free:
     if(rowsSizes)   free(rowsSizes);
-    if(accVects)    freeAccVectors(accVects,cfg->gridRows);
+    if(accVects)    freeAccsDense(accVects,cfg->gridRows);
     if(outAccumul)  freeSpMMAcc(outAccumul);
 
     return AB;
@@ -268,7 +268,7 @@ spmat* CAT(spmmRowByRow2DBlocks_,OFF_F)(spmat* A,spmat* B, CONFIG* cfg){
     _free:
     free(rowsPartsSizes);
     free(bColOffsets);
-    if (accVectors)  freeAccVectors(accVectors,gridSize);
+    if (accVectors)  freeAccsDense(accVectors,gridSize);
     if (outAccumul)  freeSpMMAcc(outAccumul);
     
     return AB;
@@ -391,7 +391,7 @@ spmat* CAT(spmmRowByRow2DBlocksAllocated_,OFF_F)(spmat* A,spmat* B, CONFIG* cfg)
     }
     free(rowsPartsSizes);
     free(bColOffsets);
-    if (accVectors)  freeAccVectors(accVectors,gridSize);
+    if (accVectors)  freeAccsDense(accVectors,gridSize);
     if (outAccumul)  freeSpMMAcc(outAccumul);
     
     return AB;
@@ -478,7 +478,7 @@ spmat* CAT(sp3mmRowByRowMerged_,OFF_F)(spmat* R,spmat* AC,spmat* P,CONFIG* cfg,S
         for (idx_t j=R->IRP[r]-OFF_F; j<R->IRP[r+1]-OFF_F; j++)
             CAT(scSparseRowMul_,OFF_F)(R->AS[j], AC, R->JA[j]-OFF_F, accRAC);
         //forward the computed row
-        for (idx_t j=0; j<accRAC->nnzIdxLast; j++){
+        for (idx_t j=0; j<accRAC->nnzIdxMap.len; j++){
             c = accRAC->nnzIdx[j];    
             CAT(scSparseRowMul_,OFF_F)(accRAC->v[c],P,c,accRACP);
         }
@@ -504,8 +504,8 @@ spmat* CAT(sp3mmRowByRowMerged_,OFF_F)(spmat* R,spmat* AC,spmat* P,CONFIG* cfg,S
     out = NULL;
     _free:
     if(rowSizes)       free(rowSizes);
-    if(accVectorsR_AC)  freeAccVectors(accVectorsR_AC,cfg->threadNum);
-    if(accVectorsRAC_P) freeAccVectors(accVectorsRAC_P,cfg->threadNum);
+    if(accVectorsR_AC)  freeAccsDense(accVectorsR_AC,cfg->threadNum);
+    if(accVectorsRAC_P) freeAccsDense(accVectorsRAC_P,cfg->threadNum);
     if(outAccumul)      freeSpMMAcc(outAccumul);
     
     return out;

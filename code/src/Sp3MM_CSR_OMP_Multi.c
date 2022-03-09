@@ -13,22 +13,8 @@
 #include "utils.h"
 #include "macros.h"
 #include "sparseMatrix.h"
-//inline export - single implmentation functions
-idx_t reductionMaxSeq(idx_t* arr,idx_t arrLen);
-SPMM_ACC* initSpMMAcc(ulong entriesNum, ulong accumulatorsNum);
-void freeSpMMAcc(SPMM_ACC* acc);
-void sparsifyDenseVect(SPMM_ACC* acc,ACC_DENSE* accV,SPACC* accSparse, ulong startColAcc);
-int mergeRowsPartitions(SPACC* rowsParts,spmat* mat,CONFIG* conf);
-int mergeRows(SPACC* rows,spmat* mat);
-ACC_DENSE* _initAccVectors_monoalloc(ulong num,ulong size); //TODO PERF WITH NEXT
-int _allocAuxVect(ACC_DENSE* v,ulong size);
-void _resetAccVect(ACC_DENSE* acc);
-void _freeAccVectorsChecks(ACC_DENSE* vectors,ulong num); 
-void freeAccVectors(ACC_DENSE* vectors,ulong num);
-void assertArrNoRepetitions(idx_t* arrSorted, idx_t arrLen);
-//void C_FortranShiftIdxs(spmat* outMat);
-//void Fortran_C_ShiftIdxs(spmat* m);
 
+#include "inlineExports.h"
 
 //Symb version deps
 #include "Sp3MM_CSR_OMP_Multi.h"
@@ -38,13 +24,13 @@ void assertArrNoRepetitions(idx_t* arrSorted, idx_t arrLen);
 double Start,End,Elapsed,ElapsedInternal;
 
 #define OFF_F 0
-#include "inlineExports_Generic.c"
+#include "inlineExports_Generic.h"
 #include "Sp3MM_CSR_OMP_UB_Generic.c"
 #include "Sp3MM_CSR_OMP_Symb_Generic.c"
 #undef OFF_F
 
 #define OFF_F 1
-#include "inlineExports_Generic.c"
+#include "inlineExports_Generic.h"
 #include "Sp3MM_CSR_OMP_UB_Generic.c"
 #include "Sp3MM_CSR_OMP_Symb_Generic.c"
 #undef OFF_F

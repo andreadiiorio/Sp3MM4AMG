@@ -77,7 +77,7 @@ spmat* CAT(spmmRowByRow_SymbNum_,OFF_F)(spmat* A,spmat* B, CONFIG* cfg){
     AB=NULL;    //nothing'll be returned
     _free:
     if(rowsSizes)   free(rowsSizes);
-    if(accVects)    freeAccVectors(accVects,cfg->threadNum);
+    if(accVects)    freeAccsDense(accVects,cfg->threadNum);
     if(outAccumul)  freeSpMMAcc(outAccumul);
 
     return AB;
@@ -138,7 +138,7 @@ spmat* CAT(spmmRowByRow1DBlocks_SymbNum_,OFF_F)(spmat* A,spmat* B, CONFIG* cfg){
     AB=NULL;    //nothing'll be returned
     _free:
     if(rowsSizes)   free(rowsSizes);
-    if(accVects)    freeAccVectors(accVects,cfg->threadNum);
+    if(accVects)    freeAccsDense(accVects,cfg->threadNum);
     if(outAccumul)  freeSpMMAcc(outAccumul);
 
     return AB;

@@ -5,7 +5,7 @@ FF=gfortran
 CWALL =-Wall -Wextra
 CWALL+=-Wno-pointer-sign -Wno-unused-parameter -Wno-unused-but-set-variable -Wno-switch
 CWALL+=-Wno-unused-function -Wno-unused-variable       #TODO CLEAN USELESS FUNCTIONS / VARIABLES
-CWALL+=-Wno-unused-label
+CWALL+=-Wno-unused-label -Wfatal-errors
 CFLAGS=-O2 $(RUNTIME) $(CWALL)
 CFLAGS+=-lm -fopenmp
 

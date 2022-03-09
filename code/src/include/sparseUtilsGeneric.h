@@ -23,6 +23,7 @@ spmat* CAT(colsPartitioningUnifRanges_,OFF_F)(spmat* A,uint gridCols);
 spmat* CAT(colsPartitioningUnifRangesOffsetsAux_,OFF_F)(spmat* A,uint gridCols,idx_t** colPartsOffsets);
 ///////////////////////////////////////////////////////////////////////////////
 
+///Single implementations headers
 #ifndef SPARSEUTILS_H_COMMON_IDX_IMPLS
 #define SPARSEUTILS_H_COMMON_IDX_IMPLS
 
