@@ -3,6 +3,11 @@
  * target: 	compute the output matrix size and the row lens for preallocation
  * 			direct write out partial results
  * See interfaces in respective header
+ *
+ * MultiImplementations functions with all parameters
+ * several functions (lower level) has config based on 
+ * 	OUT_IDXS for returing or using also symbMul Output idxs somehow
+ * 	COL_PARTS for returing or using also distribution of symb out idxs in col partition
  */
 
 ///MultiImplementations
@@ -25,7 +30,6 @@
 #endif
 
 
-///MultiImplementations functions with all parameters
 
 
 /*
@@ -43,8 +47,8 @@
  *		in each of the @gridCols column partitions inside @rowColPartsLens
  * OFF_F:	offset back indexes from fortran
  * 		TODO also output indexes are shifted (see c_b )
- */
-idx_t CAT4(SpMM_Row_Symb_,OUT_IDXS,COL_PARTS,OFF_F) (idx_t* aRowJA,idx_t aRowLen,
+
+idx_t CAT4(SpMM_Row_Symb_Rbtree,OUT_IDXS,COL_PARTS,OFF_F) (idx_t* aRowJA,idx_t aRowLen,
   spmat* b,rbRoot* root,rbNode* nodes
     #if _OUT_IDXS  == TRUE
     #ifndef OUT_IDXS_RBTREE_NODES 
@@ -55,7 +59,30 @@ idx_t CAT4(SpMM_Row_Symb_,OUT_IDXS,COL_PARTS,OFF_F) (idx_t* aRowJA,idx_t aRowLen
     ,ushort gridCols,idx_t* rowColPartsOffsets
     #endif
   );
+ */
 
+/*
+ * SPVECT_IDX_DENSE_MAP based, as SpMM_Row_Symb_Rbtree but with idxMap aux idx keeping
+ * CONFIG_MACROS (new)
+ * IDX_RMUL_SYMB_RBTREE && ( _OUT_IDXS == T || _COL_PARTS == T ):
+ * 	 (tmp) symb mult out indexes will be kept via a rbtree
+ * 	 otherwise directly in the out array appending them and then sorting them
+ * 	 		(potentially same n log n)
+
+idx_t CAT4(SpMM_Row_Symb_IdxMap,OUT_IDXS,COL_PARTS,OFF_F)  
+  (
+   idx_t* aRowJA, idx_t aRowLen, spmat* b, SPVECT_IDX_DENSE_MAP* idxsMapAcc
+   #if _OUT_IDXS  == TRUE 
+   ,idx_t* outIdxs
+    #if IDX_RMUL_SYMB_RBTREE == TRUE
+    ,rbRoot* root, rbNode* nodes
+    #endif
+   #endif	// _OUT_IDXS == TRUE
+   #if _COL_PARTS == TRUE
+   ,ushort gridCols,idx_t* rowColPartsLens
+   #endif
+  );
+ */
 
 /*
  * Compute symbolic product of sparse matrixes @a * @b
@@ -76,7 +103,7 @@ idx_t CAT4(SpMM_Row_Symb_,OUT_IDXS,COL_PARTS,OFF_F) (idx_t* aRowJA,idx_t aRowLen
  */
 idx_t* CAT4(SpMM_Symb_,OUT_IDXS,COL_PARTS,OFF_F) 
   (
-   spmat* a, spmat* b
+   ROW_MMSYM_IMPL_MODE symbRowImplID, spmat* a, spmat* b
    #if _OUT_IDXS  == TRUE
    ,idx_t*** outIdxs
    #endif
@@ -99,13 +126,15 @@ idx_t* CAT4(SpMM_Symb_,OUT_IDXS,COL_PARTS,OFF_F)
  * 	(not only ab row as earlier version)
  *
  */
-idx_t CAT3(Sp3MM_Row_Symb_,OUT_IDXS,OFF_F) (idx_t* aRowJA,idx_t aRowLen,
-  spmat* b,spmat* c, rbRoot* root,rbNode* nodes, idx_t* abRowJATmp
-  #if _OUT_IDXS  == TRUE
-  #ifndef OUT_IDXS_RBTREE_NODES 
-  ,idx_t* outIdxs
-  #endif
-  #endif
+idx_t CAT3(Sp3MM_Row_Symb_,OUT_IDXS,OFF_F) 
+  (
+    ROW_MMSYM_IMPL_MODE symbMMRowImplID, idx_t* aRowJA,idx_t aRowLen,
+    spmat* b,spmat* c, rbRoot* root,rbNode* nodes, idx_t* abRowJATmp
+    #if _OUT_IDXS  == TRUE
+    #ifndef OUT_IDXS_RBTREE_NODES 
+    ,idx_t* outIdxs
+    #endif
+    #endif
   );
 
 /*
@@ -121,12 +150,13 @@ idx_t CAT3(Sp3MM_Row_Symb_,OUT_IDXS,OFF_F) (idx_t* aRowJA,idx_t aRowLen,
  */ 
 //TODO 	HEURISTICS IN _OUT_IDXS to avoid serializing after first sym.product
 //		see HEURISTICS_UB
-idx_t* CAT3(Sp3MM_Symb_,OUT_IDXS,OFF_F) (spmat* a,spmat* b,spmat* c
-  #if _OUT_IDXS  == TRUE
-  ,idx_t*** outIdxs
-  #endif
-  )
-;
+idx_t* CAT3(Sp3MM_Symb_,OUT_IDXS,OFF_F) 
+  (
+    ROW_MMSYM_IMPL_MODE symbMMRowImplID, spmat* a, spmat* b, spmat* c
+    #if _OUT_IDXS  == TRUE
+    ,idx_t*** outIdxs
+    #endif
+  );
 
 #endif
 	

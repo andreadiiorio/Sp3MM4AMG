@@ -20,8 +20,8 @@ inline void CAT(scSparseVectMul_,OFF_F)
         aux->v[j] += vectVals[i] * scalar;  //accumulate
         //append new nonzero index to auxVNNZeroIdxs for quick sparsify
         //if (!(aux->v[j]))    aux->nnzIdx[ aux->nnzIdxMap.len++ ] = j; //TODO numerical zero may then cause readd
-        if(!spVect_idx_in(j,aux->nnzIdxMap.idxsMap))
-			aux->nnzIdx[ aux->nnzIdxMap.len++ ] = j;
+        if(!spVect_idx_in(j,&aux->nnzIdxMap))
+			aux->nnzIdx[ aux->nnzIdxMap.len-1 ] = j;
     }
 }
 
@@ -48,8 +48,8 @@ inline void CAT(scSparseVectMulPart_,OFF_F)(double scalar,double* vectVals,
         aux->v[j] += vectVals[i] * scalar;  //accumulate
         //append new nonzero index to auxVNNZeroIdxs for quick sparsify
         //if (!(aux->v[j]))    aux->nnzIdx[ aux->nnzIdxMap.len++ ] = j; //TODO numerical zero may then cause readd
-        if(!spVect_idx_in(j,aux->nnzIdxMap.idxsMap))
-			aux->nnzIdx[ aux->nnzIdxMap.len++ ] = j;
+        if(!spVect_idx_in(j,&aux->nnzIdxMap))
+			aux->nnzIdx[ aux->nnzIdxMap.len-1 ] = j;
     }
 }
 

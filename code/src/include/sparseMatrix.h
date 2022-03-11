@@ -29,6 +29,15 @@ typedef struct{
 	nnz_idxs_flags_t idxsMap;
 	uint idxsMapN;	//either num of limbs or len of char flag array
 } SPVECT_IDX_DENSE_MAP;
+int initSpVectIdxDenseAcc(idx_t idxMax, SPVECT_IDX_DENSE_MAP* );  
+inline void _resetIdxMap(SPVECT_IDX_DENSE_MAP* acc){
+	acc->len = 0;
+	memset(acc->idxsMap,0,sizeof(*acc->idxsMap)*acc->idxsMapN);
+}
+inline void _freeIdxMap(SPVECT_IDX_DENSE_MAP* acc){
+	free(acc->idxsMap);
+	free(acc);
+}
 //aux struct for sparse vector-scalar product accumualtion
 typedef struct{ 
     double*  v;          			//aux accumulating dense vector (sparse)
@@ -43,28 +52,25 @@ int allocAccDense(ACC_DENSE* v, ulong size);
  *    sp_vect_idx_set(idx,SPVECT_IDX_DENSE_MAP)
  *    	-> return 0 if idx isn't already setted and in case set it
  */
-static inline int spVect_idx_in(idx_t idx, nnz_idxs_flags_t idxsMap){
+static inline int spVect_idx_in(idx_t idx, SPVECT_IDX_DENSE_MAP* idxsMapAcc){
 	#if SPVECT_IDX_BITWISE == TRUE
-	uint limbID 	= idx / (sizeof(*idxsMap) * 8); //idx's limb id
-	uint limbIdxID	= idx % (sizeof(*idxsMap) * 8); //idx's pos in limb
+	uint limbID 	= idx / (sizeof(*idxsMapAcc->idxsMap) * 8); //idx's limb id
+	uint limbIdxID	= idx % (sizeof(*idxsMapAcc->idxsMap) * 8); //idx's pos in limb
 	limb_t idxPos   = ((limb_t) 1) << limbIdxID;
-	if (!( idxsMap[limbID] & idxPos) ){
-		idxsMap[limbID] |= idxPos;
+	if (!( idxsMapAcc->idxsMap[limbID] & idxPos) ){
+		idxsMapAcc->idxsMap[limbID] |= idxPos;
+		idxsMapAcc->len++;
 		return 0;
 	}
 	#else	
-	if (!(nnzIdxsF lags[idx])){
-		idxsMap[idx] = 1;
+	if (!( nnzIdxsFlags[idx] )){
+		idxsMapAcc->idxsMap[idx] = 1;
+		idxsMapAcc->len++;
 		return 0;
 	}
 	#endif //SPVECT_IDX_BITWISE == TRUE
 	return 1;
 }	
-int initSpVectIdxDenseAcc(idx_t idxMax, SPVECT_IDX_DENSE_MAP* );  
-inline void _resetIdxMap(SPVECT_IDX_DENSE_MAP* acc){
-	acc->len = 0;
-	memset(acc->idxsMap,0,sizeof(*acc->idxsMap)*acc->idxsMapN);
-}
 inline void _resetAccVect(ACC_DENSE* acc){
     memset(acc->v,		 0,	acc->vLen * sizeof(*(acc->v)));
     memset(acc->nnzIdx,	 0,	acc->vLen * sizeof(*(acc->nnzIdx)));

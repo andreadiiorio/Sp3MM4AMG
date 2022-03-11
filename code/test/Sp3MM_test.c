@@ -54,6 +54,7 @@ CHUNKS_DISTR_INTERF chunkDistrbFunc=&chunksFairFolded;
 static CONFIG Conf = {
     .gridRows  = 8,
     .gridCols  = 8,
+	.symbMMRowImplID = RBTREE,
 };
 
 /*
@@ -248,7 +249,7 @@ int main(int argc, char** argv){
 	SP3MM_INTERF  	sp3MMFunc;
 
 	//goto symbNum;	//TODO TODO
-	///UB
+	ub:		///UB IMPLEMENTATIONS
 	VERBOSE	hprintf("CHECKING UPPER BOUND IMPLEMENTATIONS\n");
     //test SP3MM as pair of SPMM: RAC = R * AC; RACP = RAC * P
     for (uint f = 0;  f < spMM_UB_FuncsN; f++){
@@ -265,9 +266,25 @@ int main(int argc, char** argv){
         if (testSp3MMImpl(sp3MMFunc,NULL,oracleOut,R,AC,P))   goto _free;
     }
     VERBOSE printf("\nall pairs of SpMM functions passed the test\n\n\n");
-	///SYMB-NUM
-	symbNum:
-	VERBOSE	hprintf("CHECKING SYMBOLIC-NUMERIC IMPLEMENTATIONS\n");
+	symbNum:	///SYMB-NUM IMPLEMENTATIONS
+	VERBOSE	hprintf("CHECKING SYMBOLIC.RBTREE - NUMERIC IMPLEMENTATIONS\n");
+	Conf.symbMMRowImplID = RBTREE;
+    //test SP3MM as pair of SPMM: RAC = R * AC; RACP = RAC * P
+    for (uint f = 0;  f < spMM_SymbNum_FuncsN; f++){
+        spMMFunc = spMM_SymbNum_Funcs[f];
+        hprintsf("@computing Sp3MM as pair of SpMM with func:\%u at:%p\t",
+          f,spMMFunc);
+        if (testSp3MMImpl(sp3MM_SymbNum_WrapPair,spMMFunc,oracleOut,R,AC,P))   goto _free;
+    }
+    //test SP3MM as merged two multiplication
+    for (uint f = 0;  f < sp3MM_SymbNum_Direct_FuncsN; f++){
+        sp3MMFunc = sp3MM_SymbNum_Direct_Funcs[f];
+        hprintsf("@computing Sp3MM directly with func:\%u at:%p\t\t",
+          f,sp3MMFunc);
+        if (testSp3MMImpl(sp3MMFunc,NULL,oracleOut,R,AC,P))   goto _free;
+    }
+	VERBOSE	hprintf("CHECKING SYMBOLIC.IDXMAP - NUMERIC IMPLEMENTATIONS\n");
+	Conf.symbMMRowImplID = IDXMAP;
     //test SP3MM as pair of SPMM: RAC = R * AC; RACP = RAC * P
     for (uint f = 0;  f < spMM_SymbNum_FuncsN; f++){
         spMMFunc = spMM_SymbNum_Funcs[f];

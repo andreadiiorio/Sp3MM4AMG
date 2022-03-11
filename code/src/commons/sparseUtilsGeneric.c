@@ -153,6 +153,10 @@ int spmatDiff(spmat* A, spmat* B){
         ERRPRINT("NZ differ\n");
         return EXIT_FAILURE;
     }
+    if (memcmp(A->IRP,B->IRP,A->M)){
+        ERRPRINT("IRP differ\n");
+        return EXIT_FAILURE;
+    }
     if (doubleVectorsDiff(A->AS,B->AS,A->NZ,NULL)){
         ERRPRINT("AS DIFFER\n");
         return EXIT_FAILURE;

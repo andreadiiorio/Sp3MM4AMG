@@ -1,9 +1,18 @@
 #ifndef CONFIG_H
 #define CONFIG_H
+//CONFIG STRUCT DEPENDECIES
+//switch among diferent symb row -> rows implementation var
+typedef enum{
+	RBTREE,
+	IDXMAP
+} ROW_MMSYM_IMPL_MODE;
+
+//
 typedef struct{
     ushort gridRows;
     ushort gridCols;
     //TODO FULL CONFIG DOCCED HERE
+    ROW_MMSYM_IMPL_MODE symbMMRowImplID; //how to compute symb mul (if required)
     uint threadNum;  //thread num to use in an OMP parallel region ...
     void* chunkDistrbFunc;  //CHUNKS_DISTR_INTERF func pntr
 } CONFIG;  
@@ -58,6 +67,14 @@ typedef unsigned __int128	uint128;
 #pragma message("ROW_LENS ARRAY ENABLED")
 #endif
 
+/*
+ * idxsMapAcc based symb row*rows, outIdxs and colParts carried with an aux rbtree
+ * otherwise carried throught an append array
+ * (hyp same computational cost... n + nlog n)
+ */
+#ifndef IDX_RMUL_SYMB_RBTREE
+	#define IDX_RMUL_SYMB_RBTREE  FALSE
+#endif
 #define RB_CACHED_INSERT	//use cached insert
 //#define USE_RB_ROOT_CACHE_LMOST //use leftmost leaf cached in rbtree in sym mul
 ///CONSTS

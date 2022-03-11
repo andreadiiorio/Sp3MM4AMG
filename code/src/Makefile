@@ -8,7 +8,7 @@ CFLAGSDBG=$(CFLAGS) -ggdb -Og
 CWALL+=-Wall -Wextra -Wno-pointer-sign -Wno-unused-parameter -Wno-unused-but-set-variable
 CWALL+=-Wno-unused-label -Wno-switch
 CWALL+=-Wno-unused-function -Wno-unused-variable -Werror=incompatible-pointer-types -Werror=misleading-indentation
-CFLAGS+=$(RUNTIME) $(CWALL) #-Wfatal-errors 
+CFLAGS+=$(RUNTIME) $(CWALL) -Wfatal-errors 
 ##TODO OMP CONFIG
 #OMP_CANCELLATION=true
 #export OMP_CANCELLATION

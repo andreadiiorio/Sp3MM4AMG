@@ -42,7 +42,7 @@ spmat* CAT(spmmRowByRow_SymbNum_,OFF_F)(spmat* A,spmat* B, CONFIG* cfg){
         goto _err;
     }
 	///SYMBOLIC STEP
-	if (!(rowsSizes = CAT(SpMM_Symb___,OFF_F) (A,B)))	goto _err;
+	if (!(rowsSizes = CAT(SpMM_Symb___,OFF_F) (cfg->symbMMRowImplID, A,B)))	goto _err;
 	if (allocCSRSpMatSymbStep(AB,rowsSizes))			goto _err;
 	
     ///NUMERIC STEP
@@ -96,7 +96,7 @@ spmat* CAT(spmmRowByRow1DBlocks_SymbNum_,OFF_F)(spmat* A,spmat* B, CONFIG* cfg){
         goto _err;
     }
 	///SYMBOLIC STEP
-	if (!(rowsSizes = CAT(SpMM_Symb___,OFF_F) (A,B)))	goto _err;
+	if (!(rowsSizes = CAT(SpMM_Symb___,OFF_F) (cfg->symbMMRowImplID, A,B)))	goto _err;
 	if (allocCSRSpMatSymbStep(AB,rowsSizes))			goto _err;
 	
     ///NUMERIC STEP

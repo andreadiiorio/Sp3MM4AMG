@@ -240,7 +240,7 @@ typedef struct rb_root_cached rbRoot;
  * return 1 if @node with the given key @key 
  * has been inserted in rbtree rooted at @root; 0 otherwise
  */
-static inline int rbInsertNewKey(rbRoot *root,rbNode *node, idx_t key)
+static inline int rbInsertStdNewKey(rbRoot *root,rbNode *node, idx_t key)
 {
 	struct rb_node **new = &root->rb_root.rb_node, *parent = NULL;
 	idx_t parentK;
@@ -298,6 +298,14 @@ static inline int rbInsertCachedNewKey(rbRoot *root,rbNode *node, idx_t key)
 	rb_link_node(&node->rb, parent, new);
 	rb_insert_color_cached(&node->rb, root, leftmost);
 	return 1;
+}
+
+static inline int rbInsertNewKey(rbRoot *root,rbNode *node, idx_t key){
+	#ifdef RB_CACHED_INSERT
+	return rbInsertCachedNewKey(root,node,key);
+	#else
+	return rbInsertStdNewKey(root,node,key);
+	#endif
 }
 
 #define rbNodeOrderedVisit(n,root) \

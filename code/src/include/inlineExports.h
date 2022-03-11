@@ -1,4 +1,6 @@
 //inline export - single implmentation functions
+void cleanRbNodes(rbRoot* root,rbNode* nodes,idx_t nodesNum);
+int rbInsertNewKey(rbRoot *root,rbNode *node, idx_t key);
 //void C_FortranShiftIdxs(spmat* outMat);
 //void Fortran_C_ShiftIdxs(spmat* m);
 ACC_DENSE* _initAccVectors(ulong num,ulong size);
