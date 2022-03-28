@@ -110,6 +110,26 @@ int createNewFile(char* const outFpath){
     if (outFd<0)            perror("open outFd failed ");
     return outFd;
 }
+///BUFFERED IO 
+//TODO series of 0 returns.... fix
+int fread_wrap(FILE* fp,void* dst,size_t count){
+	int rd=0,toRead;
+	size_t readed=0;
+	while (readed < count){
+		toRead = count - readed;
+		rd=fread(dst+readed,1,toRead,fp);
+		if (rd != toRead){ //TODO SHORT ITEM COUNT
+			if (feof(fp))	return EOF;
+			else if (ferror(fp)){
+				ERRPRINT("fread_wrap errd\n");
+				return -2;
+			}
+			//else ERRPRINT("W** SHORT ITEM COUNT RETURN MEANS!?"); //TODO OO
+		}
+		readed+=rd;
+	}
+	return rd;
+}
 ///STRUCTURED DATA IO
 int writeDoubleVector(char* fpath,double* v,ulong size){
     int fd,out=EXIT_FAILURE;
@@ -132,7 +152,7 @@ int writeDoubleVectorAsStr(char* fpath,double* v,ulong size){
         return EXIT_FAILURE;
     }
     for (ulong i=0; i<size; i++){
-        if (fprintf(fp,"%lf\n",v[i]) < 0){
+        if (fprintf(fp,DOUBLE_STR_FORMAT,v[i]) < 0){
             ERRPRINT("fprintf to out vector file errd\n");
             goto _end;
         } 
@@ -147,6 +167,64 @@ int writeDoubleVectorAsStr(char* fpath,double* v,ulong size){
 }
 
 double* readDoubleVector(char* fpath,ulong* size){
+    int rd,hleft;
+    double *out,*tmp;
+    ulong i=0,vectorSize=RNDVECTORSIZE;
+    if (*size)   vectorSize = *size;
+    FILE* fp = fopen(fpath,"r");
+    if (!fp){
+        perror("fopen vector file");
+        return NULL;
+    }
+    if (!(out = malloc(vectorSize * sizeof(*out)))){ 
+        ERRPRINT("vector read malloc fail for file\n");
+        return NULL;
+    }
+    while (1){
+        if (i >= vectorSize ){ //realloc the array
+            vectorSize *= VECTOR_STEP_REALLOC;
+            if (!(tmp=realloc(out,vectorSize*sizeof(*out)))){
+                ERRPRINTS("realloc errd to ~~ %lu MB\n",vectorSize >> 20);
+                goto _err;
+            }
+            out = tmp;
+            DEBUG   printf("reallocd to ~~ %lu MB\n",vectorSize >> 20);
+        }
+		ulong toRead = MIN(VECTOR_READ_BLOCK,(vectorSize-i));
+		if((rd = fread_wrap(fp,out + i,sizeof(*out)*toRead)) == -2){
+			ERRPRINT("fread_wrap errd\n");
+			goto _err;
+		}
+		if(feof(fp))	//TODO rd == EOF not work always != W*F???
+			break;
+		i += rd/sizeof(out);
+		if( (hleft = rd % sizeof(out)) ){
+			DEBUG hprintf("half left double read... rounding down fptr\n");
+			if(fseek(fp,-hleft,SEEK_CUR)){
+				perror("fseek in readDoubleVector");
+				goto _err;
+			}
+		}
+	}
+    //REALLOC THE ARRAY TO THE FINAL SIZE
+    assert( i > 0 );
+    if (!(tmp = realloc(out,*size*sizeof(*out)))){
+        ERRPRINT("realloc errd\n");
+        goto _err;
+    }
+    out = tmp;
+    DEBUG printf("readed vector from %s of %lu elements\n",fpath,*size);
+    goto _free;
+
+    _err:
+    free(out);
+    out = NULL;
+    _free:
+    if (fclose(fp) == EOF)  perror("fclose errd\n");
+    return out;
+}
+
+double* readDoubleVectorStr(char* fpath,ulong* size){
     int fscanfOut;
     double *out,*tmp;
     ulong i=0,vectorSize=RNDVECTORSIZE;
@@ -170,7 +248,7 @@ double* readDoubleVector(char* fpath,ulong* size){
             out = tmp;
             DEBUG   printf("reallocd to ~~ %lu MB\n",vectorSize >> 20);
         }
-        fscanfOut = fscanf(fp,"%lf\n",out + i++ );
+        fscanfOut = fscanf(fp,DOUBLE_STR_FORMAT,out + i++ );
         if ( fscanfOut == EOF && ferror(fp)){
             perror("invalid fscanf");
             goto _err;
@@ -178,6 +256,7 @@ double* readDoubleVector(char* fpath,ulong* size){
         if ( fscanfOut != 1 || fscanfOut == EOF )   break;  //end of vector
     }
     //REALLOC THE ARRAY TO THE FINAL SIZE
+    assert( i > 0 );
     *size = --i;
     if (!(tmp = realloc(out,*size*sizeof(*out)))){
         ERRPRINT("realloc errd\n");
@@ -275,7 +354,7 @@ static inline int rndDouble_sinDecimal(double* d){
         ERRPRINT("read_wrap failed to read holder for rnd double\n");
         return EXIT_FAILURE;
     }
-    *d = (_rndHold % MAXRND) + sin(_rndHold);
+    *d = (_rndHold % (ulong) ceil(MAXRND)) + sin(_rndHold);
     return EXIT_SUCCESS;
 }
    
@@ -292,7 +371,7 @@ void statsAvgVar(double* values,uint numVals, double* out){
 /// MATRIX - VECTOR COMPUTE UTILS
 int fillRndVector(ulong size, double* v){
     for( ulong x=0; x<size; ++x ){
-        if(rndDouble_sinDecimal( v+x )) return EXIT_FAILURE;
+        if(rndDouble_sinAll( v+x )) return EXIT_FAILURE;
         #ifdef RNDVECTMIN
         v[x] += RNDVECTMIN;
         #endif
@@ -300,6 +379,7 @@ int fillRndVector(ulong size, double* v){
     return EXIT_SUCCESS;
 }
 
+//convention true result in @a, toCheck in @b
 int doubleVectorsDiff(double* a, double* b, ulong n,double* diffMax){
     int out = EXIT_SUCCESS;
     double diff,diffAbs,_diffMax=0;
@@ -310,8 +390,9 @@ int doubleVectorsDiff(double* a, double* b, ulong n,double* diffMax){
         diffAbs = ABS( diff );
         if( diffAbs > DOUBLE_DIFF_THREASH ){
             out = EXIT_FAILURE;
-            ERRPRINTS("DIFF IN DOUBLE VECTORS: |%13lg| > threash=%lf\tat: %lu\n",
-              diff,DOUBLE_DIFF_THREASH,i);
+            ERRPRINTS("DOUBLE VECTORS DIFF: DOUBLE_DIFF_THREASH=%lf\t<\t"
+					  "|%13lg| = %lf %% of @a[%lu]\n",
+              		  DOUBLE_DIFF_THREASH,diff,100*diffAbs/ABS(a[i]),i);
             #ifdef DOUBLE_VECT_DIFF_EARLY_EXIT
             #pragma message("DOUBLE_VECT_DIFF_EARLY_EXIT: only first diff double reported")
             return EXIT_FAILURE;

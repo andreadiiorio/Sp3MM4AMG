@@ -95,12 +95,14 @@ typedef unsigned __int128	uint128;
 #define RB_CACHED_INSERT	//use cached insert
 //#define USE_RB_ROOT_CACHE_LMOST //use leftmost leaf cached in rbtree in sym mul
 ///CONSTS
-#define ELL_MAX_ENTRIES ( 100l << 20 )  //ell max (padded) entries supported in a matrix 
+#define ELL_MAX_ENTRIES ( 6l << 27 ) //2*6GB of ell (padded) entries maxSupport in a matrix 
+#define LIMIT_ELL_SIZE				 //enable above threshold
 #define ELL_AS_FILLER       (0 )        //handled with calloc
 //TODO NOW FILLED WITH LAST NNPADDED COL #define ELL_JA_FILLER       (-1)
 //#define DOUBLE_VECT_DIFF_EARLY_EXIT 1
 //#define RNDVECTMIN          222222
 #define VECTOR_STEP_REALLOC 25
+#define VECTOR_READ_BLOCK	50		//file (raw) vector read block
 #define RNDVECTORSIZE       100000
 #define RNDVECTORDUMP       TMPDIR  "rndVectorDump"
 #define RNDVECTORDUMPRAW    TMPDIR  "rndVectorDumpRaw"
@@ -124,9 +126,9 @@ typedef unsigned __int128	uint128;
     //TODO SOME TRICK TO HAVE 1! PRINT
 #endif*/
 extern double Start,End,Elapsed,ElapsedInternal;
-#define DOUBLE_DIFF_THREASH         7e-5
+#define DOUBLE_DIFF_THREASH         7e-4
 #define DRNG_DEVFILE                "/dev/urandom"
-#define MAXRND                      1
+#define MAXRND                      3e-5
 #ifndef TMPDIR
     #define TMPDIR                      "/tmp/"
 #endif

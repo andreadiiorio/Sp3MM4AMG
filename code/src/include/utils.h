@@ -17,7 +17,7 @@
 #ifndef UTILS
 #define UTILS
 
-#include <stddef.h> 
+//#include <stddef.h> 
 #include "macros.h"
 
 #include "linuxK_rbtree_minimalized.h"
@@ -36,20 +36,23 @@ int init_urndfd(); // wrap init urndFd
  */
 //wrap read cycle over @fd
 int read_wrap(int fd,void* dst,size_t count);
+int fread_wrap(FILE* fp,void* dst,size_t count);
 //dual of read_wrap
 int write_wrap(int fd,void* src,size_t count);
 //create or open file at @outFpath for write
 int createNewFile(char* const outFpath);
 ///STRUCTURED DATA IO
+#define DOUBLE_STR_FORMAT	"%25le\n"
 //write double vector @v as row sequence of double at @fpath
 //e.g. read with od -tf8 -w8 fpath : OCTALOFFSET:   DOUBLE FULL DIGITS
 int writeDoubleVector(char* fpath,double* v,ulong size);
 /*
- * read vector of arbitrary size from @fpath, true lenght in *size
+ * read vector of double [Str] of arbitrary size from @fpath, true lenght in *size
  * if size point to a nnz value, the initial allocation will be of *size
  * eventual successive reallocation done multipling *size with VECTOR_STEP_REALLOC
  */
 double* readDoubleVector(char* fpath,ulong* size);
+double* readDoubleVectorStr(char* fpath,ulong* size);
 
 ///STRUCTURED DATA IO -- BUFFERED: FSCANF - FPRINTF
 //dual of readDoubleVectorVector
@@ -138,6 +141,7 @@ inline idx_t reductionMaxOmp(idx_t* arr,idx_t arrLen){
  * return 0 if vectors a and b has elements that differ at most of DOUBLE_DIFF_THREASH 
  * if diffMax!=NULL save there the max difference value  
  *  of the 2 entries of the input vectors, signed as a[i] - b[i] (as well as dump prints)
+ * CONVENTION:	@a = true result, @b vector to check with the true result 
  */
 int doubleVectorsDiff(double* a, double* b, ulong n,double* diffMax);
 //fill a random vector in @v long @size doubles
