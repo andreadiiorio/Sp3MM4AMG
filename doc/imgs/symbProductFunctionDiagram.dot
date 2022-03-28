@@ -1,0 +1,15 @@
+digraph symbProdFuncs {
+	node [shape = record]
+	graph[  rankdir = "TB"  ] //vertical <- top bottom
+	SpMM_Symb		[label = "{SpMM_Symb|Calcola il prodotto simbolico tra 2 matrici}" ]
+	Sp3MM_Symb		[label = "{Sp3MM_Symb|Calcola il prodotto simbolico tra 3 matrici}"]
+	Sp3MM_Row_Symb	[label = "{Sp3MM_Row_Symb|Calcola 1 riga del prodotto simbolico tra 3 matrici}"]
+	SpMM_Row_Symb	[label = "{SpMM_Row_Symb|Calcola 1 riga del prodotto simbolico tra 2 matrici}"]
+	SpMM_Row_Symb_IdxMap	[label = "{SpMM_Row_Symb_IdxMap|Calcola 1 riga del prodotto simbolico tra 2 matrici}"]
+	SpMM_Row_Symb_Rbtree	[label = "{SpMM_Row_Symb_Rbtree|Calcola 1 riga del prodotto simbolico tra 2 matrici}"]
+	//links
+	SpMM_Symb 		-> SpMM_Row_Symb 
+	Sp3MM_Symb 		-> Sp3MM_Row_Symb -> SpMM_Row_Symb
+	SpMM_Row_Symb 	-> SpMM_Row_Symb_IdxMap
+	SpMM_Row_Symb 	-> SpMM_Row_Symb_Rbtree
+}

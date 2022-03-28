@@ -18,10 +18,10 @@
 %
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \documentclass[
-11pt,           % The default document font size, options: 10pt, 11pt, 12pt
-%oneside,       % Two side (alternating margins) for binding by default, uncomment to switch to one side
-english,
-singlespacing,  % Single line spacing, alternatives: onehalfspacing or doublespacing
+12pt,           % The default document font size, options: 10pt, 11pt, 12pt
+oneside,       % Two side (alternating margins) for binding by default, uncomment to switch to one side
+italian,
+%singlespacing,  % Single line spacing, alternatives: onehalfspacing or doublespacing
 %draft,         %  enable draft mode (no pictures, no links, overfull hboxes indicated)
 %nolistspacing, % If the document is onehalfspacing or doublespacing, uncomment this to set spacing in lists to single
 %liststotoc,    %  add the list of figures/tables/etc to the table of contents
@@ -33,50 +33,14 @@ headsepline,    %  get a line under the header
 %consistentlayout, %  change the layout of the declaration, abstract and acknowledgements pages to match the default layout
 ]{MastersDoctoralThesis} % The class file specifying the document structure
 
-%%CODE EMBEDD
-\usepackage{listings,color} 
-%CONFIG CODE LISTINGS
-\definecolor{mygreen}{rgb}{0,0.6,0}      
-\definecolor{mygray}{rgb}{0.5,0.5,0.5}   
-\definecolor{mymauve}{rgb}{0.58,0,0.82}  
+%\usepackage[backend=bibtex,style=authoryear,natbib=true]{biblatex} % Use the bibtex backend with the authoryear citation style (which resembles APA)
 
-\lstloadlanguages{C}
-\lstdefinestyle{C_typedefs}{
-  language=C,
-  keywordstyle=\color{red},
-  morekeywords={uint,ulong}
-}
-\lstset{
-  %escapechar=\%,                  %%EMBEDD LATEX CODE IN SOURCE CODE
-  escapeinside={*@}{@*},       %%EMBEDD LATEX CODE IN SOURCE PARTI RACCHIUSE DA QUESTE DUE COPPIE             
-  captionpos=b,                    % sets the caption-position to bottom
-  tabsize=2,                       % sets default tabsize to 2 spaces
-  %title=\lstname                   % show the filename of files included with \lstinputlisting; also try caption instead of title
-  basicstyle=\footnotesize,        % the size of the fonts that are used for the code
-  basewidth=0.6em,   fontadjust=true, %fontSizes config in manual
-  numberstyle=\tiny, % the style that is used for the line-numbers
-  numbersep=3pt,                   % how far the line-numbers are from the code
-  numbers=left,                    % where to put the line-numbers; possible values are (none, left, right)
-  numberfirstline=true,   firstnumber=1,
-  stepnumber=1,                    % the step between two line-numbers. If it's 1, each line will be numbered
-  frame=lines,                   % bordo attorno al codice
-  keepspaces=true,                 % keeps spaces in text, useful for keeping indentation of code (possibly needs columns=flexible)
-  keywordstyle=\color{red},       % keyword style
-  language=C,             % the language of the code
-  style=C_typedefs,
-  morekeywords={uint,ulong}        % add more keywords to the set
-  %deletekeywords={...},            % if you want to delete keywords from the given language
-  rulecolor=\color{black},         % if not set, the frame-color may be changed on line-breaks within not-black text (e.g. comments (green here))
-  showspaces=false,                % show spaces everywhere adding particular underscores; it overrides 'showstringspaces'
-  showstringspaces=false,          % underline spaces within strings only
-  showtabs=false,                  % show tabs within strings adding particular underscores
-  backgroundcolor=\color{white},   % choose the background color; you must add \usepackage{color} or \usepackage{xcolor}; should come as last argument
-  breakatwhitespace=false,         % sets if automatic breaks should only happen at whitespace
-  breaklines=true,                 % sets automatic line breaking
-  commentstyle=\color{mygreen},    % comment style
-  extendedchars=false,             % lets you use non-ASCII characters; for 8-bits encodings only, does not work with UTF-8
-  stringstyle=\color{mymauve},     % string literal style
-}
+\usepackage[
+	backend=bibtex,
+	style=alphabetic,
+	sorting=ynt
+	]{biblatex}
+\addbibresource{references.bib} % The filename of the bibliography
 
 %%TEMPLATE IMPORTS
 \usepackage[utf8]{inputenc} % Required for inputting international characters
@@ -84,14 +48,99 @@ headsepline,    %  get a line under the header
 
 \usepackage{mathpazo} % Use the Palatino font by default
 
-\usepackage[backend=bibtex,style=authoryear,natbib=true]{biblatex} % Use the bibtex backend with the authoryear citation style (which resembles APA)
-
-\addbibresource{references.bib} % The filename of the bibliography
 
 \usepackage[autostyle=true]{csquotes} % Required to generate language-dependent quotes in the bibliography
 %
 \usepackage{graphicx}
 \graphicspath{ {./imgs/} } % imgs searched from this dir
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%% CODE EMBEDD %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\usepackage{listings,color,tcolorbox} 
+%CONFIG CODE LISTINGS
+\definecolor{mygreen}{rgb}{0,0.6,0}      
+\definecolor{mygray}{rgb}{0.5,0.5,0.5}   
+\definecolor{mymauve}{rgb}{0.58,0,0.82}  
+\definecolor{background}{RGB}{255, 255, 255}
+
+\makeatletter
+\newcommand{\srcsize}		{\@setfontsize{\srcsize}{7pt}{7pt}}
+\newcommand{\srcsizeNums}	{\@setfontsize{\srcsize}{3pt}{3pt}}
+\makeatother
+
+\lstloadlanguages{C}
+\lstdefinestyle{C_typedefs}{
+	language=C,
+	keywordstyle=\color{red},
+	%morecomment=[l][\color{purple}]{\#pragma}	 %TODO FIX
+	morekeywords={inline,uint,ulong,ushort,idx_t,spmat,CONFIG},
+	morecomment=[l][\color{mygreen}]{\#},	 %TODO FIX
+	%keywordstyle=\color{mygreen},
+	%classoffset=2,
+	%morekeywords=[\color{mygreen}]{CAT}
+}
+\lstset{ 
+  %escapechar=\%,                  %%EMBEDD LATEX CODE IN SOURCE CODE 
+  escapeinside={*@}{@*},       %%EMBEDD LATEX CODE IN SOURCE PARTI RACCHIUSE DA QUESTE DUE COPPIE              
+  %captionpos=b,                    % sets the caption-position to bottom 
+  tabsize=2,                       % sets default tabsize to 2 spaces 
+  %title=\lstname                   % show the filename of files included with \lstinputlisting; also try caption instead of title 
+  linewidth=\textwidth,
+  %basicstyle=\tiny, %footnotesize,        % the size of the fonts that are used for the code 
+  basicstyle= {\ttfamily\srcsize},
+  numberstyle={\ttfamily\srcsizeNums},
+  stepnumber=1,                    % the step between two line-numbers. If it's 1, each line will be numbered 
+  numbersep=1pt,                   % how far the line-numbers are from the code 
+  basewidth=0.6em,   fontadjust=true, %fontSizes config in manual 
+  %TODO NOT WORK xleftmargin=\dimexpr-\csname @totalleftmargin\endcsname]
+  numbers=left,                    % where to put the line-numbers; possible values are (none, left, right) 
+  numberfirstline=true,   firstnumber=1, 
+  %frame=lines,                   % bordo attorno al codice 
+  %keepspaces=true,                 % keeps spaces in text, useful for keeping indentation of code (possibly needs columns=flexible) 
+  %keywordstyle=\color{red},       % keyword style 
+  language=C, style=C_typedefs, 
+  %deletekeywords={...},            % if you want to delete keywords from the given language 
+  %rulecolor=\color{black},         % if not set, the frame-color may be changed on line-breaks within not-black text (e.g. comments (green here)) 
+  %showspaces=false,                % show spaces everywhere adding particular underscores; it overrides 'showstringspaces' 
+  showstringspaces=false,          % underline spaces within strings only 
+  %showtabs=false,                  % show tabs within strings adding particular underscores 
+  backgroundcolor=\color{background},   % choose the background color; you must add \usepackage{color} or \usepackage{xcolor}; should come as last argument 
+  breakatwhitespace=false,         % sets if automatic breaks should only happen at whitespace 
+  %breaklines=true,                 % sets automatic line breaking 
+  commentstyle=\color{mygreen},    % comment style 
+  extendedchars=false,             % lets you use non-ASCII characters; for 8-bits encodings only, does not work with UTF-8 
+  stringstyle=\color{mymauve},     % string literal style 
+} 
+%\lstset{
+%  %escapechar=\%,                  %%EMBEDD LATEX CODE IN SOURCE CODE
+%  escapeinside={*@}{@*},       %%EMBEDD LATEX CODE IN SOURCE PARTI RACCHIUSE DA QUESTE DUE COPPIE             
+%  captionpos=b,                    % sets the caption-position to bottom
+%  tabsize=2,                       % sets default tabsize to 2 spaces
+%  %title=\lstname                   % show the filename of files included with \lstinputlisting; also try caption instead of title
+%  basicstyle=\footnotesize,        % the size of the fonts that are used for the code
+%  basewidth=0.6em,   fontadjust=true, %fontSizes config in manual
+%  numberstyle=\tiny, % the style that is used for the line-numbers
+%  numbersep=3pt,                   % how far the line-numbers are from the code
+%  numbers=left,                    % where to put the line-numbers; possible values are (none, left, right)
+%  numberfirstline=true,   firstnumber=1,
+%  stepnumber=1,                    % the step between two line-numbers. If it's 1, each line will be numbered
+%  frame=lines,                   % bordo attorno al codice
+%  keepspaces=true,                 % keeps spaces in text, useful for keeping indentation of code (possibly needs columns=flexible)
+%  keywordstyle=\color{red},       % keyword style
+%  language=C,             % the language of the code
+%  style=C_typedefs,
+%  morekeywords={uint,ulong}        % add more keywords to the set
+%  %deletekeywords={...},            % if you want to delete keywords from the given language
+%  rulecolor=\color{black},         % if not set, the frame-color may be changed on line-breaks within not-black text (e.g. comments (green here))
+%  showspaces=false,                % show spaces everywhere adding particular underscores; it overrides 'showstringspaces'
+%  showstringspaces=false,          % underline spaces within strings only
+%  showtabs=false,                  % show tabs within strings adding particular underscores
+%  backgroundcolor=\color{white},   % choose the background color; you must add \usepackage{color} or \usepackage{xcolor}; should come as last argument
+%  breakatwhitespace=false,         % sets if automatic breaks should only happen at whitespace
+%  breaklines=true,                 % sets automatic line breaking
+%  commentstyle=\color{mygreen},    % comment style
+%  extendedchars=false,             % lets you use non-ASCII characters; for 8-bits encodings only, does not work with UTF-8
+%  stringstyle=\color{mymauve},     % string literal style
+%}
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %----------------------------------------------------------------------------------------
 %	MARGIN SETTINGS
@@ -99,11 +148,11 @@ headsepline,    %  get a line under the header
 
 \geometry{
 	paper=a4paper, % Change to letterpaper for US letter
-	inner=2.5cm, % Inner margin
-	outer=3.8cm, % Outer margin
+	inner=2.3cm, % Inner margin
+	outer=2.9cm, % Outer margin
 	bindingoffset=.5cm, % Binding offset
-	top=1.5cm, % Top margin
-	bottom=1.5cm, % Bottom margin
+	top=2.5cm, % Top margin
+	bottom=2.5cm, % Bottom margin
 	%showframe, %  show how the type block is set on the page
 }
 
@@ -111,16 +160,16 @@ headsepline,    %  get a line under the header
 %	THESIS INFORMATION
 %----------------------------------------------------------------------------------------
 
-\thesistitle{SpGEMM APPLIED TO AMG}     %title and abstract, print it elsewhere with \ttitle
-%\supervisor{Dr. James \textsc{Smith}}   % Your supervisor's name, this is used in the title page, print it elsewhere with \supname
+\thesistitle{Sp3MM for AMG:\\Sparse triple matrix multiplication for AlgebraicMultiGrid}     %title and abstract, print it elsewhere with \ttitle
+\author{Andrea Di Iorio} % Your name, this is used in the title page and abstract, print it elsewhere with \authorname
+\supervisor{Salvatore Filippone}   % Your supervisor's name, this is used in the title page, print it elsewhere with \supname
 %\examiner{} % Your examiner's name, this is not currently used anywhere in the template, print it elsewhere with \examname
 \degree{Computer and Information Engineering} % Your degree name, this is used in the title page and abstract, print it elsewhere with \degreename
-\author{Andrea \textsc{Di Iorio}} % Your name, this is used in the title page and abstract, print it elsewhere with \authorname
 \addresses{} % Your address, this is not currently used anywhere in the template, print it elsewhere with \addressname
 
 \subject{HPC} % Your subject area, this is not currently used anywhere in the template, print it elsewhere with \subjectname
-\keywords{HPC,SpGEMM,AMG} % Keywords for your thesis, this is not currently used anywhere in the template, print it elsewhere with \keywordnames
-\university{\href{http://ing.uniroma2.it/}{Tor Vergata}} % Your university's name and URL, this is used in the title page and abstract, print it elsewhere with \univname
+\keywords{HPC,OpenMP,SpMM,AMG} % Keywords for your thesis, this is not currently used anywhere in the template, print it elsewhere with \keywordnames
+\university{\href{http://ing.uniroma2.it/}{Università degli studi di Roma Tor Vergata}} % Your university's name and URL, this is used in the title page and abstract, print it elsewhere with \univname
 %\department{\href{http://inginformatica.uniroma2.it}{Ingegneria Informatica}} % Your department's name and URL, this is used in the title page and abstract, print it elsewhere with \deptname
 %\group{\href{http://researchgroup.university.com}{Research Group Name}} % Your research group's name and URL, this is used in the title page, print it elsewhere with \groupname
 \faculty{\href{http://inginformatica.uniroma2.it}{Ingegneria Informatica}} % Your faculty's name and URL, this is used in the title page and abstract, print it elsewhere with \facname
@@ -131,58 +180,64 @@ headsepline,    %  get a line under the header
 \hypersetup{pdfkeywords=\keywordnames} % Set the PDF's keywords to your keywords
 }
 
-\begin{document}
+
 
 \frontmatter % Use roman page numbering style (i, ii, iii, iv...) for the pre-content pages
 
 \pagestyle{plain} % Default to the plain heading style until the thesis style is called for the body content
 
 % Define some commands to keep the formatting separated from the content 
-\newcommand{\nnz}{non zero }
+\newcommand{\nnz}	{non zero }
+\newcommand{\nnnz}	{numero di non zeri }
+\newcommand{\rowbyrow}	{row-by-row }
+\newcommand{\amgforpsblas}	{\url{https://github.com/sfilippone/amg4psblas}}
+
 \newcommand{\keyword}[1]{\textbf{#1}}
 \newcommand{\tabhead}[1]{\textbf{#1}}
 \newcommand{\code}[1]{\texttt{#1}}
 \newcommand{\file}[1]{\texttt{\bfseries#1}}
 \newcommand{\option}[1]{\texttt{\itshape#1}}
 
-%----------------------------------------------------------------------------------------
-%	TITLE PAGE
-%----------------------------------------------------------------------------------------
+\begin{document}
+%%%%%%%%%%%%	TITLE PAGE	%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \begin{titlepage}
-\begin{center}
-\vspace*{.06\textheight}
-{\scshape\LARGE \univname\par}\vspace{1.5cm} % University name
-\textsc{\Large Laurea Magistrale}\\[0.5cm] % Thesis type
-
-\HRule \\[0.4cm] % Horizontal line
-{\huge \bfseries \ttitle\par}\vspace{0.4cm} % Thesis title
-\HRule \\[1.5cm] % Horizontal line
- 
-\begin{minipage}[t]{0.4\textwidth}
-\begin{flushleft} \large
-\emph{Author:}\\
-%\href{http://www.johnsmith.com}{\authorname} % Author name - remove the \href bracket to remove the link
-\end{flushleft}
-\end{minipage}
-%\begin{minipage}[t]{0.4\textwidth}
-%\begin{flushright} \large
-%\emph{Supervisor:} \\
-%\href{http://www.jamessmith.com}{\supname} % Supervisor name - remove the \href bracket to remove the link  
-%\end{flushright}
-%\end{minipage}\\[3cm]
- 
-\vfill
-
-\large \textit{A thesis submitted in fulfillment of the requirements\\ for the degree of \degreename}\\[0.3cm] % University requirement text
-%\textit{in the}\\[0.4cm]
-%\groupname\\\deptname\\[2cm] % Research group name and department name
-\vfill
-
-{\large \today}\\[4cm] % Date
-\includegraphics{utvLogo.png}
-\vfill
-\end{center}
+	\begin{center}
+	\vspace*{.06\textheight}
+	{\scshape\LARGE \univname\par}\vspace{1.5cm} % University name
+	\textsc{\Large Laurea Magistrale in \\ \degreename}\\[0.5cm] % Thesis type
+	
+	\HRule \\[0.4cm] % Horizontal line
+	{\huge \bfseries \ttitle\par}\vspace{0.4cm} % Thesis title
+	\HRule \\[1.5cm] % Horizontal line
+	 
+	\begin{minipage}[t]{0.4\textwidth}
+	\begin{flushleft} \large
+	\emph{Autore: \authorname}\\
+	%\href{http://www.johnsmith.com}{\authorname} % Author name - remove the \href bracket to remove the link
+	\end{flushleft}
+	
+	\end{minipage}
+	\begin{minipage}[t]{0.4\textwidth}
+	\begin{flushright} \large
+	\emph{Relatore: \supname}\\
+	%\href{http://www.jamessmith.com}{\supname} % Supervisor name - remove the \href bracket to remove the link  
+	\end{flushright}
+	\end{minipage}\\[3cm]
+	 
+	\vfill
+	
+	%\large \textit{A thesis submitted in fulfillment of the requirements\\ for the degree of \degreename}\\[0.3cm] % University requirement text
+	%\textit{in the}\\[0.4cm]
+	%\groupname\\\deptname\\[2cm] % Research group name and department name
+	\vfill
+	
+	%{\large \today}\\[4cm] % Date
+	\includegraphics[width=0.2\linewidth,keepaspectratio]{utvLogo.png}
+	\vfill
+	\end{center}
 \end{titlepage}
+%----------------------------------------------------------------------------------------
+
 %
 %%----------------------------------------------------------------------------------------
 %%	DECLARATION PAGE
@@ -210,16 +265,43 @@ headsepline,    %  get a line under the header
 %
 %\cleardoublepage
 %
-%%----------------------------------------------------------------------------------------
-%%	QUOTATION PAGE
-%%----------------------------------------------------------------------------------------
+%%%%%%%%%%%%   Dediche  %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\dedicatory{
+Dedico questo lavoro di tesi\\
+\par\null\par
+Ai miei genitori Rosaria e Antonio \\
+e al mio caro fratello Enrico,\\
+che mi hanno supportato costantemente in ogni modo\\
+\par\null\par
+Ai miei nonni, che mi sono stati sempre accanto,\\
+specialmente a Vincenzina e Michele\\
+%Ai tutta la mia famigla
+\par\null\par
+Alla mia meravigliosa compagna Cynthia,\\
+che mi è stata vicino in questo periodo difficile 
+\par\null\par
+\authorname
+}
 %
-%\vspace*{0.2\textheight}
-%
-%\noindent\enquote{\itshape Thanks to my solid academic training, today I can write hundreds of words on virtually any topic without possessing a shred of information, which is how I got a good job in journalism.}\bigbreak
-%
-%\hfill Dave Barry
-%
+%%%QUOTATION version (page)
+%%
+%%\vspace*{0.2\textheight}
+%%
+%%\noindent\enquote{\itshape Thanks to my solid academic training, today I can write hundreds of words on virtually any topic without possessing a shred of information, which is how I got a good job in journalism.}\bigbreak
+%%
+%\begin{flushright}
+%Dedico questo lavoro di tesi\\
+%Ai miei genitori Rosaria e Antonio e al mio caro fratello Enrico,\\
+%che mi hanno supportato costantemente\\
+%\par\null\par
+%Ai miei nonni, che mi sono stati sempre vicini,\\
+%specialmente a Vincenzina e Michele\\
+%%Ai tutta la mia famigla
+%%Alla mia meravigliosa compagna Cynthia, che mi è stata vicino 
+%\hfill \authorname
+%\end{flushright}
+%----------------------------------------------------------------------------------------
+
 %%----------------------------------------------------------------------------------------
 %%	ABSTRACT PAGE
 %%----------------------------------------------------------------------------------------
@@ -242,7 +324,13 @@ headsepline,    %  get a line under the header
 %%	LIST OF CONTENTS/FIGURES/TABLES PAGES
 %%----------------------------------------------------------------------------------------
 %
-%\tableofcontents % Prints the main table of contents
+
+% set TOC level to display also subsubsubsections and paragraphs
+\setcounter{tocdepth}{4}
+\setcounter{secnumdepth}{4}
+\tableofcontents % Prints the main table of contents
+%\addcontentsline{toc}{chapter}{Bibliografia}
+
 %
 %\listoffigures % Prints the list of figures
 %
@@ -288,12 +376,6 @@ headsepline,    %  get a line under the header
 %
 %\end{symbols}
 %
-%%----------------------------------------------------------------------------------------
-%%	DEDICATION
-%%----------------------------------------------------------------------------------------
-%
-%\dedicatory{For/Dedicated to/To my\ldots} 
-%
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%%%%%%%%%%%%%%%%%%%%%%% THESIS CONTENT - CHAPTERS %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -302,12 +384,22 @@ headsepline,    %  get a line under the header
 
 \pagestyle{thesis} % Return the page headers back to the "thesis" style
 
+%\newcommand{\vvv}[1]{\verbatim{#1} }
+\newcommand{\vvv}[1]{{\small\texttt{#1}}}
+\newcommand{\voidLine}{\par\null\par}
 % Include the chapters of the thesis as separate files from the Chapters folder
 % Uncomment the lines as you write the chapters
 
-\include{Chapters/Chapter1}
-\include{Chapters/Chapter2} 
-
+%--CHAPTERS-------------------------------------------------------------------------------
+\include{Chapters/ChSummarization}		%3PAGE SUMMING REQUIRED
+\include{Chapters/ChIntro}				%HPC context (poco poco), pdeDiscretized -> psBlas -> amg4psblas -> criticità prodotto -> ottimizzazione
+\include{Chapters/ChExistingTecqs}		%soluzione esistenti in letteratura
+\include{Chapters/ChSymbProduct}		%tecq symb product
+\include{Chapters/ChNumProduct}			%tecq num  product
+\include{Chapters/ChAuxSpMM}			%auxiliary solutions (referenced from behind)
+\include{Chapters/ChPerformance}		%timing any confronto
+\include{Chapters/ChConclusion}			%??, ripetizione di any confronto perfs? inglobabile in perfs? 
+										%configurazioni ottimali per Sp3MM + matrici da problemi diagonali
 %%----------------------------------------------------------------------------------------
 %%	THESIS CONTENT - APPENDICES
 %%----------------------------------------------------------------------------------------
@@ -321,10 +413,8 @@ headsepline,    %  get a line under the header
 %%\include{Appendices/AppendixB}
 %%\include{Appendices/AppendixC}
 %
-%%----------------------------------------------------------------------------------------
-%%	BIBLIOGRAPHY
-%%----------------------------------------------------------------------------------------
-%
+%%-----------------------------BIBLIOGRAPHY----------------------------------------------
+%\section{Bibliografia}
 \printbibliography[heading=bibintoc]
 
 %----------------------------------------------------------------------------------------

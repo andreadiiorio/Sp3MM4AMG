@@ -1,0 +1,463 @@
+\chapter{Componenti di supporto a Sp[3]MM}
+In questo capitolo verranno analizzati diversi componenti ausiliari
+sviluppati ed integrati per supportare le operazioni di SpMM e Sp3MM.\\
+%%%%%%%%%%%%%%%%%%%%%%  CORE  -- >> << -- xD  %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\section{Derivazione automatica di molteplici implementazioni mediante PreProcessore C}	\label{chSpMMAux:multiImpl}
+Sfruttando una serie di direttive del pre processore C, sono riuscito ad ottenere
+per molte funzioni scritte nei sorgenti, varie versioni differenti ottenute a tempo di pre-processamento, 
+accessibili in altre funzioni mediante una segnatura modificata in base alle necessità.\\
+La necessità principale di realizzare questo approccio è stato quello di supportare, con
+un'alta efficienza, l'integrazione del codice C in un progetto fortran come \cite{PSBLAS3\_GIT},
+come verrà trattato a breve in \ref{chSpMMAux:fortranIntegrate}.\\
+%PRO GENERAL CPP MULTI VERSION IMPLEMENTATIONS
+I vantaggi di usare il pre processore per ottenere molteplici versioni di una funzione sono diverse:
+\begin{itemize}
+	\item	la possibilità di escludere completamente sezioni di codice non utili ad una versione
+	\item	la possibilità di aumentare di molto il riuso del codice scritto
+	\item	rispetto ad incapsulare in sotto funzioni le differenze delle varie versioni da ottenere
+			rispetto ad una funzione  base:
+	\begin{itemize}
+		\item	si consente al compilatore di effettuare ottimizzazioni 
+				su ogni versione ottenuta in seguito al pre processamento, non possibili a run-time,
+				come ad esempio semplificare un offset pari a zero da applicare ad operazioni di indicizzazione
+				%(come ad esempio usare una diversa indicizzazione all'interno di un applicazione Fortran
+				%\ref{chSpMMAux:fortanIdxsDifferent} )
+		\item	evitare istruzioni di branching addizionali nel codice, (come analizzato in \ref{chSpMMSymb:funcsMultiImpleVSmanualMultiFunc} )
+				che potenzialmente permettono ulteriori ottimizzazioni a tempo di compilazione.\\
+	\end{itemize}
+\end{itemize}
+Ho pubblicato un semplice esempio di questo approccio implementativo in \url{https://github.com/andreadiiorio/C_Compile_Multi_Implementation_Automatically}.\\
+Per ottenere diverse implementazioni da una funzione è necessario:
+\begin{itemize}
+	\item	racchiudere le differenze richieste da ogni versione in una funzione \emph{base o generica} con una serie di direttive \verb|#if ... #endif| ,\\
+			così da consentire al preprocessore l'aggiunta del codice necessario a modificare la funzione base.%ad una particolare versione.
+	\item	Le diverse versioni della funzione \emph{generica} devono essere esportate ad altre funzioni mediante una segnatura differente.\\
+			Per questo è possibile aggiungere un  suffisso al nome, ed eventualmente argomenti addizionali, alla funzione 
+			\emph{base}, mediante la concatenazione di stringhe del pre-processore C.\\
+			Un possibile approccio per supportare la concatenazione di stringhe e macro di configurazione, i
+			in questo contesto è quello di usare la macro \vvv{CAT} del seguente blocco di codice.\\
+			\begin{lstlisting}
+#define _STR(s) #s
+#define STR(s) _STR(s)
+
+//Concatenate preprocessor tokens A and B WITHOUT   expanding macro definitions
+#define _CAT(a,b)    a ## b
+//Concatenate preprocessor tokens A and B           EXPANDING macro definitions
+#define CAT(a,b)    _CAT(a,b)
+			\end{lstlisting}
+	\item	Le funzioni generiche devono essere racchiuse in un sorgente dedicato, ed incluse da un altro mediante \verb|#include|,
+			per un numero di volte pari al numero di versioni che è necessario ottenere,
+			ridefininendo le macro di ausiliare di configurazione delle implementazioni differenti.
+	\item	per avere esportate le dichiarazioni delle versioni differenti realizzate, è possibile reiterare l'approccio 
+			appena descrito agli header files.
+\end{itemize}
+ 
+\subsection{Supporto integrazione in progetto Fortran} \label{chSpMMAux:fortranIntegrate}
+Al giorno d'oggi esistono vari approcci per integrare un applicazione C in una Fortran e viceversa,
+grazie agli standard del linguaggio Fortran 2003 e 2018, come descritto in \cite{modernFortranExplained}.\\
+Una differenza sostanziale di questi due linguaggi è l'uso di una differente indicizzazione, 
+dove il C è a base 0 e il Fortran è a base 1.\\
+%need double indexing generic
+È necessario tenere a mente questa differenza dato che in ogni formato di memorizzazione sparso di matrici 
+sono presenti degli indici relativi alla posizione relativa dei valori \nnz nella matrice.\\
+%efficient approch
+Per supportare l'integrazione di questo lavoro in \cite{AMG4PSBLAS\_Git},
+è stato necessario supportare efficientemente un passaggio tra l'indicizzazione
+dell'applicazione fortran a quella C per eseguire il prodotto, eseguendo poi il vicerversa 
+nel ritorno all'applicazione chiamante.\\
+Al fine di supportare efficientemente il cambio di questi indici 
+ho sfruttato l'approccio descritto per ottenere 2 versione per ogni funzione,
+una che accetti l'indicizzazione nativa del C e un'altra che accetti l'indicizzazione del Fortran,
+mediante l'aggiunta di un suffisso numerico ad ogni nome di funzione %.\\
+,come nell'esempio successivo.\\ 
+\begin{lstlisting}
+spmat* CAT(spmmRowByRow_SymbNum_,OFF_F)(spmat* A,spmat* B, CONFIG* cfg){...}
+\end{lstlisting}
+Dalla funzione precedente, definita nel file \verb|Sp3MM_CSR_OMP_Symb_Generic.c| per eseguire il prodotto numerico con un partizionamento del lavoro 1D 
+verranno ottenute due versioni distinte per supportare le due indicizzazioni in base al valore della macro \verb|OFF_F| al momento
+dell'inclusione del sorgente.\\
+La doppia indicizzazione è realizzata dall'uso della macro \verb|OFF_F| all'interno della funzione 
+come costante sottratta ad ogni indice preveniente dal Fortran prima di utilizzarlo per indicizzare un qualsiasi vettore,
+ed avrà valore \vvv{1} nella versione da usare in un'applicazione Fortran o \vvv{0} per una applicazione C.\\
+Un vantaggio immediato di avere una versione dedicata all'indicizzazione C è quello di avere la certezza 
+quasi assoluta che la correzione degli indici con il valore \vvv{0} in \verb|OFF_F| verrà ottimizzata via dal compilatore.\\
+%defined interface
+Inoltre, per favorire una interoperabilità tra le varie implementazioni per le operazioni di SpMM e Sp3MM 
+ho definito le seguenti interfacce per le operazioni:
+\begin{lstlisting}
+typedef spmat* (*SPMM_INTERF )  (spmat*,spmat*,CONFIG*);
+typedef spmat* (*SP3MM_INTERF)  (spmat*,spmat*,spmat*,CONFIG*,SPMM_INTERF);
+\end{lstlisting}
+Dove \vvv{spmat} è una struttura con campi per supportare varie rappresentazioni sparse 
+come CSR o ELL, mentre \vvv{CONFIG} contiene la configurazione per le esecuzioni delle operazioni in oggetto,
+come ad esempio la griglia di parallelizzazione del lavoro o il numero di thread da utilizzare.\\
+
+Per supportare il lato Fortran dell'integrazione è stato sfruttato il modulo \verb|iso_c_binding| 
+per definire le interfacce e strutture, definite anche nel codice C, in un modulo di supporto.\\
+
+\subsection{Supporto alla generazione efficiente di diverse versioni di una funzione base}	\label{chSpMMAux:multiImplMany}
+Estendendo la soluzione appena riportata per generare una coppia di implementazioni per gestire una doppia indicizzazione,
+ho realizzato un supporto alla generazione di otto versioni differenti di una funzione generica nel modulo relativo al prodotto simbolico.\\
+Per realizzare le varie combinazioni di versioni richieste di ogni funzione per generare i vari livelli di dettaglio dell'output 
+del prodotto simbolico descritti in \ref{chSpMMSymb:outputDetailLevel_coreFuncsVersions} 
+ho usato il seguente approccio basato su redefinizioni di alcune macro di supporto:\\
+\begin{lstlisting}
+#define OFF_F 0
+	///generate basic versions
+	#include "Sp3MM_CSR_OMP_SymbStep_Generic.c"
+	///generate outIdxs versions
+	#define OUT_IDXS 	OUT_IDXS_ON	
+		#include "Sp3MM_CSR_OMP_SymbStep_Generic.c"
+	#undef  OUT_IDXS
+	///generate colParts versions
+	#define COL_PARTS	COL_PARTS_ON
+		#include "Sp3MM_CSR_OMP_SymbStep_Generic.c"
+		//generate outIdxs AND colParts versions
+		#define OUT_IDXS 	OUT_IDXS_ON
+		#include "Sp3MM_CSR_OMP_SymbStep_Generic.c"
+
+	#undef OUT_IDXS
+	#undef COL_PARTS
+#undef OFF_F
+#define OFF_F 1
+...
+\end{lstlisting}
+Nel frammento di codice precedente vengono generate dal preprocessore C otto diverse versioni
+della maggior parte delle funzioni definite nei sergenti, 
+combinando la ridefinizione delle macro di configurazione \verb|OUT_IDXS COL_PARTS OFF_F|.\\
+
+\section{Linux Kernel 5.10.85 RedBlack Tree Userspace porting} \label{chSpMMAux:linuxRBTree}
+L'implementazione dei RedBlack Tree usati nel prodotto simbolico è ottenuta effettuando un porting in 
+userspace dei moduli relativi del kernel Linux 5.10.85.\\
+\subsection{RedBlack nel kernel Linux}	%TODO
+\subsection{Porting in UserSpace}
+Per effettuare il porting delle funzioni necessarie al prodotto simbolico con RedBlack Tree è stato necessario 
+rimpiazzare varie dipendenze definite in altri moduli del kernel linux come la macro \verb|container_of| o le funzioni di (de)allocazione
+con soluzioni alternative in userspace.\\
+Sono state rimosse le versioni RCU delle operazioni sui RedBlack Tree.
+Inoltre, per ottenere un codice minimalizzato dei RedBlack all'uso necessario nella fase simbolica di SpMM, 
+è stata creata una versione ridotta del porting senza le funzioni non indispensabili al prodotto.
+%Per supportare efficacemente questo ho usato il seguente approccio basato su opzioni di compilazione e linking per 
+%individuare funzioni non utilizzate.\\
+%\begin{lstlisting}[language=Makefile]
+%DISCARDED_FUNCS_LOG="discardedFuncs.list"
+%getUnusedFuncs_ld_mapfile: \$(srcAddOnly)
+%	rm -f *.o	
+%	$(CC) -c $(filter-out %.h ,$^) $(CFLAGS) \
+%	  -ffunction-sections -fdata-sections -fno-inline-small-functions -O0
+%	$(CC) -Wl,--gc-sections *.o -Wl,-Map=mapfile
+%	echo "KEEP ONLY DISCARDED SECTION OF MAPFILE" && sleep 2
+%	vi mapfile
+%	echo "Grepping unused functions from the whole mapfile in $(DISCARDED_FUNCS_LOG) (you may want to use this command just on the discarded section)"
+%	grep  "text\." mapfile | awk '{print $$1}' | awk -F'\.' '{print $$3}' | tee $(DISCARDED_FUNCS_LOG) 
+%	echo  "grepping discarded functions line numbers -> only first occurrence likelly to be the definition"
+%	cat $(DISCARDED_FUNCS_LOG) | xargs -n 1 -I% sh -c 'grep -m 1 -Rn % \$(srcAddOnly) | head -1' | tee \$(DISCARDED_FUNCS_LOG).grep
+%\end{lstlisting}
+%La precedente regola Makefile consente di elencare alcune funzioni non usate nel codice compilato
+%all'interno della tabbella di linking salvata in un file denominato nel frammento di precedente \vvv{mapfile}.\\
+%
+%%-ffunction-section:	ogni funzione/data item deve andare in una sezione dedicata
+%%-Map: salva in \vvv{mapfile} una tabbella con informazioni di linking come il mapping in memoria di file oggetto e simboli
+
+\section{Uso Bitmaps per inserimento efficiente di indici}	\label{chSpMMAux:bitmapInsert}
+Per supportare l'inserimento efficiente di indici senza ripetizioni,
+in alcune versioni del prodotto simbolico descritte in \ref{chSpMMSymb:bitmapsUse} e nel gestire gl'indici di colonna 
+negli accumulatori densi calcolati durante le moltiplicazioni scalari ho adottato
+una struttura di ricerca basata su un insieme di bitmaps.\\
+La struttura contiene una zona di memoria in cui ogni bit può rappresentare la presenza di un indice specifico
+se è posto ad \vvv{1}.\\
+%GMP quote
+L'approccio usato è in qualche modo correlato all'idea sfruttata in \cite{GMP},
+ovvero di supportare una variabile di dimensione arbitraria (in questo caso il numero massimo di indici inseribili)
+con molteplici variabili, \emph{limb}, di una dimensione supportata dall'archittettura target.\\
+\begin{lstlisting}
+typedef unsigned __int128	uint128;
+#if SPVECT_IDX_BITWISE == TRUE
+	#ifndef LIMB_T
+		#define LIMB_T uint128
+	#endif
+	typedef LIMB_T limb_t;
+	typedef limb_t* nnz_idxs_flags_t;
+	#define LIMB_SIZE_BIT ( sizeof(limb_t) * 8 )
+#else //nnz idxs ar flags in a byte arry
+	typedef uchar* nnz_idxs_flags_t;
+#endif
+...
+typedef struct{					//smart index keeping in a dense map
+	idx_t	len;				//num of nnz idx accumulated
+	/* nnz index presence packing, implict space enough for all possible indexes*/
+	nnz_idxs_flags_t idxsMap;
+	uint idxsMapN;				//either num of limbs or len of char flag array
+} SPVECT_IDX_DENSE_MAP;
+\end{lstlisting}
+Nel frammento di codice precedente è riportata la struttura \verb|SPVECT_IDX_DENSE_MAP|, che supporta
+il generico inserimento di indici in un area di memoria accessibile con \vvv{idxsMapN}, 
+tenendone traccia del numero senza ripetizioni in \vvv{len}.\\
+La macro di configurazione a riga 2 \verb|SPVECT_IDX_BITWISE| determina se la struttura sarà realizzata
+mediante bitmaps o array di char.\\
+Nel caso in oggetto di analisi, il tipo definito \verb|nnz_idxs_flags_t| conterrà l'indirizzo
+di un array di bitmaps o \emph{limb}.
+La dimensione di ogni \emph{limb} è definibile nel tipo \verb|limb_t| a tempo di compilazione a riga 3, 
+configurato di default all'estensione C di GCC per interi a 128bit con il tipo \verb|__int128| \cite{gcc10.1}.\\
+%Insert details
+Considerando un dimensionamento della struttura per contenere $N$ indici, con \emph{limb} di dimensione $b$ bits
+saranno necessari $\left\lceil \frac{N}{b}  \right\rceil$ \emph{limb}.
+L'inserimento dell'indice $i$ è effettuato mediante un'operazione di OR logico di un \vvv{1} nell'
+$\left\lceil \frac{i}{b}  \right\rceil$-esimo \emph{limb} nel $i ~mod~ b$-esimo bit.\\
+Per supportare efficientemente il mantenimento del numero di indici inseriti, ad ogni inserimento 
+viene associato una preventiva operazione di controllo se il bit target è già posto ad 1,
+in caso contrario avviene l'operazione OR e viene incrementato un contatore.\\
+\begin{lstlisting}
+static inline int spVect_idx_in(idx_t idx, SPVECT_IDX_DENSE_MAP* idxsMapAcc){
+	uint limbID 	= idx / LIMB_SIZE_BIT; //idx's limb id
+	uint limbIdxID	= idx % LIMB_SIZE_BIT; //idx's pos in limb
+	limb_t idxPos   = ((limb_t) 1) << limbIdxID;
+	if (!( idxsMapAcc->idxsMap[limbID] & idxPos) ){
+		idxsMapAcc->idxsMap [limbID] |= idxPos;
+		idxsMapAcc->len++;
+		return 0;
+	}
+	return 1;
+}
+\end{lstlisting}
+Nel frammento di codice precedente viene implementata l'operazione di inserimento di un indice nel set di bitmaps (riga 6) 
+incrementando il contantore degli indici inseriti senza duplicati a riga 7 come descritto.\\
+
+% TODO TODO  \paragraph{Prodotto simbolico di una (partizione di) riga della matrice output con Bitmaps VS RedBlack Tree}
+% È possibile affermare che nel caso di dover generare un prodotto simbolico accurato, con output limitato
+% al numero di \nnz per riga \ref{chSpMMSymb:outputDetailLevel},
+% l'utilizzo delle bitmap ha un costo unitario per inserimento invece che logaritmico sul numero di nodi inseriti.\\
+% Nel caso di dover generare la versione \verbOutIdxs_| del operazione in oggetto, è necessario tenere traccia
+
+\section{Configurazione chunksize dello scheduling dynamic OpenMP} \label{chSpMMAux:dynChunkFairAdapting}
+Usare uno scheduling di tipo Dynamic in un ciclo parallelizzato con OpenMP 
+può essere molto utile nel caso di problemi in cui il lavoro assegnabile ai thread ha una grande variabilità.\\
+Nelle operazioni di SpMM e Sp3MM, la variabilità del lavoro è dovuta 
+al pattern di sparsità dei \nnz nelle matrici di input.\\
+%vs static: vantaggio per lavoro variabile
+\par\null\par
+%false cache sharing
+Lo scheduling Dynamic assegna un chunksize di dimensione pari ad 1 di default, 
+il che può facilmente causare problemi di \emph{false cache sharing}.
+%\paragraph{False Cache Sharing con chunksize di default di scheduling Dynamic}
+Ovvero situazioni in cui il lavoro assegnato ad un thread \vvv{a} modifica una piccola area di memoria
+troppo vicina a quello di un altro thread \vvv{b}, 
+al punto in cui le due aree mappano su linee di cache con una intersezione. 
+In questo caso, una modifica del thread \vvv{a} sulla sua area di memoria invalida la 
+copia della linea di cache intersezionata del thread \vvv{b}, causando un pessimo uso della memoria.\\
+\par\null\par
+%CORE
+Lo scheduling Dynamic in confronto allo scheduling static di OpenMP, al costo di un overhead di istanziazzione e gestione maggiore,
+consente ad un thread che ha terminato il proprio lavoro di prenderne altro da una coda acceduta concorrentemente,
+evitando di restare bloccato in attesa sprecando risorse computazionali.\\
+Conseguentemente, per il problema in analisi usare uno scheduling Dynamic con chunksize che sia un compromesso tra un valore piccolo e un 
+chunksize statico, dato della divisione del numero di iterazioni per il numero di thread,
+può dare dei benefici prestazionali.\\
+Per realizzare questa funzionalità ho realizzato una funzione che adatta dinamicamente 
+il chunksize di un ciclo parallelizzato ad $\frac{\#\text{iterazioni}}{\# \text{thread} \cdot \text{FAIR\_CHUNKS\_FOLDING}}$
+dove \verb|FAIR_CHUNKS_FOLDING| è una macro configurabile a tempo di compilazione.\\
+
+
+\section{Assegnamento dinamico di memoria ai thread \emph{fence-less}} \label{chSpMMAux:atomicSegAssign}
+Nel caso di effettuare la \emph{sparsificazione} di un accumulatore denso 
+durante il prodotto numerico di SpMM, descritta precedentemente in \ref{chSpMMNum:sparsify},
+in assenza di informazioni sulla quantità di memoria necessaria ad ogni thread, 
+è necessario assegnare dinamicamente partizioni di memoria (pre allocata), in maniera concorrente.\\
+\par\null\par
+Un approccio semplice allo scopo è quello di utilizzare una qualche primitiva di sincronizzazione
+,funzionalmente simile ad un \emph{lock}, per proteggere una sezione critica in cui
+si annota che il thread corrente si è riservato un segmento del blocco di memoria condiviso.\\
+%TODO TODO CHECK TRIVIAL LOCK APROCH:	USELESS FENCE
+Tuttavia, quest'approccio potrebbe introdurre istruzioni di \vvv{fence} intorno alla sezione critica,
+causando una serializzazione di tutti gli accessi di memoria effettuati fin a quel momento.\\
+%ATOMIC BUILT IN APPROCH
+Per ridurre al minimo l'overhead di sincronizzazione per realizzare questa assegnazione
+ho usato due approcci equivalenti.
+%per effettuare una somma atomica di una variabile, salvandone il contenuto precedente all'incremento.\\
+
+\subsection{Riservazione concorrente di memoria mediante built-in atomiche di GCC}
+Un approccio diretto al problema è quello di usare la built-in atomica offerta da gcc
+\verb|type __atomic_fetch_add (type *ptr, type val, int memorder)|
+su una variabile atomica, contente l'indice dell'ultimo elemento assegnato ad un thread dal blocco di memoria condiviso.\\
+%Il thread che necessita di uno spazio $s$ dalla zona di memoria pre allocata, ....
+\begin{lstlisting}
+sparsifyStartV = __atomic_fetch_add(&(acc->lastAssigned),nnz,__ATOMIC_ACQ_REL); 
+\begin{lstlisting}
+Nel frammento di codice precedente, relativo alla sparsificazione di un accumulatore denso,
+viene mantenuto l'indice iniziale dello spazio di memoria condiviso non assegnato.\\
+Ogni thread riserverà uno spazio di memoria mediante l'incremento atomico 
+del numero di elementi da salvare (\vvv{nnz}) sulla variabile \vvv{lastAssigned}.
+L'indirizzo iniziale del blocco di memoria riservato al thread sarà il valore precedente all'incremento
+di \vvv{lastAssigned} ed è salvato nella variabile \vvv{sparsifyStartV}.\\
+\par\null\par
+L'uso di questa primitiva è da associare ad un modello di ordine di memoria \vvv{memorder}.\\
+Per l'operazione da realizzare dovrebbe essere sufficiente il modello \verb|__ATOMIC_ACQ_REL|,
+che sostanzialmente crea una relazione di tipo \emph{happens-before} tra le operazioni di 
+\emph{acquire} e \emph{release} sulla variabile atomica  \cite{isoc11},gcc10.1}.\\
+
+\subsection{Riservazione concorrente di memoria mediante OpenMP}
+Un approccio del tutto equivalente è usare la clausola \vvv{capture} al construttuto \vvv{atomic} di openMP.\\
+Segue una porzione di codice per realizzare la funzionalità in analisi.\\
+\begin{lstlisting}
+#pragma omp atomic capture
+{   //fetch and add like 
+    sparsifyStartV = acc->lastAssigned;
+    acc->lastAssigned += nnz;
+}
+\end{lstlisting}
+
+\subsection{Confronto implementazione operazione atomica}
+Per confrontare le soluzioni, valutando anche altri modelli di memoria,
+ho effettuato un dissasemblamento del codice compilato con gcc 8.5.0.\\
+\begin{lstlisting}[language={[x86masm]Assembler}]
+sparsifyStartV = __atomic_fetch_add(&(acc->lastAssigned),nnz,__ATOMIC_SEQ_CST); 
+mov		-0x18(%rbp),%rax
+add		$0x18,%rax
+mov		-0x8(%rbp),%edx
+lock 	xadd %edx,(%rax)
+mov		%edx,-0xc(%rbp)
+
+sparsifyStartV = __atomic_fetch_add(&(acc->lastAssigned),nnz,__ATOMIC_ACQ_REL); 
+mov		-0x18(%rbp),%rax
+add		$0x18,%rax
+mov		-0x8(%rbp),%edx
+lock	xadd %edx,(%rax)
+mov		%edx,-0xc(%rbp)
+
+#pragma omp atomic capture
+{   //fetch and add like .... 
+	sparsifyStartV = acc->lastAssigned;
+	acc->lastAssigned += nnz;
+}
+mov		-0x18(%rbp),%rax
+add		$0x18,%rax
+mov		-0x8(%rbp),%edx
+lock	xadd %edx,(%rax)
+mov		%edx,-0xc(%rbp) 
+\end{lstlisting}
+%$	%TODO uncomment to avoid wrong highlighting in vim
+Nel frammento di codice precedente vengono confrontati il dissasemblamento del codice
+configurato ad usare rispettivamente: 
+\begin{itemize}
+	\item la \verb|__atomic_fetch_add| con modello di consistenza \verb|__ATOMIC_SEQ_CST|, 
+	  che dovrebbe offrire un ordinamento totale delle operazioni,
+	\item la \verb|__atomic_fetch_add| con modello di consistenza \verb|__ATOMIC_ACQ_REL|
+	\item il costrutto openMP \vvv{atomic} precedentemente visto.\\
+\end{itemize}
+È possibile notare come il codice Assembly prodotto sia sempre lo stesso,
+basato sull'uso di un'operazione di Exchange and Add con prefisso \vvv{LOCK}.
+L'atomicità dell'implementazione è provata dalla presenza di questo prefisso,
+che come la documentazione intel riporta, 
+%LOCK prefix intel man 2
+consente al processore corrente di avere uso esclusivo di ogni memoria condivisa \cite{intelDevMan2}.\\
+
+
+\section{Partizionamento bidimensionale di una matrice CSR}	\label{chSpMMAux:CSR2DPARTI}
+Per effettuare un partizionamento 2D di una matrice CSR è sufficiente
+dividere le colonne in gruppi ed accederne le righe.
+Dato che il vettore IRP della rappresentazione CSR permette di accederene facilmente le righe,
+avendo la conoscenza addizionale dei limiti di ogni partizione di colonne è possibile accedere blocchi bidimensionali
+della matrice.\\
+Una rappresentazione grafica dell'operazione è raffigurata nell'immagine seguente.\\
+\begin{figure}[h!]
+  \centering \includegraphics{csrTilingCSR_only.svg.png} 
+  \caption[Rappresentazione grafica di un partizionamento 2D di una matrice CSR, \cite{adaptiveTilingSpMM}]
+  \decoRule \label{fig:csrTilingCSR_only}
+\end{figure}
+
+La suddivisione delle colonne di una matrice CSR, necessaria per il suo partizionamento 2D, 
+può essere effettuata \emph{in loco} o mediante sotto matrici CSR separate con una struttura di offest di supporto.
+
+Nel seguito saranno descritte due soluzione che ho realizzato per effettuare l'operazione in oggetto.\\
+
+\subsection{Partizionamento colonne in loco mediante offsets di supporto} 
+\label{chSpMMAux:csrColPartitioning}
+Per accedere in loco una matrice CSR $MXN$ in blocchi bidimensionali di $\frac{M}{gridRows}X\frac{N}{gridCols}$, 
+ho realizzato un supporto alla generazione di una matrice di offset $MXgridCols$, dove l'elemento
+$i,j$ è relativo all'inizio della $j$-esima partizione di colonne della $i$-esima riga.\\
+\begin{lstlisting}
+///OFFSETS COMPUTE FOR COL GROUPS -> O( A.NZ )
+for (ulong r=0, j=0;     r<A->M;     j=A->IRP[++r]-OFF_F){
+    offsets[ IDX2D(r,0,gridCols) ] = j;  //row's first gc start is costrained
+    for (ulong gc=1,gcStartCol;  gc<gridCols;  gc++){
+        gcStartCol = UNIF_REMINDER_DISTRI_STARTIDX(gc,_colBlock,_colBlockRem);
+        //goto GroupCols start entry,keeping A's nnz entries navigation (idx j)
+        while ( j < A->IRP[r+1]-OFF_F &&  A->JA[j]-OFF_F < gcStartCol )  j++;
+        offsets[ IDX2D(r,gc,gridCols) ] = j;  //row's gc group startIdx
+    }
+}
+\end{lstlisting}
+Nel frammento di codice precedente è possibile vedere come la matrice da partizionare è scansionata
+linearmente, salvandone l'indice di colonna corrente ogni volta che 
+viene raggiunto o superato l'inizio di un gruppo di colonne.\\
+
+\subsection{Partizionamento colonne mediante sotto-matrici dedicate} \label{chSpMMAux:csrColPartitioningAllocatd}
+Un approccio alternativo al precedente è quello di separare i gruppi di colonne della matrice da 
+partizionare in sotto matrici separate.
+Successivamente è possibile accedere un blocco 2D della matrice originaria partizionando 
+le righe (indirizzandole con IRP) di ogni sotto matrice ottenuta.\\
+Ho realizzato due implementazioni di quest'approccio,
+uno basato sull'uso della struttura ausiliara vista nella sottosezione precedente, 
+ed un'altra basata su una scansione diretta della matrice, simile al caso precedente.\\ 
+
+\begin{lstlisting}
+for (ulong r=0, j=0;     r<A->M;     j=A->IRP[++r]-OFF_F){
+    //navigate column groups inside current row
+    for (ulong gc=0,gcEndCol=0,i;  gc<gridCols ;  gc++,j+=i){
+        i = 0;  //@i=len current subpartition of row @r to copy
+        colPart = colParts + gc;
+        colPart->IRP[r] = colPartsLens[gc];	
+        gcEndCol += UNIF_REMINDER_DISTRI(gc,_colBlock,_colBlockRem);
+        //goto next GroupCols,keeping A's nnz entries navigation ( index j+i )
+        while ( j+i < A->IRP[r+1]-OFF_F && A->JA[j+i]-OFF_F < gcEndCol ) i++;
+        memcpy(colPart->AS+colPart->IRP[r], A->AS+j, i*sizeof(*A->AS));
+        memcpy(colPart->JA+colPart->IRP[r], A->JA+j, i*sizeof(*A->JA));
+        
+        colPartsLens[gc] += i;
+		#ifdef ROWLENS
+        colPart->RL[r] = i;
+		#endif
+    }
+}
+\end{lstlisting}
+Nel frammento di codice precedente è possibile vedere come scansionando la matrice da partizionare,
+si associ all'indice corrente l'inizio della partizione di colonne da riempirea(\vvv{j})
+e la dimensione (\vvv{i}) della sotto riga attuale.%nella partizione di colonne.
+Con queste informazioni è possibile effettuare una \vvv{memcpy} dei \nnz relativi 
+\vvv{gc}-esima partizione della \vvv{r}-esima riga della matrice (righe 10-11),
+dopo che l'indice di scanzionamento corrente della matrice \vvv{j+i} sia arrivato alla 
+fine della sotto riga da copiare.\\
+
+\subsection{Confronto teorico delle due soluzioni}
+\begin{itemize}
+	\item
+	L'approccio basato sulla generazione di sottomatrici per ogni partizione di colonna 
+	soffre di un overhead di inizializzazione superiore all'altro dato che 
+	oltre che scansionare la matrice per identificarne blocchi di colonne, è necessario effettuarne
+	copie in altre zone di memoria.\\
+	\item 
+	L'approccio basato sulla struttura di indicizzazione ausiliaria applicato alla realizzazione
+	del prodotto numerico con partizionamento 2D del lavoro, soffre di una possibile penalità di memoria
+	nell'accedere righe consecutive di una stessa partizione, dato che i \nnz relativi non sono 
+	contigui in memoria.
+\end{itemize}
+
+\section{Distribuzione uniforme del lavoro tra i thread}	\label{chSpMMAux:UNIF_REMINDER_DISTRI}
+Distribuire uniformemente il carico di lavoro tra i thread è un'operazione importante,
+che consente di minimizzare il divario tra i tempi di completamento dei vari thread 
+e conseguentemente anche il tempo di esecuzione parallelo
+(dal momento che è definito con l'istante di terminazione dell'ultimo thread).\\
+
+Algoritmi paralleli basati su strutture sparse sono spesso accumunati da 
+un'impossibilità di determinare efficientemente il carico di lavoro di effettivo
+relativo ad una partizione dell'input.
+Nonostante ciò, può essere utile distribuire il più uniformente possibile ogni partizione 
+di dati e iterazioni tra i thread .\\%in assenza di informazioni che consentano di effettuare un partizio
+Considerando un input di dimensione $n$ da suddividere tra $t$ threads, avendo 
+$div=\left\lfloor \frac{n}{t}  \right\rfloor ~ rem=n ~mod ~t$,
+l'approccio seguito per minimizzare il divario delle partizioni assegnate %a vari thread
+è realizzato dalla seguente macro:
+\begin{lstlisting}
+#define UNIF_REMINDER_DISTRI(i,div,rem)	( (div) + ( (i) < (rem) ? 1 : 0 ) )
+\end{lstlisting}
+dove viene redistribuito il resto della divisione $rem$ tra i thread.\\

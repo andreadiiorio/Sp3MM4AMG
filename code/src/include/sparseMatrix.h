@@ -1,3 +1,19 @@
+/*
+ * Copyright Andrea Di Iorio 2022
+ * This file is part of Sp3MM_for_AlgebraicMultiGrid
+ * Sp3MM_for_AlgebraicMultiGrid is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ * 
+ * Sp3MM_for_AlgebraicMultiGrid is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ * 
+ * You should have received a copy of the GNU General Public License
+ * along with Sp3MM_for_AlgebraicMultiGrid.  If not, see <http://www.gnu.org/licenses/>.
+ */ 
 //sparse matrix def & aux
 #ifndef SPARSEMATRIX
 #define SPARSEMATRIX 
@@ -54,8 +70,9 @@ int allocAccDense(ACC_DENSE* v, ulong size);
  */
 static inline int spVect_idx_in(idx_t idx, SPVECT_IDX_DENSE_MAP* idxsMapAcc){
 	#if SPVECT_IDX_BITWISE == TRUE
-	uint limbID 	= idx / (sizeof(*idxsMapAcc->idxsMap) * 8); //idx's limb id
-	uint limbIdxID	= idx % (sizeof(*idxsMapAcc->idxsMap) * 8); //idx's pos in limb
+	uint limbID 	= idx / LIMB_SIZE_BIT; //idx's limb id
+	uint limbIdxID	= idx % LIMB_SIZE_BIT; //idx's pos in limb
+	DEBUGCHECKS		assert( limbID < idxsMapAcc->idxsMapN );
 	limb_t idxPos   = ((limb_t) 1) << limbIdxID;
 	if (!( idxsMapAcc->idxsMap[limbID] & idxPos) ){
 		idxsMapAcc->idxsMap[limbID] |= idxPos;
@@ -63,7 +80,7 @@ static inline int spVect_idx_in(idx_t idx, SPVECT_IDX_DENSE_MAP* idxsMapAcc){
 		return 0;
 	}
 	#else	
-	if (!( nnzIdxsFlags[idx] )){
+	if (!( nnzIdxsFlags[idx] )){	//TODO usabile primitiva atomica di cmpswap, accorpamento ops a livello HW?
 		idxsMapAcc->idxsMap[idx] = 1;
 		idxsMapAcc->len++;
 		return 0;

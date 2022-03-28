@@ -1,1 +1,0 @@
-/home/andysnake/roba/scripts_quick/docs/svgConvert.sh

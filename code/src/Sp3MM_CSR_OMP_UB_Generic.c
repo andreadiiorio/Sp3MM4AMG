@@ -1,3 +1,19 @@
+/*
+ * Copyright Andrea Di Iorio 2022
+ * This file is part of Sp3MM_for_AlgebraicMultiGrid
+ * Sp3MM_for_AlgebraicMultiGrid is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ * 
+ * Sp3MM_for_AlgebraicMultiGrid is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ * 
+ * You should have received a copy of the GNU General Public License
+ * along with Sp3MM_for_AlgebraicMultiGrid.  If not, see <http://www.gnu.org/licenses/>.
+ */ 
 //Developped by     Andrea Di Iorio - 0277550
 #pragma message( "compiling SpMM_CSR_OMP_Generic.c with OFF_F as:" STR(OFF_F) )
 #ifndef OFF_F
@@ -90,7 +106,7 @@ spmat* CAT(spmmRowByRow1DBlocks_,OFF_F)(spmat* A,spmat* B, CONFIG* cfg){
     if (!AB)    goto _err;
     if (!(rowsSizes = CAT(spMMSizeUpperbound_,OFF_F)(A,B)))   goto _err;
     ///aux structures alloc 
-    if (!(accVects = _initAccVectors(cfg->gridRows,AB->N))){
+    if (!(accVects = _initAccVectors(cfg->threadNum,AB->N))){
         ERRPRINT("accVects init failed\n");
         goto _err;
     }
@@ -112,8 +128,9 @@ spmat* CAT(spmmRowByRow1DBlocks_,OFF_F)(spmat* A,spmat* B, CONFIG* cfg){
     ulong b,startRow,block; //omp for aux vars
     #pragma omp parallel for schedule(runtime) private(acc,startRow,block)
     for (b=0;   b < cfg->gridRows; b++){
-        block      = UNIF_REMINDER_DISTRI(b,rowBlock,rowBlockRem);
-        startRow   = UNIF_REMINDER_DISTRI_STARTIDX(b,rowBlock,rowBlockRem);
+        block		= UNIF_REMINDER_DISTRI(b,rowBlock,rowBlockRem);
+        startRow	= UNIF_REMINDER_DISTRI_STARTIDX(b,rowBlock,rowBlockRem);
+        acc			= accVects + omp_get_thread_num();
        
         DEBUGPRINT{
             fflush(NULL);
@@ -123,7 +140,6 @@ spmat* CAT(spmmRowByRow1DBlocks_,OFF_F)(spmat* A,spmat* B, CONFIG* cfg){
         //row-by-row formulation in the given row block
         for (ulong r=startRow;  r<startRow+block;  r++){
             //iterate over nz entry index c inside current row r
-            acc = accVects + b;
             for (ulong c=A->IRP[r]-OFF_F; c<A->IRP[r+1]-OFF_F; c++) 
                 CAT(scSparseRowMul_,OFF_F)(A->AS[c], B, A->JA[c]-OFF_F, acc);
             //trasform accumulated dense vector to a CSR row
@@ -149,7 +165,7 @@ spmat* CAT(spmmRowByRow1DBlocks_,OFF_F)(spmat* A,spmat* B, CONFIG* cfg){
     AB=NULL;    //nothing'll be returned
     _free:
     if(rowsSizes)   free(rowsSizes);
-    if(accVects)    freeAccsDense(accVects,cfg->gridRows);
+    if(accVects)    freeAccsDense(accVects,cfg->threadNum);
     if(outAccumul)  freeSpMMAcc(outAccumul);
 
     return AB;

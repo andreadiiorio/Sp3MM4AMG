@@ -1,0 +1,1 @@
+../../../../roba/scripts_quick/docs/latexGetIndexTabs.sh
