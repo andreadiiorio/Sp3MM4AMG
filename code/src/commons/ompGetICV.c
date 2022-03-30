@@ -17,6 +17,7 @@
 #include <stdlib.h>
 #include <stdio.h>
 #include <omp.h>
+#include <config.h>
 
 char* SCHEDULES[]={"OMP_SCHED_STATIC","OMP_SCHED_DYNAMIC","OMP_SCHED_GUIDED","OMP_SCHED_AUTO"};
 void ompGetRuntimeSchedule(int* kind_chunk_monotonic){
@@ -39,8 +40,8 @@ void ompGetRuntimeSchedule(int* kind_chunk_monotonic){
     monotonic = omp_sched_monotonic & kind;
     if(monotonic)   k = kind - omp_sched_monotonic;
     #endif
-    printf("omp sched gather:\tkind: %s\tomp chunkSize: %d\tmonotonic: %s\n",
-      SCHEDULES[k-1],chunk_size,monotonic?"Y":"N");
+    printf("omp sched gather:\tkind:%s\tomp chunkSize:%d\tmonotonic:%s\tfairChunkFolding:%d\n",
+      SCHEDULES[k-1],chunk_size,monotonic?"Y":"N",FAIR_CHUNKS_FOLDING);
     if (kind_chunk_monotonic){
         kind_chunk_monotonic[0] = k;
         kind_chunk_monotonic[1] = chunk_size;

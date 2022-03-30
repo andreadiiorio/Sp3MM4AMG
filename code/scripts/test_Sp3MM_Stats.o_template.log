@@ -1,7 +1,0 @@
-omp sched gather:       kind: OMP_SCHED_DYNAMIC omp chunkSize: 1        monotonic: N
-@COARSENING AC: 2744x2744 ---> 343x343  conf grid: 8x8, NNZ:12642-18032-12642    AVG_TIMES_ITERATION:25
-@computing Sp3GEMM as pair of SpGEMM with func:0 at:0x5649dd0658d0      timeAvg:3.969077e-03 timeVar:9.028166e-08       timeInternalAvg:3.724154e-03 (93.829210% tot) timeInternalVar:8.564707e-08 
-@computing Sp3GEMM as pair of SpGEMM with func:1 at:0x5649dd065c10      timeAvg:4.259216e-03 timeVar:1.201497e-07       timeInternalAvg:3.883259e-03 (91.173084% tot) timeInternalVar:1.185677e-07 
-@computing Sp3GEMM as pair of SpGEMM with func:2 at:0x5649dd0654d0      timeAvg:5.543735e-03 timeVar:9.956814e-08       timeInternalAvg:4.827327e-03 (87.077171% tot) timeInternalVar:9.726651e-08 
-@computing Sp3GEMM as pair of SpGEMM with func:3 at:0x5649dd065f80      timeAvg:6.609403e-03 timeVar:1.303754e-07       timeInternalAvg:4.414451e-03 (66.790469% tot) timeInternalVar:1.109838e-07 
-@computing Sp3GEMM directly with func:0 at:0x5649dd066450               timeAvg:2.808390e-03 timeVar:9.281322e-08       timeInternalAvg:2.715685e-03 (96.698996% tot) timeInternalVar:8.825363e-08 

@@ -19,26 +19,26 @@ CWALL =-Wall -Wextra
 CWALL+=-Wno-pointer-sign -Wno-unused-parameter -Wno-unused-but-set-variable -Wno-switch
 CWALL+=-Wno-unused-function -Wno-unused-variable       #TODO CLEAN USELESS FUNCTIONS / VARIABLES
 CWALL+=-Wno-unused-label -Wfatal-errors
-CFLAGS=-O2 $(RUNTIME) $(CWALL)
+CFLAGS=-O2 $(CWALL)
 CFLAGS+=-lm -fopenmp
 
 #SYSTEM CONFIGURATION
 UNAME=$(shell uname -a | tr -c -d \[:alnum:\] | tr \[:lower:\] \[:upper:\] ) #upper uname-a
 TMPDIR=/run/user/$(shell id -u)/
 #MACROS
-CONSTS = -DTMPDIR='"$(TMPDIR)"'  -DAVG_TIMES_ITERATION=25  -DDOUBLE_VECT_DIFF_EARLY_EXIT 
 MACROS = -DDEBUGPRINT="if(FALSE)" -DDEBUG="if(FALSE)" -DCONSISTENCY_CHECKS="if(FALSE)" -DVERBOSE="if(FALSE)"  -DDEBUGCHECKS="if(FALSE)" 
 MACROSDBG = -DCONSISTENCY_CHECKS="if(TRUE)"  -DDEBUGCHECKS="if(TRUE)" -DVERBOSE="if(TRUE)" -DDEBUG="if(TRUE)"
 UNDEF := $(shell echo $(MACROSDBG) | tr " " "\n" | grep -oe '-D.*=' | tr -d "=" |  sed s/-D/-U/ )
 CFLAGSDBG = -ggdb -O0 #-Og 	#TODO -O0 cause REDUCTION MISWRITE...FAULTY RESOULT (OR SERIAL ERROR)
 #GATHER ALL DEBUG STUFF IN A VAR
 DBG=$(CFLAGSDBG) $(UNDEF) -UAVG_TIMES_ITERATION -DAVG_TIMES_ITERATION=1 $(MACROSDBG)  
+CONSTS = -DTMPDIR='"$(TMPDIR)"'  -DAVG_TIMES_ITERATION=11  -DDOUBLE_VECT_DIFF_EARLY_EXIT $(RUNTIME) #RUNTIME HAS TO BE AS LAST FOR CORRECT OVERRIDING
 
 #bind to source original project
 srcDir=$(realpath ../src)
 srcInclDir=$(realpath ../src/include)
-coreSrcs:=$(srcDir)/Sp3MM*OMP*.c $(srcDir)/commons/*.c  $(srcDir)/lib/*.c $(srcInclDir)/*.h 
-testSrcs:=Sp3MM_test.c  $(coreSrcs)
+coreSrcs=$(wildcard $(srcDir)/Sp3MM*OMP*.c $(srcDir)/commons/*.c  $(srcDir)/lib/*.c $(srcInclDir)/*.h )
+testSrcs=Sp3MM_test.c  $(coreSrcs)
 
 ##CBLAS BUILD NEEDED
 CBLAS_INCLUDE=CBLAS_LAPACK/include 
@@ -67,15 +67,29 @@ objs := $(shell  grep -Eo '.*\.o:\s' Makefile | grep -v -e '@' -e PHONY | awk -F
 
 
 all: $(objs)
-#FAST TESTS - PERFGATHER
-test_Sp3MM.o: $(testSrcs)
+.SECONDEXPANSION:
+baseCompil=$(CFLAGS) -I$(srcDir)/include/  $(filter-out %.h %Generic.c,$(testSrcs)) $(MACROS) $(CONSTS) 
+$(info baseCompil:		$(baseCompil))
+
+###QUIET TESTS - PERF GATHER
+test_Sp3MM_full.o: $(testSrcs)							#dflts short
 	$(CC) -o $@ $(CFLAGS) -I$(srcDir)/include/  $(filter-out %.h %Generic.c,$^) \
 	$(MACROS) $(CONSTS) -UAVG_TIMES_ITERATION -DAVG_TIMES_ITERATION=1
-test_Sp3MM_Stats.o: $(testSrcs)
-	$(CC) -o $@ $(CFLAGS) -I$(srcDir)/include/  $(filter-out %.h %Generic.c,$^) $(MACROS) $(CONSTS)
-test_Sp3MM_Stats_UB_NN_TID_RESERVED.o: $(testSrcs)
-	$(CC) -o $@ $(CFLAGS) -I$(srcDir)/include/  $(filter-out %.h %Generic.c,$^) \
-	$(MACROS) $(CONSTS) -DSPARSIFY_PRE_PARTITIONING=F
+test_Sp3MM.o: $(testSrcs)							#dflts short
+	$(CC) -o $@ $(baseCompil) -UAVG_TIMES_ITERATION -DAVG_TIMES_ITERATION=1
+test_Sp3MM_Stats.o: $(testSrcs)						#dflts
+	$(CC) -o $@ $(baseCompil)
+test_Sp3MM_Stats_UB_DYN_ASSIGN.o: $(testSrcs)		#UB dynAssign
+	$(CC) -o $@ $(baseCompil) -DSPARSIFY_PRE_PARTITIONING=F
+test_Sp3MM_Stats_SYMB_RB_NOCACHED.o: $(testSrcs)	#no cached insert in RBtrees
+	$(CC) -o $@ $(baseCompil) -DRB_CACHED_INSERT=F
+test_Sp3MM_Stats_IDXBITMAP_U64.o: $(testSrcs)		#ulong64 vars as bitmaps limbs
+	$(CC) -o $@ $(baseCompil) -DLIMB_T=ulong
+test_Sp3MM_Stats_IDXBITMAP_INT.o: $(testSrcs)		#uint vars as bitmaps limbs
+	$(CC) -o $@ $(baseCompil) -DLIMB_T=uint
+test_Sp3MM_Stats_IDXFLAG_ARRAY.o: $(testSrcs)		#Char array instead of bitmaps limbs
+	$(CC) -o $@ $(baseCompil) -SPVECT_IDX_BITWISE=F
+
 
 ##DEBUG BUILDS
 test_Sp3MM_DBG_UB_NN_TID_RESERVED.o: $(testSrcs)

@@ -1,0 +1,21 @@
+#r ac p ac_next
+omp sched gather:	kind:OMP_SCHED_DYNAMIC	omp chunkSize:1	monotonic:N	fairChunkFolding:4
+COARSENING AC: 2744x2744 ---> 343x343	conf grid: 8x8,	NNZ:12642-18032-12642	 AVG_TIMES_ITERATION:1	symbUBAssignType:STATIC_ASSIGN	bitmapLimbSize:128
+[1m[92m@computing Sp3MM as pair of SpMM UpperBounded 	func:0 at:0x408350
+[0mthreadNum: 4	ompGridSize: 8x8	timeAvg:2.969584e-03 timeVar:0.000000e+00	timeInternalAvg:2.376510e-03 (overheads ~ 19.971619% tot) timeInternalVar:0.000000e+00 
+[1m[92m@computing Sp3MM as pair of SpMM UpperBounded 	func:1 at:0x4087f0
+[0mthreadNum: 4	ompGridSize: 8x8	timeAvg:2.095911e-03 timeVar:0.000000e+00	timeInternalAvg:2.020315e-03 (overheads ~ 3.606832% tot) timeInternalVar:0.000000e+00 
+[1m[92m@computing Sp3MM as pair of SpMM UpperBounded 	func:2 at:0x407120
+[0mthreadNum: 4	ompGridSize: 8x8	timeAvg:3.192277e-03 timeVar:0.000000e+00	timeInternalAvg:2.604958e-03 (overheads ~ 18.398121% tot) timeInternalVar:0.000000e+00 
+[1m[92m@computing Sp3MM as pair of SpMM UpperBounded 	func:3 at:0x408cc0
+[0mthreadNum: 4	ompGridSize: 8x8	timeAvg:4.650205e-03 timeVar:0.000000e+00	timeInternalAvg:2.564730e-03 (overheads ~ 44.846948% tot) timeInternalVar:0.000000e+00 
+[1m[92m@computing Sp3MM directly UpperBounded 	func:0 at:0x409350	
+[0mthreadNum: 4	ompGridSize: 8x8	timeAvg:1.265354e-03 timeVar:0.000000e+00	timeInternalAvg:1.201899e-03 (overheads ~ 5.014802% tot) timeInternalVar:0.000000e+00 
+[1m[92m@computing Sp3MM as pair of SpMM SymbolicAccurate with RBTREE 	func:0 at:0x409850
+[0mthreadNum: 4	ompGridSize: 8x8	timeAvg:3.093614e-03 timeVar:0.000000e+00	timeInternalAvg:1.401623e-03 (overheads ~ 54.693023% tot) timeInternalVar:0.000000e+00 
+[1m[92m@computing Sp3MM as pair of SpMM SymbolicAccurate with RBTREE 	func:1 at:0x409ac0
+[0mthreadNum: 4	ompGridSize: 8x8	timeAvg:7.572215e-03 timeVar:0.000000e+00	timeInternalAvg:1.402229e-03 (overheads ~ 81.481918% tot) timeInternalVar:0.000000e+00 
+[1m[92m@computing Sp3MM as pair of SpMM with IDXMAP 	func:0 at:0x409850
+[0mthreadNum: 4	ompGridSize: 8x8	timeAvg:2.019461e-03 timeVar:0.000000e+00	timeInternalAvg:1.359522e-03 (overheads ~ 32.678967% tot) timeInternalVar:0.000000e+00 
+[1m[92m@computing Sp3MM as pair of SpMM with IDXMAP 	func:1 at:0x409ac0
+[0mthreadNum: 4	ompGridSize: 8x8	timeAvg:2.020448e-03 timeVar:0.000000e+00	timeInternalAvg:1.383629e-03 (overheads ~ 31.518703% tot) timeInternalVar:0.000000e+00 

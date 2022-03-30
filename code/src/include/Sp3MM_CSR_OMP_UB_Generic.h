@@ -37,6 +37,7 @@ SP3MM CAT(sp3mmRowByRowMerged_,OFF_F);
 
 ///SUB FUNCTIONS
 ///SPMM FUNCTIONS
+SPMM CAT(spmmSerial_,OFF_F); //mono thread version for debug oracle-less
 /*
  * sparse parallel implementation of @A * @B parallelizing Gustavson row-by-row
  * formulation using an aux dense vector @_auxDense

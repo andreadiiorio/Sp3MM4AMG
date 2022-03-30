@@ -23,6 +23,21 @@
 
 
 //////////////////// COMPUTE CORE Sp[3]MM Upperbound //////////////////////////
+spmat* CAT(spmmSerial_,OFF_F)(spmat* A,spmat* B, CONFIG* _cfg){	//serial implementation
+    spmat* AB = NULL;
+	ACC_DENSE acc;
+	if ( allocAccDense(&acc,B->N) )			goto _free;
+    if (!(AB = allocSpMatrix(A->M,B->N)))	goto _free;
+	for( idx_t r=0; r<A->M; r++ ){
+        for (ulong c=A->IRP[r]-OFF_F; c<A->IRP[r+1]-OFF_F; c++) //row-by-row formul
+            CAT(scSparseRowMul_,OFF_F)(A->AS[c], B, A->JA[c]-OFF_F, &acc);
+    	sparsifyDirect(&acc,AB,r); //0,NULL);TODO COL PARTITIONING COMMON API
+	}
+	_free:
+	freeAccsDense(&acc,1);
+	
+	return AB;
+}
 ////////Sp3MM as 2 x SpMM
 ///1D
 spmat* CAT(spmmRowByRow_,OFF_F)(spmat* A,spmat* B, CONFIG* cfg){

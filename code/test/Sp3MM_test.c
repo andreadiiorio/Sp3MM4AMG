@@ -73,48 +73,58 @@ static CONFIG Conf = {
 	.symbMMRowImplID = RBTREE,
 };
 
+void print3SPMMCore(spmat* R,spmat* AC,spmat* P,CONFIG* conf){
+    printf("COARSENING AC: %lux%lu ---> %lux%lu\t"
+      "conf grid: %ux%u,\tNNZ:%lu-%lu-%lu\t AVG_TIMES_ITERATION:%u\t",
+      AC->M,AC->N, R->M,P->N, conf->gridRows,conf->gridCols,
+      R->NZ,AC->NZ,P->NZ,AVG_TIMES_ITERATION);
+	printf("symbUBAssignType:%s\tbitmapLimbSize:%lu\n",
+	  SPARSIFY_PRE_PARTITIONING?"STATIC_ASSIGN":"DYN_ASSIGN",LIMB_SIZE_BIT);
+}
+
 /*
  * wrap result check and stats gather of Sp3MM implementation func at (@sp3mm,[@spmm])
  * result checked with @oracleOut or with CBLAS dense-serial implementation ifdef CBLAS_TESTS
  * @spmm forwarded to @sp3mm, stats printed on stdout; EXIT_FAILURE returned if any error
  */
-static inline int testSp3MMImpl(SP3MM_INTERF sp3mm,SPMM_INTERF spmm,spmat* oracleOut,
+static inline int testSp3MMImplOMP(SP3MM_INTERF sp3mm,SPMM_INTERF spmm,spmat* oracleOut,
   spmat* R,spmat* AC,spmat* P){
     int out = EXIT_FAILURE;
     spmat* outToCheck=NULL;
     //elapsed stats aux vars
     double times[AVG_TIMES_ITERATION],  timesInteral[AVG_TIMES_ITERATION];
-    double deltaTStats[2],  deltaTInternalStats[2],internal_over_full,start,end;
-    for (uint i=0;  i<AVG_TIMES_ITERATION; i++){
-        start = omp_get_wtime();
-        if (!(outToCheck = sp3mm(R,AC,P,&Conf,spmm))){
-            ERRPRINTS("compute sp3mm at:%p with spmm at:%p failed...\n",sp3mm,spmm);
-            return EXIT_FAILURE;
-        }
-        end = omp_get_wtime();
+    double deltaTStats[2],  deltaTInternalStats[2],notInternalTime,start,end;
+	uint threadNum = Conf.threadNum;
+	#ifdef DECREASE_THREAD_NUM
+    for (uint t=Conf.threadNum;  t>0; t--){
+		omp_set_num_threads(t);
+		threadNum = t;
+	#endif
+    	for (uint i=0;  i<AVG_TIMES_ITERATION; i++){
+    	    start = omp_get_wtime();
+    	    if (!(outToCheck = sp3mm(R,AC,P,&Conf,spmm))){
+    	        ERRPRINTS("compute sp3mm at:%p with spmm at:%p failed...\n",sp3mm,spmm);
+    	        return EXIT_FAILURE;
+    	    }
+    	    end = omp_get_wtime();
 
-        #ifdef CBLAS_TESTS
-        if (GEMMTripleCheckCBLAS(R,AC,P,outToCheck)){
-             ERRPRINTS("compute sp3mm at:%p with spmm at:%p "
-               "diff with CBLAS implementation...\n",sp3mm,spmm);
-             goto _free;
-        }
-        #else
-        if (oracleOut && spmatDiff(outToCheck,oracleOut))    goto _free;
-        #endif
+    	    if (oracleOut && spmatDiff(outToCheck,oracleOut))    goto _free;
 
-        freeSpmat(outToCheck); outToCheck = NULL;
-        times[i]        = end - start;
-        timesInteral[i] = ElapsedInternal;
-        ElapsedInternal = Elapsed = 0;
-    }
-    statsAvgVar(times,AVG_TIMES_ITERATION,deltaTStats);
-    statsAvgVar(timesInteral,AVG_TIMES_ITERATION,deltaTInternalStats);
-    internal_over_full = deltaTInternalStats[0] / deltaTStats[0];
-    //printf("R:%lux%lu AC:%lux%lu P:%lux%lu ",R->M,R->N,AC->M,AC->N,P->M,P->N);
-    printf("timeAvg:%le timeVar:%le\ttimeInternalAvg:%le (%lf%% tot) timeInternalVar:%le \n",
-     deltaTStats[0],deltaTStats[1],deltaTInternalStats[0],internal_over_full*100,deltaTInternalStats[1]);
-
+    	    freeSpmat(outToCheck); outToCheck = NULL;
+    	    times[i]        = end - start;
+    	    timesInteral[i] = ElapsedInternal;
+    	    ElapsedInternal = Elapsed = 0;
+    	}
+    	statsAvgVar(times,AVG_TIMES_ITERATION,deltaTStats);
+    	statsAvgVar(timesInteral,AVG_TIMES_ITERATION,deltaTInternalStats);
+    	notInternalTime = 1 - deltaTInternalStats[0] / deltaTStats[0];
+    	printf("threadNum: %d\tompGridSize: %ux%u\t"
+    	 "timeAvg:%le timeVar:%le\ttimeInternalAvg:%le (overheads ~ %lf%% tot) timeInternalVar:%le \n",
+    	 threadNum,Conf.gridRows,Conf.gridCols,
+		 deltaTStats[0],deltaTStats[1],deltaTInternalStats[0],notInternalTime*100,deltaTInternalStats[1]);
+	#ifdef DECREASE_THREAD_NUM
+	}
+	#endif
     
     out = EXIT_SUCCESS;
     _free:
@@ -123,10 +133,10 @@ static inline int testSp3MMImpl(SP3MM_INTERF sp3mm,SPMM_INTERF spmm,spmat* oracl
 }
 
 #define TESTTESTS "TESTTESTS"
-#define HELP "usage Matrixes: R_{i+1}, AC_{i}, P_{i+1},[AC_{i+1}," TESTTESTS "(requires -DCBLAS_TEST)]"\
-"all matriexes in MatrixMarket_sparse_matrix_COO[.compressed]\n" \
-"giving AC_{i+1} the outputs of the 3SPMM will be matched with the given result as an oracle" \
-"\ngiving" TESTTESTS "the tests function output over the given inputs will be used to check if match the given result AC_{i+1}\n" 
+#define HELP "usage Matrixes: R_{i+1}, AC_{i}, P_{i+1},[AC_{i+1} || " TESTTESTS "(requires -DCBLAS_TEST)]"\
+"all matriexes in MatrixMarket_sparse_matrix_COO[.compressed] and the triple product will be matched with an oracle output\n" \
+"giving AC_{i+1} the oracle output will be from the given input, otherwise it will be computed with a pair of SpMM as serial implementations" \
+"\ngiving" TESTTESTS "the oracle output from the serial implementation will be validated with CBLAS netlib reference implementation (will densify)"
 
 
 int main(int argc, char** argv){
@@ -165,7 +175,12 @@ int main(int argc, char** argv){
             ERRPRINT("err during conversion MM -> CSR AC_{i+1}\n");
             goto _free;
         }
-    } // else { //manually compute the correct result with a serial implementation
+    } else {
+		if (!(oracleOut = sp3mmRowByRowPair_0(R,AC,P,&Conf,&spmmSerial_0))){
+			ERRPRINT("err during sp3mm for oracle\n");
+			goto _free;
+		}
+	}
     CONSISTENCY_CHECKS{     ///DIMENSION CHECKS...
         if (R->N != AC ->M){
             ERRPRINT("invalid sizes in R <-> AC\n");
@@ -195,8 +210,8 @@ int main(int argc, char** argv){
         }
     }
 #ifdef CBLAS_TESTS
-    ////TEST THE TESTs 
-    if ( argc == 6 && !strncmp(argv[5],TESTTESTS,strlen(TESTTESTS)) ){
+    ////Validate the serialImplementation with CBLAS reference implementation
+    if ( argc == 4 && !strncmp(argv[5],TESTTESTS,strlen(TESTTESTS)) ){
         printf("testing the tests:\n matching dense CBLAS test with an oracle output\n");
         if (GEMMTripleCheckCBLAS(R,AC,P,oracleOut)){
             ERRPRINT("GEMMTripleCheckCBLAS matching with oracleOut failed\n");
@@ -215,6 +230,7 @@ int main(int argc, char** argv){
     int maxThreads = omp_get_max_threads();
     Conf.threadNum = (uint) maxThreads;
     DEBUG   printf("omp_get_max_threads:\t%d\n",maxThreads); 
+    printf("#%s %s %s %s\n", argv[1],argv[2],argv[3],argv[4]);
     /*
      * get exported schedule configuration, 
      * if schedule != static -> dyn like -> set a chunk division function before omp for
@@ -226,6 +242,7 @@ int main(int argc, char** argv){
         Conf.chunkDistrbFunc = chunkDistrbFunc;
     VERBOSE 
       printf("%s",Conf.chunkDistrbFunc == &chunksNOOP?"static schedule =>chunkDistrbFunc NOOP\n":"");
+
     print3SPMMCore(R,AC,P,&Conf);
     //// PARALLEL COMPUTATIONs TO CHECK
     end = omp_get_wtime();elapsed = end-start;
@@ -270,52 +287,55 @@ int main(int argc, char** argv){
     //test SP3MM as pair of SPMM: RAC = R * AC; RACP = RAC * P
     for (uint f = 0;  f < spMM_UB_FuncsN; f++){
         spMMFunc = spMM_UB_Funcs[f];
-        hprintsf("@computing Sp3MM as pair of SpMM with func:\%u at:%p\t",
+        hprintsf("@computing Sp3MM as pair of SpMM UpperBounded \tfunc:\%u at:%p\n",
           f,spMMFunc);
-        if (testSp3MMImpl(sp3MM_UB_WrapPair,spMMFunc,oracleOut,R,AC,P))   goto _free;
+        if (testSp3MMImplOMP(sp3MM_UB_WrapPair,spMMFunc,oracleOut,R,AC,P))   goto _free;
     }
-    //test SP3MM as merged two multiplication
+    //test SP3MM directly as merged two multiplication
     for (uint f = 0;  f < sp3MM_UB_Direct_FuncsN; f++){
         sp3MMFunc = sp3MM_UB_Direct_Funcs[f];
-        hprintsf("@computing Sp3MM directly with func:\%u at:%p\t\t",
+        hprintsf("@computing Sp3MM directly UpperBounded \tfunc:\%u at:%p\t\n",
           f,sp3MMFunc);
-        if (testSp3MMImpl(sp3MMFunc,NULL,oracleOut,R,AC,P))   goto _free;
+        if (testSp3MMImplOMP(sp3MMFunc,NULL,oracleOut,R,AC,P))   goto _free;
     }
     VERBOSE printf("\nall pairs of SpMM functions passed the test\n\n\n");
-	symbNum:	///SYMB-NUM IMPLEMENTATIONS
+	///SYMB-NUM IMPLEMENTATIONS
+	symbNum:
 	VERBOSE	hprintf("CHECKING SYMBOLIC.RBTREE - NUMERIC IMPLEMENTATIONS\n");
 	Conf.symbMMRowImplID = RBTREE;
     //test SP3MM as pair of SPMM: RAC = R * AC; RACP = RAC * P
     for (uint f = 0;  f < spMM_SymbNum_FuncsN; f++){
         spMMFunc = spMM_SymbNum_Funcs[f];
-        hprintsf("@computing Sp3MM as pair of SpMM with func:\%u at:%p\t",
+        hprintsf("@computing Sp3MM as pair of SpMM SymbolicAccurate with RBTREE \tfunc:\%u at:%p\n",
           f,spMMFunc);
-        if (testSp3MMImpl(sp3MM_SymbNum_WrapPair,spMMFunc,oracleOut,R,AC,P))   goto _free;
+        if (testSp3MMImplOMP(sp3MM_SymbNum_WrapPair,spMMFunc,oracleOut,R,AC,P))   goto _free;
     }
-    //test SP3MM as merged two multiplication
+    //test SP3MM directly as merged two multiplication
     for (uint f = 0;  f < sp3MM_SymbNum_Direct_FuncsN; f++){
         sp3MMFunc = sp3MM_SymbNum_Direct_Funcs[f];
-        hprintsf("@computing Sp3MM directly with func:\%u at:%p\t\t",
+        hprintsf("@computing Sp3MM directly SymbolicAccurate with RBTREE \tfunc:\%u at:%p\t\n",
           f,sp3MMFunc);
-        if (testSp3MMImpl(sp3MMFunc,NULL,oracleOut,R,AC,P))   goto _free;
+        if (testSp3MMImplOMP(sp3MMFunc,NULL,oracleOut,R,AC,P))   goto _free;
     }
 	VERBOSE	hprintf("CHECKING SYMBOLIC.IDXMAP - NUMERIC IMPLEMENTATIONS\n");
 	Conf.symbMMRowImplID = IDXMAP;
     //test SP3MM as pair of SPMM: RAC = R * AC; RACP = RAC * P
     for (uint f = 0;  f < spMM_SymbNum_FuncsN; f++){
         spMMFunc = spMM_SymbNum_Funcs[f];
-        hprintsf("@computing Sp3MM as pair of SpMM with func:\%u at:%p\t",
+        hprintsf("@computing Sp3MM as pair of SpMM with IDXMAP \tfunc:\%u at:%p\n",
           f,spMMFunc);
-        if (testSp3MMImpl(sp3MM_SymbNum_WrapPair,spMMFunc,oracleOut,R,AC,P))   goto _free;
+        if (testSp3MMImplOMP(sp3MM_SymbNum_WrapPair,spMMFunc,oracleOut,R,AC,P))   goto _free;
     }
     //test SP3MM as merged two multiplication
     for (uint f = 0;  f < sp3MM_SymbNum_Direct_FuncsN; f++){
         sp3MMFunc = sp3MM_SymbNum_Direct_Funcs[f];
-        hprintsf("@computing Sp3MM directly with func:\%u at:%p\t\t",
+        hprintsf("@computing Sp3MM directly with IDXMAP \tfunc:\%u at:%p\t\n",
           f,sp3MMFunc);
-        if (testSp3MMImpl(sp3MMFunc,NULL,oracleOut,R,AC,P))   goto _free;
+        if (testSp3MMImplOMP(sp3MMFunc,NULL,oracleOut,R,AC,P))   goto _free;
     }
-    VERBOSE hprintf("\nall sp3MM_SymbNum_Direct_Funcs functions passed the test\n\n\n");
+    VERBOSE hprintf("\nall Sp3MM_SymbNum functions passed the test\n\n\n");
+	//test wraps end
+    VERBOSE hprintf("\nall Sp3MM functions passed the test\n\n\n");
 
     DEBUGPRINT{
         printf("sparse matrix: AC_i\n");printSparseMatrix(outToCheck,TRUE);

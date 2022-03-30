@@ -100,6 +100,7 @@ void freeAccsDense(ACC_DENSE* vectors,ulong num){
     for (ulong i=0; i<num; i++){
         free(vectors[i].v);
         free(vectors[i].nnzIdx);
+        free(vectors[i].nnzIdxMap.idxsMap);
     }
     free(vectors);
 }
@@ -211,12 +212,6 @@ void printSparseMatrix(spmat* spMatrix,char justNZMarkers){
     free(denseMat);
 }
 
-void print3SPMMCore(spmat* R,spmat* AC,spmat* P,CONFIG* conf){
-    printf("@COARSENING AC: %lux%lu ---> %lux%lu\t"
-      "conf grid: %ux%u,\tNNZ:%lu-%lu-%lu\t AVG_TIMES_ITERATION:%u\n",
-      AC->M,AC->N, R->M,P->N, conf->gridRows,conf->gridCols,
-      R->NZ,AC->NZ,P->NZ,AVG_TIMES_ITERATION);
-}
 
 
 static inline int _colsPartitioningUnifRanges_init(spmat* A,uint gridCols,

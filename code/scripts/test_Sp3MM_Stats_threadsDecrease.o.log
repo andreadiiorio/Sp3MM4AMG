@@ -1,0 +1,48 @@
+#r ac p ac_next
+omp sched gather:	kind:OMP_SCHED_DYNAMIC	omp chunkSize:1	monotonic:N	fairChunkFolding:4
+COARSENING AC: 2744x2744 ---> 343x343	conf grid: 8x8,	NNZ:12642-18032-12642	 AVG_TIMES_ITERATION:1	symbUBAssignType:STATIC_ASSIGN	bitmapLimbSize:128
+[1m[92m@computing Sp3MM as pair of SpMM UpperBounded 	func:0 at:0x408380
+[0mthreadNum: 4	ompGridSize: 8x8	timeAvg:2.809468e-03 timeVar:0.000000e+00	timeInternalAvg:2.178454e-03 (overheads ~ 22.460266% tot) timeInternalVar:0.000000e+00 
+threadNum: 3	ompGridSize: 8x8	timeAvg:2.261037e-03 timeVar:0.000000e+00	timeInternalAvg:2.172815e-03 (overheads ~ 3.901838% tot) timeInternalVar:0.000000e+00 
+threadNum: 2	ompGridSize: 8x8	timeAvg:2.479217e-03 timeVar:0.000000e+00	timeInternalAvg:2.390983e-03 (overheads ~ 3.558946% tot) timeInternalVar:0.000000e+00 
+threadNum: 1	ompGridSize: 8x8	timeAvg:4.476370e-03 timeVar:0.000000e+00	timeInternalAvg:4.371670e-03 (overheads ~ 2.338949% tot) timeInternalVar:0.000000e+00 
+[1m[92m@computing Sp3MM as pair of SpMM UpperBounded 	func:1 at:0x408820
+[0mthreadNum: 4	ompGridSize: 8x8	timeAvg:2.040595e-03 timeVar:0.000000e+00	timeInternalAvg:1.874834e-03 (overheads ~ 8.123170% tot) timeInternalVar:0.000000e+00 
+threadNum: 3	ompGridSize: 8x8	timeAvg:2.460426e-03 timeVar:0.000000e+00	timeInternalAvg:2.370322e-03 (overheads ~ 3.662130% tot) timeInternalVar:0.000000e+00 
+threadNum: 2	ompGridSize: 8x8	timeAvg:2.355978e-03 timeVar:0.000000e+00	timeInternalAvg:2.277992e-03 (overheads ~ 3.310133% tot) timeInternalVar:0.000000e+00 
+threadNum: 1	ompGridSize: 8x8	timeAvg:4.453374e-03 timeVar:0.000000e+00	timeInternalAvg:4.349807e-03 (overheads ~ 2.325585% tot) timeInternalVar:0.000000e+00 
+[1m[92m@computing Sp3MM as pair of SpMM UpperBounded 	func:2 at:0x407150
+[0mthreadNum: 4	ompGridSize: 8x8	timeAvg:3.281877e-03 timeVar:0.000000e+00	timeInternalAvg:2.634175e-03 (overheads ~ 19.735718% tot) timeInternalVar:0.000000e+00 
+threadNum: 3	ompGridSize: 8x8	timeAvg:3.636069e-03 timeVar:0.000000e+00	timeInternalAvg:3.066969e-03 (overheads ~ 15.651518% tot) timeInternalVar:0.000000e+00 
+threadNum: 2	ompGridSize: 8x8	timeAvg:3.833149e-03 timeVar:0.000000e+00	timeInternalAvg:3.328091e-03 (overheads ~ 13.176060% tot) timeInternalVar:0.000000e+00 
+threadNum: 1	ompGridSize: 8x8	timeAvg:6.572538e-03 timeVar:0.000000e+00	timeInternalAvg:5.858732e-03 (overheads ~ 10.860432% tot) timeInternalVar:0.000000e+00 
+[1m[92m@computing Sp3MM as pair of SpMM UpperBounded 	func:3 at:0x408cf0
+[0mthreadNum: 4	ompGridSize: 8x8	timeAvg:5.543008e-03 timeVar:0.000000e+00	timeInternalAvg:2.563510e-03 (overheads ~ 53.752367% tot) timeInternalVar:0.000000e+00 
+threadNum: 3	ompGridSize: 8x8	timeAvg:4.673551e-03 timeVar:0.000000e+00	timeInternalAvg:2.836408e-03 (overheads ~ 39.309360% tot) timeInternalVar:0.000000e+00 
+threadNum: 2	ompGridSize: 8x8	timeAvg:4.589883e-03 timeVar:0.000000e+00	timeInternalAvg:3.180290e-03 (overheads ~ 30.710870% tot) timeInternalVar:0.000000e+00 
+threadNum: 1	ompGridSize: 8x8	timeAvg:7.220298e-03 timeVar:0.000000e+00	timeInternalAvg:5.846523e-03 (overheads ~ 19.026569% tot) timeInternalVar:0.000000e+00 
+[1m[92m@computing Sp3MM directly UpperBounded 	func:0 at:0x409380	
+[0mthreadNum: 4	ompGridSize: 8x8	timeAvg:1.482132e-03 timeVar:0.000000e+00	timeInternalAvg:1.334202e-03 (overheads ~ 9.980892% tot) timeInternalVar:0.000000e+00 
+threadNum: 3	ompGridSize: 8x8	timeAvg:1.404130e-03 timeVar:0.000000e+00	timeInternalAvg:1.366919e-03 (overheads ~ 2.650111% tot) timeInternalVar:0.000000e+00 
+threadNum: 2	ompGridSize: 8x8	timeAvg:1.485859e-03 timeVar:0.000000e+00	timeInternalAvg:1.452959e-03 (overheads ~ 2.214207% tot) timeInternalVar:0.000000e+00 
+threadNum: 1	ompGridSize: 8x8	timeAvg:2.783954e-03 timeVar:0.000000e+00	timeInternalAvg:2.744940e-03 (overheads ~ 1.401388% tot) timeInternalVar:0.000000e+00 
+[1m[92m@computing Sp3MM as pair of SpMM SymbolicAccurate with RBTREE 	func:0 at:0x409880
+[0mthreadNum: 4	ompGridSize: 8x8	timeAvg:3.096372e-03 timeVar:0.000000e+00	timeInternalAvg:1.360679e-03 (overheads ~ 56.055700% tot) timeInternalVar:0.000000e+00 
+threadNum: 3	ompGridSize: 8x8	timeAvg:6.502388e-03 timeVar:0.000000e+00	timeInternalAvg:1.545906e-03 (overheads ~ 76.225565% tot) timeInternalVar:0.000000e+00 
+threadNum: 2	ompGridSize: 8x8	timeAvg:6.166781e-03 timeVar:0.000000e+00	timeInternalAvg:1.689358e-03 (overheads ~ 72.605513% tot) timeInternalVar:0.000000e+00 
+threadNum: 1	ompGridSize: 8x8	timeAvg:8.039792e-03 timeVar:0.000000e+00	timeInternalAvg:3.138260e-03 (overheads ~ 60.965906% tot) timeInternalVar:0.000000e+00 
+[1m[92m@computing Sp3MM as pair of SpMM SymbolicAccurate with RBTREE 	func:1 at:0x409af0
+[0mthreadNum: 4	ompGridSize: 8x8	timeAvg:7.625714e-03 timeVar:0.000000e+00	timeInternalAvg:1.414940e-03 (overheads ~ 81.445147% tot) timeInternalVar:0.000000e+00 
+threadNum: 3	ompGridSize: 8x8	timeAvg:6.120321e-03 timeVar:0.000000e+00	timeInternalAvg:1.704368e-03 (overheads ~ 72.152310% tot) timeInternalVar:0.000000e+00 
+threadNum: 2	ompGridSize: 8x8	timeAvg:5.560124e-03 timeVar:0.000000e+00	timeInternalAvg:1.698187e-03 (overheads ~ 69.457750% tot) timeInternalVar:0.000000e+00 
+threadNum: 1	ompGridSize: 8x8	timeAvg:8.027623e-03 timeVar:0.000000e+00	timeInternalAvg:3.133878e-03 (overheads ~ 60.961321% tot) timeInternalVar:0.000000e+00 
+[1m[92m@computing Sp3MM as pair of SpMM with IDXMAP 	func:0 at:0x409880
+[0mthreadNum: 4	ompGridSize: 8x8	timeAvg:2.038544e-03 timeVar:0.000000e+00	timeInternalAvg:1.317568e-03 (overheads ~ 35.367203% tot) timeInternalVar:0.000000e+00 
+threadNum: 3	ompGridSize: 8x8	timeAvg:2.234500e-03 timeVar:0.000000e+00	timeInternalAvg:1.517486e-03 (overheads ~ 32.088342% tot) timeInternalVar:0.000000e+00 
+threadNum: 2	ompGridSize: 8x8	timeAvg:2.372617e-03 timeVar:0.000000e+00	timeInternalAvg:1.656897e-03 (overheads ~ 30.165846% tot) timeInternalVar:0.000000e+00 
+threadNum: 1	ompGridSize: 8x8	timeAvg:4.175925e-03 timeVar:0.000000e+00	timeInternalAvg:3.102533e-03 (overheads ~ 25.704293% tot) timeInternalVar:0.000000e+00 
+[1m[92m@computing Sp3MM as pair of SpMM with IDXMAP 	func:1 at:0x409af0
+[0mthreadNum: 4	ompGridSize: 8x8	timeAvg:2.010539e-03 timeVar:0.000000e+00	timeInternalAvg:1.334602e-03 (overheads ~ 33.619691% tot) timeInternalVar:0.000000e+00 
+threadNum: 3	ompGridSize: 8x8	timeAvg:2.426863e-03 timeVar:0.000000e+00	timeInternalAvg:1.703401e-03 (overheads ~ 29.810583% tot) timeInternalVar:0.000000e+00 
+threadNum: 2	ompGridSize: 8x8	timeAvg:2.354101e-03 timeVar:0.000000e+00	timeInternalAvg:1.633024e-03 (overheads ~ 30.630674% tot) timeInternalVar:0.000000e+00 
+threadNum: 1	ompGridSize: 8x8	timeAvg:4.247698e-03 timeVar:0.000000e+00	timeInternalAvg:3.178530e-03 (overheads ~ 25.170528% tot) timeInternalVar:0.000000e+00 

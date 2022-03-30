@@ -92,7 +92,9 @@ typedef unsigned __int128	uint128;
 #ifndef IDX_RMUL_SYMB_RBTREE
 	#define IDX_RMUL_SYMB_RBTREE  FALSE
 #endif
-#define RB_CACHED_INSERT	//use cached insert
+#ifndef RB_CACHED_INSERT
+	#define RB_CACHED_INSERT TRUE	//use cached insert
+#endif
 //#define USE_RB_ROOT_CACHE_LMOST //use leftmost leaf cached in rbtree in sym mul
 ///CONSTS
 #define ELL_MAX_ENTRIES ( 6l << 27 ) //2*6GB of ell (padded) entries maxSupport in a matrix 

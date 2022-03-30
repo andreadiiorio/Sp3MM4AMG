@@ -302,7 +302,7 @@ static inline int rbInsertCachedNewKey(rbRoot *root,rbNode *node, idx_t key)
 }
 
 static inline int rbInsertNewKey(rbRoot *root,rbNode *node, idx_t key){
-	#ifdef RB_CACHED_INSERT
+	#if	RB_CACHED_INSERT == TRUE
 	return rbInsertCachedNewKey(root,node,key);
 	#else
 	return rbInsertStdNewKey(root,node,key);
