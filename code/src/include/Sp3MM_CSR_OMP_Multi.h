@@ -38,6 +38,13 @@ typedef spmat* ( SPMM        )  (spmat*,spmat*,CONFIG*);
 typedef spmat* (*SPMM_INTERF )  (spmat*,spmat*,CONFIG*);
 typedef spmat* ( SP3MM       )  (spmat*,spmat*,spmat*,CONFIG*,SPMM_INTERF);
 typedef spmat* (*SP3MM_INTERF)  (spmat*,spmat*,spmat*,CONFIG*,SPMM_INTERF);
+
+typedef enum {
+	_1D_DIRECT,
+	_1D_BLOCKS,
+	_2D_OFFSET,
+	_2D_ALLOCD 
+} SPMM_IMPL_TYPE;
 ///-- commons single implementation stuff
 
 ///includes

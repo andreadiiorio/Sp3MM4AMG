@@ -120,7 +120,7 @@ spmat* CAT(spmmRowByRow_SymbNum_,OFF_F)(spmat* A,spmat* B, CONFIG* cfg){
     if(AB)  freeSpmat(AB);
     AB=NULL;    //nothing'll be returned
     _free:
-    if(rowsSizes)   free(rowsSizes);
+    free(rowsSizes);
     if(accVects)    freeAccsDense(accVects,cfg->threadNum);
     if(outAccumul)  freeSpMMAcc(outAccumul);
 

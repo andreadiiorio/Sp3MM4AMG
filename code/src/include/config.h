@@ -76,6 +76,7 @@ typedef unsigned __int128	uint128;
 	#define LIMB_SIZE_BIT ( sizeof(limb_t) * 8 )
 #else //nnz idxs ar flags in a byte arry
 	typedef uchar* nnz_idxs_flags_t;
+	#define LIMB_SIZE_BIT ( sizeof(uchar) * 8 )
 #endif
 
 ///AUDIT extra configuration

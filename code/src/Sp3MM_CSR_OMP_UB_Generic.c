@@ -112,6 +112,7 @@ spmat* CAT(spmmRowByRow_,OFF_F)(spmat* A,spmat* B, CONFIG* cfg){
 
 spmat* CAT(spmmRowByRow1DBlocks_,OFF_F)(spmat* A,spmat* B, CONFIG* cfg){
     DEBUG printf("spmm\trowBlocks of A,\tfull B\tM=%lu x N=%lu\n",A->M,B->N);
+    DEBUG printf("ompParallelizationGrid:\t%dx%d\n",cfg->gridRows,cfg->gridCols);
     ///thread aux
     ACC_DENSE *accVects = NULL,*acc;
     SPMM_ACC* outAccumul=NULL;
@@ -190,6 +191,7 @@ spmat* CAT(spmmRowByRow1DBlocks_,OFF_F)(spmat* A,spmat* B, CONFIG* cfg){
 //PARTITIONS NOT ALLOCATED
 spmat* CAT(spmmRowByRow2DBlocks_,OFF_F)(spmat* A,spmat* B, CONFIG* cfg){ 
     DEBUG printf("spmm\trowBlocks of A ,\tcolBlocks of B\tM=%luxN=%lu\n",A->M,B->N);
+    DEBUG printf("ompParallelizationGrid:\t%dx%d\n",cfg->gridRows,cfg->gridCols);
     idx_t* bColOffsets = NULL;   //B group columns starting offset for each row
     ACC_DENSE *accVectors=NULL,*accV;
     SPACC* accRowPart;
@@ -308,6 +310,7 @@ spmat* CAT(spmmRowByRow2DBlocks_,OFF_F)(spmat* A,spmat* B, CONFIG* cfg){
 
 spmat* CAT(spmmRowByRow2DBlocksAllocated_,OFF_F)(spmat* A,spmat* B, CONFIG* cfg){
     DEBUG printf("spmm\trowBlocks of A,\tcolBlocks (allcd) of B\tM=%luxN=%lu\n",A->M,B->N);
+    DEBUG printf("ompParallelizationGrid:\t%dx%d\n",cfg->gridRows,cfg->gridCols);
     spmat *AB = NULL, *colPartsB = NULL, *colPart;
     idx_t*   rowsPartsSizes=NULL;
     //aux vectors  

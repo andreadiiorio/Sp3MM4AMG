@@ -115,7 +115,7 @@ def parseComputeFuncID(l):
     symbType = "upperBounded"
     if "SymbolicAccurate" in l: symbType = "symbAcc"
     #symbAccType
-    try:    symbAccType = getReMatch("SymbolicAccurate with (\w+) ")
+    try:    symbAccType = getReMatch("with (\w+) ",l)
     except: symbAccType = None
 
     return FuncID(implNum, sp3MMComboType, symbType, symbAccType)

@@ -278,14 +278,17 @@ idx_t* CAT4(SpMM_Symb_,OUT_IDXS,COL_PARTS,OFF_F)
 
 	///initial allocations
 	rbRoot* rbRoots = NULL;	rbNode* rbNodes	= NULL; SPVECT_IDX_DENSE_MAP* idxsMapAccs = NULL;
-	idx_t *rowLens=NULL,*upperBoundedRowsLens=NULL,*upperBoundedSymMat=NULL;
+	idx_t *rowLens=NULL,*upperBoundedRowsLens=NULL,*upperBoundedSymMat=NULL,maxRowLen=0;
+	int rbTreeUsed = (symbRowImplID == RBTREE || (IDX_RMUL_SYMB_RBTREE && (_COL_PARTS || _OUT_IDXS)) );
 	
 	if ( !(rowLens = malloc(sizeof(*rowLens) * (a->M+1))) ){ 
 		ERRPRINT("SpMM_Symb_ rowLens malloc errd\n");
 		goto _err;
 	}
-	if (!(upperBoundedRowsLens = CAT(spMMSizeUpperbound_,OFF_F)(a,b)))
-		goto _err;
+	if (_OUT_IDXS == TRUE || rbTreeUsed ){
+		if (!(upperBoundedRowsLens = CAT(spMMSizeUpperbound_,OFF_F)(a,b)))
+			goto _err;
+	}
 	#if _OUT_IDXS  == TRUE
 	if (!(*outIdxs = malloc(sizeof(**outIdxs) * a->M))){
 		ERRPRINT("SpMM_Symb_ outIdxs malloc errd\n");
@@ -307,10 +310,10 @@ idx_t* CAT4(SpMM_Symb_,OUT_IDXS,COL_PARTS,OFF_F)
 	}
 	#endif //_COL_PARTS
 	uint maxThreads	= omp_get_max_threads();	//TODO FROM CFG
-	idx_t maxRowLen = reductionMaxSeq(upperBoundedRowsLens, a->M);
 	//index keeping aux struct
 	//rbtree implementation or idxMap with aux of symbTree for tmp outIdx keeping
-	if (symbRowImplID == RBTREE || (IDX_RMUL_SYMB_RBTREE && (_COL_PARTS || _OUT_IDXS)) ){
+	if ( rbTreeUsed ){
+		maxRowLen = reductionMaxSeq(upperBoundedRowsLens, a->M);
 		//rbTrees for index keeping
 		rbRoots 		= malloc(maxThreads * sizeof(*rbRoots));
 		rbNodes			= calloc(maxThreads * maxRowLen, sizeof(*rbNodes));
@@ -473,7 +476,7 @@ idx_t* CAT3(Sp3MM_Symb_,OUT_IDXS,OFF_F)
 		*outIdxs[i] = upperBoundedSymMat + cumul; 
   	#endif	//#if _OUT_IDXS  == TRUE
 	//rbTrees for index keeping
-	uint maxThreads 		= omp_get_max_threads(); //TODO FROM CFG
+	uint maxThreads 	= omp_get_max_threads(); //TODO FROM CFG
 	idx_t abMaxRowLen 	= reductionMaxSeq(abUpperBoundedRowsLens, a->M);
 	#ifdef 	  HEURISTICS_UB
 	idx_t maxRowLenUB 	= abMaxRowLen * SP3MM_UB_HEURISTIC; //TODO UB HEURISTC

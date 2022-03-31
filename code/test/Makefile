@@ -32,12 +32,12 @@ UNDEF := $(shell echo $(MACROSDBG) | tr " " "\n" | grep -oe '-D.*=' | tr -d "=" 
 CFLAGSDBG = -ggdb -O0 #-Og 	#TODO -O0 cause REDUCTION MISWRITE...FAULTY RESOULT (OR SERIAL ERROR)
 #GATHER ALL DEBUG STUFF IN A VAR
 DBG=$(CFLAGSDBG) $(UNDEF) -UAVG_TIMES_ITERATION -DAVG_TIMES_ITERATION=1 $(MACROSDBG)  
-CONSTS = -DTMPDIR='"$(TMPDIR)"'  -DAVG_TIMES_ITERATION=11  -DDOUBLE_VECT_DIFF_EARLY_EXIT $(RUNTIME) #RUNTIME HAS TO BE AS LAST FOR CORRECT OVERRIDING
+CONSTS = -DTMPDIR='"$(TMPDIR)"'  -DAVG_TIMES_ITERATION=40  -DDOUBLE_VECT_DIFF_EARLY_EXIT $(RUNTIME) #RUNTIME HAS TO BE AS LAST FOR CORRECT OVERRIDING
 
 #bind to source original project
 srcDir=$(realpath ../src)
 srcInclDir=$(realpath ../src/include)
-coreSrcs=$(wildcard $(srcDir)/Sp3MM*OMP*.c $(srcDir)/commons/*.c  $(srcDir)/lib/*.c $(srcInclDir)/*.h )
+coreSrcs=$(wildcard $(srcDir)/Sp3MM*OMP*.c $(srcDir)/commons/*.c $(srcDir)/commons/ompi_dims_create/*.c  $(srcDir)/lib/*.c $(srcInclDir)/*.h )
 testSrcs=Sp3MM_test.c  $(coreSrcs)
 
 ##CBLAS BUILD NEEDED
@@ -63,7 +63,7 @@ endif
 CBLAS_SLIB=CBLAS_LAPACK/$(STATIC_LIBS_DIR)/libcblas.a
 BLAS_SLIB=CBLAS_LAPACK/$(STATIC_LIBS_DIR)/librefblas.a
 
-objs := $(shell  grep -Eo '.*\.o:\s' Makefile | grep -v -e '@' -e PHONY | awk -F: '{print $1}' | tr '\n:' ' ' )
+objs := $(shell  grep -Eo '.*\.o:\s' Makefile | grep -v -e '@' -e PHONY -e '##' | awk -F: '{print $1}' | tr '\n:' ' ' )
 
 
 all: $(objs)
@@ -72,23 +72,20 @@ baseCompil=$(CFLAGS) -I$(srcDir)/include/  $(filter-out %.h %Generic.c,$(testSrc
 $(info baseCompil:		$(baseCompil))
 
 ###QUIET TESTS - PERF GATHER
-test_Sp3MM_full.o: $(testSrcs)							#dflts short
-	$(CC) -o $@ $(CFLAGS) -I$(srcDir)/include/  $(filter-out %.h %Generic.c,$^) \
-	$(MACROS) $(CONSTS) -UAVG_TIMES_ITERATION -DAVG_TIMES_ITERATION=1
 test_Sp3MM.o: $(testSrcs)							#dflts short
 	$(CC) -o $@ $(baseCompil) -UAVG_TIMES_ITERATION -DAVG_TIMES_ITERATION=1
 test_Sp3MM_Stats.o: $(testSrcs)						#dflts
 	$(CC) -o $@ $(baseCompil)
 test_Sp3MM_Stats_UB_DYN_ASSIGN.o: $(testSrcs)		#UB dynAssign
-	$(CC) -o $@ $(baseCompil) -DSPARSIFY_PRE_PARTITIONING=F
-test_Sp3MM_Stats_SYMB_RB_NOCACHED.o: $(testSrcs)	#no cached insert in RBtrees
-	$(CC) -o $@ $(baseCompil) -DRB_CACHED_INSERT=F
+	$(CC) -o $@ $(baseCompil) -DSPARSIFY_PRE_PARTITIONING=F -DUB_IMPL_ONLY
+test_Sp3MM_Stats_IDXFLAG_ARRAY.o: $(testSrcs)		#Char array instead of bitmaps limbs
+	$(CC) -o $@ $(baseCompil) -DSPVECT_IDX_BITWISE=F
 test_Sp3MM_Stats_IDXBITMAP_U64.o: $(testSrcs)		#ulong64 vars as bitmaps limbs
 	$(CC) -o $@ $(baseCompil) -DLIMB_T=ulong
 test_Sp3MM_Stats_IDXBITMAP_INT.o: $(testSrcs)		#uint vars as bitmaps limbs
 	$(CC) -o $@ $(baseCompil) -DLIMB_T=uint
-test_Sp3MM_Stats_IDXFLAG_ARRAY.o: $(testSrcs)		#Char array instead of bitmaps limbs
-	$(CC) -o $@ $(baseCompil) -SPVECT_IDX_BITWISE=F
+test_Sp3MM_Stats_SYMB_RB_NOCACHED.o: $(testSrcs)	#no cached insert in RBtrees
+	$(CC) -o $@ $(baseCompil) -DRB_CACHED_INSERT=F
 
 
 ##DEBUG BUILDS
@@ -97,8 +94,8 @@ test_Sp3MM_DBG_UB_NN_TID_RESERVED.o: $(testSrcs)
 	$(CONSTS) $(MACROS) $(DBG) -DSPARSIFY_PRE_PARTITIONING=F
 test_Sp3MM_DBG.o: $(testSrcs)
 	$(CC) -o $@ $(CFLAGS)  -I$(srcDir)/include/  $(filter-out %.h %Generic.c,$^) $(CONSTS) $(MACROS) $(DBG)
-test_Sp3MM_FORTRAN_INTEGRATE_DBG.o: $(testSrcs)
-	$(CC) -o $@ $(CFLAGS)  -I$(srcDir)/include/  $(filter-out %.h %Generic.c,$^) $(CONSTS) $(MACROS) $(DBG) -DMOCK_FORTRAN_INDEXING
+##test_Sp3MM_FORTRAN_INTEGRATE_DBG.o: $(testSrcs)
+##	$(CC) -o $@ $(CFLAGS)  -I$(srcDir)/include/  $(filter-out %.h %Generic.c,$^) $(CONSTS) $(MACROS) $(DBG) -DMOCK_FORTRAN_INDEXING
 
 test_CBLAS_Sp3MM_OMP.elf: $(testSrcs) Sp3MM_CBLAS.c
 	mkdir -p /tmp/oldBuilds
@@ -115,8 +112,8 @@ test_utils.elf: 	$(srcDir)/commons/*.c $(srcDir)/lib/*.c $(srcInclDir)/*.h
 	$(CC) -o $@  $(CFLAGS) -I$(srcDir)/include/  $(filter-out %.h %Generic.c %Multi.c,$^) $(CONSTS) $(MACROS) $(DBG) \
 	-DSPARSEUTILS_MAIN_TEST -O0
 
-ompGetICV.o:	$(srcDir)/commons/ompGetICV.c $(srcInclDir)/ompGetICV.h
-	$(CC) -o $@ $(CFLAGS) $(filter-out %.h %Generic.c,$^) -ggdb -D OMP_GET_ICV_MAIN 
+##ompGetICV.o:	$(srcDir)/commons/ompGetICV.c $(srcInclDir)/ompGetICV.h
+##	$(CC) -o $@ $(CFLAGS) $(filter-out %.h %Generic.c,$^) -ggdb -D OMP_GET_ICV_MAIN 
 
 testAll:
 	$(shell bash ../scripts/testAllMatrixGroups.sh | tee - > log/testAll$GRID_ROWSXGRID_COLS )

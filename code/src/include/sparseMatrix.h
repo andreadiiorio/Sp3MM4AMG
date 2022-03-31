@@ -80,7 +80,8 @@ static inline int spVect_idx_in(idx_t idx, SPVECT_IDX_DENSE_MAP* idxsMapAcc){
 		return 0;
 	}
 	#else	
-	if (!( nnzIdxsFlags[idx] )){	//TODO usabile primitiva atomica di cmpswap, accorpamento ops a livello HW?
+	//assert( idx < idxsMapAcc->idxsMapN ); //TODO
+	if (!( idxsMapAcc->idxsMap[idx] )){	//TODO usabile primitiva atomica di cmpswap, accorpamento ops a livello HW?
 		idxsMapAcc->idxsMap[idx] = 1;
 		idxsMapAcc->len++;
 		return 0;

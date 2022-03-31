@@ -68,8 +68,8 @@ CHUNKS_DISTR    chunksFair,chunksFairFolded,chunksNOOP;
 CHUNKS_DISTR_INTERF chunkDistrbFunc=&chunksFairFolded;
 //double Start,End,Elapsed,ElapsedInternal;
 static CONFIG Conf = {
-    .gridRows  = 8,
-    .gridCols  = 8,
+    .gridRows  = 20,
+    .gridCols  = 2,
 	.symbMMRowImplID = RBTREE,
 };
 
@@ -132,6 +132,52 @@ static inline int testSp3MMImplOMP(SP3MM_INTERF sp3mm,SPMM_INTERF spmm,spmat* or
     return out;
 }
 
+//see next function
+#if !defined FIXED_2D_PARTITIONING && !defined MPI_CART_DIMFACT_DIVISION_2D_PARTITIONING && !defined OVERFIT_GRIDROWS_GIVEN_COLS_2D_PARTITIONING
+	#define MPI_CART_DIMFACT_DIVISION_2D_PARTITIONING
+#endif
+#if defined FIXED_2D_PARTITIONING && (!defined FIXED_2D_PARTITIONING_ROWS || !defined FIXED_2D_PARTITIONING_ROWS)
+	#define FIXED_2D_PARTITIONING_ROWS 8
+	#define FIXED_2D_PARTITIONING_COLS 8
+#endif //FIXED_2D_PARTITIONING
+#ifndef SPMM_1DBLOCKS_THREAD_ITERATION_FACTOR
+	#define SPMM_1DBLOCKS_THREAD_ITERATION_FACTOR	2
+#endif //SPMM_1DBLOCKS_THREAD_ITERATION_FACTOR
+/*
+ * adapt omp parallelization grid with respect to the current SpMM implementation (*not Sp3MM*)
+ * @fID, with :
+ *	0 -> SpMM 1D direct
+ *	1 -> SpMM 1D Blocks
+ *	2 -> SpMM 2D offsets
+ *	3 -> SpMM 2D allocated
+ */
+static inline void _adaptGridByImpl(uint fID,const ushort ORIG_GRID_CONF[2]){
+	switch(fID){
+		case _1D_DIRECT:	return;
+		case _1D_BLOCKS:
+			Conf.gridRows = Conf.threadNum * SPMM_1DBLOCKS_THREAD_ITERATION_FACTOR;
+			break;
+		case _2D_OFFSET:
+		case _2D_ALLOCD:
+			#if		defined	FIXED_2D_PARTITIONING
+			Conf.gridRows = FIXED_2D_PARTITIONING_ROWS
+			Conf.gridCols = FIXED_2D_PARTITIONING_COLS
+			#elif	defined	MPI_CART_DIMFACT_DIVISION_2D_PARTITIONING
+			int dims[2] = {0,0};
+			if(MPI_Dims_create(Conf.threadNum,2,dims)) {ERRPRINT("MPIDimscreate ERRD!!!\n");exit(55);}
+			if(dims[1] == 1){ 
+				//threadNum is prime ... not fully dividable... add some reminder dividing threadNum+1
+				if(MPI_Dims_create(Conf.threadNum+1,2,dims)){ERRPRINT("MPIDimscreate ERRD!!!\n");exit(55);}
+			}
+			Conf.gridRows = dims[0];
+			Conf.gridCols = dims[1];
+			#elif	defined	OVERFIT_GRIDROWS_GIVEN_COLS_2D_PARTITIONING
+			Conf.gridCols = ORIG_GRID_CONF[1];
+			Conf.gridRows = INT_DIV_CEIL(Conf.threadNum,Conf.gridCols);
+			#endif	//defined FIXED_2D_PARTITIONING
+
+	}
+} 
 #define TESTTESTS "TESTTESTS"
 #define HELP "usage Matrixes: R_{i+1}, AC_{i}, P_{i+1},[AC_{i+1} || " TESTTESTS "(requires -DCBLAS_TEST)]"\
 "all matriexes in MatrixMarket_sparse_matrix_COO[.compressed] and the triple product will be matched with an oracle output\n" \
@@ -227,6 +273,11 @@ int main(int argc, char** argv){
     if (!getConfig(&Conf)){
         VERBOSE printf("configuration changed from env");
     }
+	//save exported parallelization grid configured ... see Config.md in the top folder
+	//const ushort GRIDROWS = Conf.gridRows;
+	//const ushort GRIDCOLS = Conf.gridCols;
+	const ushort ORIG_GRID_CONF[2] = {Conf.gridRows,Conf.gridCols};
+
     int maxThreads = omp_get_max_threads();
     Conf.threadNum = (uint) maxThreads;
     DEBUG   printf("omp_get_max_threads:\t%d\n",maxThreads); 
@@ -281,26 +332,32 @@ int main(int argc, char** argv){
     SPMM_INTERF		spMMFunc;
 	SP3MM_INTERF  	sp3MMFunc;
 
-	//goto symbNum;	//TODO TODO
-	ub:		///UB IMPLEMENTATIONS
+	//goto symbNum_idxMap;	//TODO TODO
+	
+	//ub:		///UB IMPLEMENTATIONS
 	VERBOSE	hprintf("CHECKING UPPER BOUND IMPLEMENTATIONS\n");
     //test SP3MM as pair of SPMM: RAC = R * AC; RACP = RAC * P
     for (uint f = 0;  f < spMM_UB_FuncsN; f++){
         spMMFunc = spMM_UB_Funcs[f];
-        hprintsf("@computing Sp3MM as pair of SpMM UpperBounded \tfunc:\%u at:%p\n",
-          f,spMMFunc);
+        hprintsf("@computing Sp3MM as pair of SpMM UpperBounded \tfunc:\%u at:%p\n",f,spMMFunc);
+		_adaptGridByImpl(f,ORIG_GRID_CONF);
         if (testSp3MMImplOMP(sp3MM_UB_WrapPair,spMMFunc,oracleOut,R,AC,P))   goto _free;
     }
     //test SP3MM directly as merged two multiplication
     for (uint f = 0;  f < sp3MM_UB_Direct_FuncsN; f++){
         sp3MMFunc = sp3MM_UB_Direct_Funcs[f];
-        hprintsf("@computing Sp3MM directly UpperBounded \tfunc:\%u at:%p\t\n",
-          f,sp3MMFunc);
+        hprintsf("@computing Sp3MM directly UpperBounded \tfunc:\%u at:%p\t\n",f,sp3MMFunc);
+		_adaptGridByImpl(f,ORIG_GRID_CONF);
         if (testSp3MMImplOMP(sp3MMFunc,NULL,oracleOut,R,AC,P))   goto _free;
     }
     VERBOSE printf("\nall pairs of SpMM functions passed the test\n\n\n");
+	#ifdef	 UB_IMPL_ONLY
+	ret = EXIT_SUCCESS;
+	goto _free;
+	#endif	//UB_IMPL_ONLY
 	///SYMB-NUM IMPLEMENTATIONS
-	symbNum:
+	//symbNum:
+	//symbNum_rbtree:
 	VERBOSE	hprintf("CHECKING SYMBOLIC.RBTREE - NUMERIC IMPLEMENTATIONS\n");
 	Conf.symbMMRowImplID = RBTREE;
     //test SP3MM as pair of SPMM: RAC = R * AC; RACP = RAC * P
@@ -308,6 +365,7 @@ int main(int argc, char** argv){
         spMMFunc = spMM_SymbNum_Funcs[f];
         hprintsf("@computing Sp3MM as pair of SpMM SymbolicAccurate with RBTREE \tfunc:\%u at:%p\n",
           f,spMMFunc);
+		_adaptGridByImpl(f,ORIG_GRID_CONF);
         if (testSp3MMImplOMP(sp3MM_SymbNum_WrapPair,spMMFunc,oracleOut,R,AC,P))   goto _free;
     }
     //test SP3MM directly as merged two multiplication
@@ -315,15 +373,18 @@ int main(int argc, char** argv){
         sp3MMFunc = sp3MM_SymbNum_Direct_Funcs[f];
         hprintsf("@computing Sp3MM directly SymbolicAccurate with RBTREE \tfunc:\%u at:%p\t\n",
           f,sp3MMFunc);
+		_adaptGridByImpl(f,ORIG_GRID_CONF);
         if (testSp3MMImplOMP(sp3MMFunc,NULL,oracleOut,R,AC,P))   goto _free;
     }
 	VERBOSE	hprintf("CHECKING SYMBOLIC.IDXMAP - NUMERIC IMPLEMENTATIONS\n");
+	//symbNum_idxMap:
 	Conf.symbMMRowImplID = IDXMAP;
     //test SP3MM as pair of SPMM: RAC = R * AC; RACP = RAC * P
     for (uint f = 0;  f < spMM_SymbNum_FuncsN; f++){
         spMMFunc = spMM_SymbNum_Funcs[f];
-        hprintsf("@computing Sp3MM as pair of SpMM with IDXMAP \tfunc:\%u at:%p\n",
+        hprintsf("@computing Sp3MM as pair of SpMM SymbolicAccurate with IDXMAP \tfunc:\%u at:%p\n",
           f,spMMFunc);
+		_adaptGridByImpl(f,ORIG_GRID_CONF);
         if (testSp3MMImplOMP(sp3MM_SymbNum_WrapPair,spMMFunc,oracleOut,R,AC,P))   goto _free;
     }
     //test SP3MM as merged two multiplication
@@ -331,6 +392,7 @@ int main(int argc, char** argv){
         sp3MMFunc = sp3MM_SymbNum_Direct_Funcs[f];
         hprintsf("@computing Sp3MM directly with IDXMAP \tfunc:\%u at:%p\t\n",
           f,sp3MMFunc);
+		_adaptGridByImpl(f,ORIG_GRID_CONF);
         if (testSp3MMImplOMP(sp3MMFunc,NULL,oracleOut,R,AC,P))   goto _free;
     }
     VERBOSE hprintf("\nall Sp3MM_SymbNum functions passed the test\n\n\n");

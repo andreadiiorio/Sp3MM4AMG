@@ -57,6 +57,7 @@ double* readDoubleVectorStr(char* fpath,ulong* size);
 ///STRUCTURED DATA IO -- BUFFERED: FSCANF - FPRINTF
 //dual of readDoubleVectorVector
 int writeDoubleVectorAsStr(char* fpath,double* v,ulong size);
+int MPI_Dims_create(int nnodes, int ndims, int dims[]);	//commons/ompi_dims_create/ompi_dims_create.c
 
 #include "config.h"
 ///config from ENV
