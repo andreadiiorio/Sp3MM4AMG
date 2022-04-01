@@ -67,7 +67,13 @@ objs := $(shell  grep -Eo '.*\.o:\s' Makefile | grep -v -e '@' -e PHONY -e '##' 
 
 
 all: $(objs)
-.SECONDEXPANSION:
+
+Sp3MM_getFlops.o: sp3MM_getFlops.c $(coreSrcs)
+	$(CC) -o $@ $(CFLAGS)  -I$(srcDir)/include/  $(filter-out %.h %Generic.c,$^) $(CONSTS) $(MACROS)
+Sp3MM_getFlops_DBG.o: sp3MM_getFlops.c $(coreSrcs)
+	$(CC) -o $@ $(CFLAGS)  -I$(srcDir)/include/  $(filter-out %.h %Generic.c,$^) $(CONSTS) $(MACROS) $(DBG)
+
+#.SECONDEXPANSION:
 baseCompil=$(CFLAGS) -I$(srcDir)/include/  $(filter-out %.h %Generic.c,$(testSrcs)) $(MACROS) $(CONSTS) 
 $(info baseCompil:		$(baseCompil))
 

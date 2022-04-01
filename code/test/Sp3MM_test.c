@@ -93,6 +93,9 @@ static inline int testSp3MMImplOMP(SP3MM_INTERF sp3mm,SPMM_INTERF spmm,spmat* or
     spmat* outToCheck=NULL;
     //elapsed stats aux vars
     double times[AVG_TIMES_ITERATION],  timesInteral[AVG_TIMES_ITERATION];
+	memset(times,0,AVG_TIMES_ITERATION*sizeof(times));
+	memset(timesInteral,0,AVG_TIMES_ITERATION*sizeof(timesInteral));
+
     double deltaTStats[2],  deltaTInternalStats[2],notInternalTime,start,end;
 	uint threadNum = Conf.threadNum;
 	#ifdef DECREASE_THREAD_NUM
