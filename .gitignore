@@ -7,8 +7,14 @@ doc/**/*.pdf
 doc/**/*.aux
 doc/**/*.log
 doc/**/*.bbl
+doc/**/*.bib
+doc/**/*.blg
+doc/**/*.bcf
+doc/**/*.toc
+doc/**/*.xml
 doc/**/*.out
 
+**/*.pdf
 **/*.out
 **/*.vim
 **/*.list

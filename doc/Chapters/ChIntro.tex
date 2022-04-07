@@ -169,7 +169,10 @@ derivate da informazioni sulla struttura della griglia di discretizzazione origi
 %AMG finally!
 I metodi Algebrici riescono ad utilizzare unicamente informazioni derivanti dalla matrice associata al sistema da risolvere \ref{eq:1},
 pur mantenendo la stessa complessità asintotica dei \emph{GMG}.\\
-Questa proprietà dei \emph{AMG}, rende possibile applicarli a problemi con una griglia di discretizzazione sottostante non strutturata, come ...
+%Qualunque problema discretizzato con delle griglie non strutturate, p.es. agli elementi finiti
+Questa proprietà dei \emph{AMG}, rende possibile applicarli 
+alla risoluzione di problemi discretizzati con griglie non strutturate,
+ad esempio mediante il metodo degli elementi finiti.\\
 \cite{AMGgeneralANY}.\\
 \par\null\par	%GMG vs AMG
 La gerarchia di sotto-problemi intermedi da risolvere ad ogni iterazione con i metodi AMG è derivata dal triplo prodotto di Galerkin:\\

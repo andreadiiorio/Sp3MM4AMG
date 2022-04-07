@@ -1,0 +1,19 @@
+digraph g {
+fontname="Helvetica,Arial,sans-serif"
+node [fontname="Helvetica,Arial,sans-serif" shape=record]
+edge [fontname="Helvetica,Arial,sans-serif"]
+
+graph [rankdir = "LR"];
+
+task_struct  	[label = "task_struct| struct thread_info thread_info | <mm> mm_struct mm | ... "];
+mm_struct 	 	[label = "<struct> mm_struct | <mmap> vm_area_struct* mmap | <mm_rb> rb_root mm_rb | ..."];
+vm_area_struct 	[label = "<struct> vm_area_struct | ulong vm_start,vm_end | vm_area_struct* vm_next | vm_area_struct* vm_prev | <vm_rb> rb_node vm_rb | ..."];
+rb_root		 	[label = "<struct> rb_root | <rb_node> struct rb_node* rb_node" ]
+rb_node		 	[label = "<struct> rb_node | struct rb_node* rb_left | struct rb_node* rb_right | ulong unsigned long  __rb_parent_color "]
+
+task_struct:mm 			->	mm_struct:struct		[id = 0];
+mm_struct:mmap			->	vm_area_struct:struct	[id = 1];
+mm_struct:mm_rb			->	rb_root:struct			[id = 2];
+vm_area_struct:vm_rb	->	rb_node:struct			[id = 3];
+rb_root:rb_node			->	rb_node:struct			[id = 4];
+}

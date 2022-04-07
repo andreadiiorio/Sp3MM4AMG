@@ -129,14 +129,98 @@ combinando la ridefinizione delle macro di configurazione \verb|OUT_IDXS COL_PAR
 \section{Linux Kernel 5.10.85 RedBlack Tree Userspace porting} \label{chSpMMAux:linuxRBTree}
 L'implementazione dei RedBlack Tree usati nel prodotto simbolico è ottenuta effettuando un porting in 
 userspace dei moduli relativi del kernel Linux 5.10.85.\\
-\subsection{RedBlack nel kernel Linux}	%TODO
+\subsection{RedBlack nel kernel Linux}
+\begin{figure}[H]
+  \centering \includegraphics[width=\linewidth,keepaspectratio]{Red-black_tree_example.svg.png}
+  \caption[Rappresentazione grafica di un RedBlack Tree]
+  \decoRule \label{fig:rbtree}
+\end{figure}
+I RedBlack Tree sono delle strutture di ricerca molto efficienti catalogabili come 
+\emph{Alberi binari auto bilanciati}.\\%self//semi-balancing binary search tree
+La loro formulazione comprende diversi vincoli strutturali, da mantenre in seguito ad ogni operazione di inserimento o cancellazione,
+che garantiscono ottime proprietà di bilanciamento tra cui avere che:\\ %| path: root ⟶ foglia più lontana | ≤  2* | path: root ⟶ foglia più vicina |
+la distanza tra la radice dell'albero e la foglia più lontana è minore o uguale della distanza tra la radice e la foglia più vicina.\\
+Le proprietà di bilanciamento assieme ai vincoli strutturali ne garantiscono ai RedBlack Tree
+un costo computazione logaritmico al numero di elementi inseriti per ogni operazione.\\
+\voidLine
+Il kernel del sistema operativo Linux usa i RedBlack Tree per vari scopi, tra cui:
+\begin{itemize}
+	\item	le regioni di memoria virtuale (VMAs) associate ad un processo
+	\item	la gestione delle directory nel filesystem ext3
+	\item	la gestione dei timer ad alta risoluzione attivi
+	\item	la gestione dei pacchetti di rete nello scheduler \vvv{hierarchical token bucket}
+	\item	il tracciamento delle richieste negli schedulers \verb|CFQ I/O| e \vvv{deadline}
+	\item	la gestione dei pacchetti nel driver per CD/DVD
+	\item	la gestione degli epoll file descriptors
+	\item	la gestione delle chiavi crittografiche
+\end{itemize}  
+\cite{lwnAgumentedRBtrees}
+\voidLine
+\label{chSpMMAux:memRegionRBTree}
+Un esempio dell'importanza dei RedBlack Tree è il primo punto della lista precedente,
+ovvero la gestione degli indirizzi associati ad un processo Linux.\\\
+Lo spazio degli indirizzi di memoria virtuale di un processo in Linux è implementato mediante una serie
+di intervalli di indirizzi denominati regioni di memoria, salvati sia in una lista collegata che in un RedBlack, contenuti
+nel \vvv{Memory Descriptor} di un processo.\\
+Per supportare una ricerca efficiente della regione di memoria associata o vicina ad un indirizzo
+(e.g. \verb|find_vma( )| ) viene usato il RedBlack tree, 
+mentre per operazioni di scansione completa dello spazio degli indirizzi viene utilizzata la lista collegata
+\cite{ulk}.\\
+\voidLine
+Segue una rappresentazione schematica delle strutture relative alla gestione delle regioni di memoria, con
+un focus sui RedBlack 
+\begin{figure}[H]
+  \centering \includegraphics[width=\linewidth,keepaspectratio]{RBtreeInMMDesriptor.dot.colored.svg.png}
+  \caption{Rappresentazione delle strutture usate per la gestione dello spazio degli indirizzi di un processo
+			evidenziando la presenza dei RedBlack Tree}
+  \decoRule \label{fig:RBtreeInMMDesriptor}
+\end{figure}
+Nella figura precedente è evidenziato come da un processo \vvv{p}(\verb|task_struct|) è possibile
+accedere al suo \vvv{Memory Descriptor} associato (\verb|mm_struct|), contente le varie 
+regioni di memoria (\verb|vm_area_struct|) relative ai vari intervalli di indirizzi 
+collegati a \vvv{p}.\\
+La gestione delle regioni di memoria è possibile sia mediante la strutturazione degli stessi 
+in lista collegata (campi \verb|vm_next vm_prev| in \verb|vm_area_struct|),
+sia mediante RedBlack tree grazie ai campi evidenziati in rosso in \ref{fig:RBtreeInMMDesriptor}
+\voidLine
+Dalle strutture \verb|rb_root rb_node| dei RedBlack appena mostrate è possibile notare l'assenza 
+campi contenenti chiavi o puntatori a strutture nodo. 
+Questo fatto è dovuto alla scelta di ottimizzare l'implementazione di queste strutture eliminando 
+layers di indirezione inutili all'esecuzione delle funzionalità principali di questi alberi.
+Da questa scelta degli sviluppati del kernel linux consegue la necessità di dover 
+innestare le strutture \verb|rb_node| all'interno di delle strutture nodo contenti un campo chiave adeguato
+ed dover implementare le funzioni di inserimento ed eliminazione nodi per ogni applicazione.
+La navigazione da una struttura \verb|rb_node| alla struttura nodo che la contiene è effettuabile
+semplicemente con la macro \verb|container_of| .\\%wrappata dalla macro \verb|rb_entry|
+
+\voidLine
+Le tipologie principali di RedBlack tree presenti nel kernel linux sono:
+\begin{enumerate}
+	\item normali  		identificati da una radice di tipo \verb|rb_root|
+	\item left-cached 	identificati da una radice di tipo \verb|rb_root_cached|
+		caratterizzati dall'avere il nodo con chiave minima (più a sinistra nell'albero) salvato con un puntatore nella radice
+	\item augmented		identificati da avere il suffisso \verb|_augmented| nelle operazioni associate,
+		caratterizzati dall'avere salvati in ogni nodo \vvv{n} dei dati derivati dal contenuto del sotto albero con radice in \vvv{n}.\\
+		Con questo tipo di RedBlack Tree è possibile implementare un supporto efficiente alla gestione di range come chiavi,
+		e.g. Interval Tree \cite{rbtree.rst,algoIntro}
+	\item latched		identificati dalle strutture radice e nodo rispettivamente \verb|latch_tree_root latch_tree_node|
+		utili a supportare proprietà di consistenza in esecuzioni concorrenti lock-less,
+		mediante la tecnica basata su multiple versioni dei dati \emph{latch}
+	%The latch technique is a multiversion concurrency control method that allows queries during non-atomic modifications. If you can guarantee queries never interrupt the modification – e.g. the concurrency is strictly between CPUs – you most likely do not need this.
+	%Where the traditional RCU/lockless data structures rely on atomic modifications to ensure queries observe either the old or the new state the latch allows the same for non-atomic updates. The trade-off is doubling the cost of storage; we have to maintain two copies of the entire data structure.
+\end{enumerate}
+
 \subsection{Porting in UserSpace}
+Ho effettuato il porting in UserSpace dei primi due tipi di RedBlack tree del kernel linux 5.10.27 menzionati precedentemente 
+ed ho reso disponibile il lavoro ad altri usi nel mio repository \url{https://github.com/andreadiiorio/redblackTree_linux_userspace}.\\
 Per effettuare il porting delle funzioni necessarie al prodotto simbolico con RedBlack Tree è stato necessario 
-rimpiazzare varie dipendenze definite in altri moduli del kernel linux come la macro \verb|container_of| o le funzioni di (de)allocazione
-con soluzioni alternative in userspace.\\
-Sono state rimosse le versioni RCU delle operazioni sui RedBlack Tree.
-Inoltre, per ottenere un codice minimalizzato dei RedBlack all'uso necessario nella fase simbolica di SpMM, 
-è stata creata una versione ridotta del porting senza le funzioni non indispensabili al prodotto.
+rimpiazzare varie dipendenze definite in altri moduli del kernel linux come 
+le macro \verb|container_of READ_ONCE WRITE_ONCE| \dots  o le funzioni di (de)allocazione
+con soluzioni alternative in userspace.\\Sono state inoltre rimosse le versioni RCU delle operazioni sui RedBlack Tree per questioni di semplicità. 
+
+Per supportare la fase simbolica per l'operazione di SpMM è stata realizzata una seconda versione minimalizzata del porting,
+senza le funzioni non indispensabili al prodotto.\\
+
 %Per supportare efficacemente questo ho usato il seguente approccio basato su opzioni di compilazione e linking per 
 %individuare funzioni non utilizzate.\\
 %\begin{lstlisting}[language=Makefile]
@@ -256,6 +340,42 @@ può dare dei benefici prestazionali.\\
 Per realizzare questa funzionalità ho realizzato una funzione che adatta dinamicamente 
 il chunksize di un ciclo parallelizzato ad $\frac{\#\text{iterazioni}}{\# \text{thread} \cdot \text{FAIR\_CHUNKS\_FOLDING}}$
 dove \verb|FAIR_CHUNKS_FOLDING| è una macro configurabile a tempo di compilazione.\\
+
+\section{Configurazione automatica della griglia di partizionamento del lavoro}	\label{chSpMMAux:ompGrid}
+Nelle implementazioni parallele di SpMM descritte in \ref{Chapter3} è prevista una suddivisione della computazione del risultato
+tra i vari thread mediante sia il chunksize configurato in openMP, sia tramite una griglia di partizionamento del lavoro.\\
+Il chunksize dello scheduling openMP configurato determina quante iterazioni di un ciclo parallelizzato affidare ad un thread
+ed è configurato automaticamente in base al tipo di scheduling come descritto precedentemente in \ref{chSpMMAux:dynChunkFairAdapting}.\\
+La griglia di partizionamento consiste in un partizionamento del risultato da calcolare in blocchi 1D o 2D.\\
+\voidLine
+Nel caso di implementazioni monodimensionali è possibile suddividere la computazione in blocchi di righe sia automaticamente 
+mediante il chunksize di openMP, sia mediante un pre-partizionamento delle righe in blocchi all'interno del ciclo parallelizzato.
+L'approccio usato in quest'ultimo caso è quello di suddividere le righe del risultato in blocchi di dimensione simile,
+in numero pari \verb|SPMM_1DBLOCKS_THREAD_ITERATION_FACTOR| volte il numero di thread configurato per il calcolo.\\
+Nel caso di implementazioni bidimensionali di SpMM è necessario strutturare il calcolo del risultato in blocchi 2D, corrispondenti
+a una suddivisione delle righe di A e delle colonne di B rispettivamente in \vvv{gridRows}x\vvv{gridCols} blocchi.\\
+Mediante le seguenti euristiche, la determinazione della griglia di partizionamento in questo caso è stata resa configurabile 
+basate sul numero di thread configurato per l'esecuzione:\\
+\begin{itemize}
+	\item	automaticamente in una griglia di blocchi determinata mediante un porting che ho realizzato 
+			della funzione \verb|MPI_Dims_create| da OpenMPI
+	\item	a partire da una suddivisione delle colonne di B (associata a un costo di preprocessamento nel caso d'analisi CSR, come descritto in \ref{chSpMMAux:csrColPartitioning})
+			da cui derivare un partizionamento delle righe di A pari a $\left\lceil \frac{numThread}{gridCols}  \right\rceil$
+	\item	un partizionamento fisso, configurabile manulamente a tempo di compilazione con le macro
+			\verb|FIXED_2D_PARTITIONING_ROWS FIXED_2D_PARTITIONING_COLS|
+\end{itemize}
+\subsection{porting funzione MPI\_Dims\_create da OpenMPI}	\label{ompiDimsCreate}
+Al fine di supportare una suddivisione del lavoro di SpMM per il numero di thread $nThread$ configurato
+in una griglia di partizionamento 2D, il più quadrata possibile, ho realizzato un porting della 
+funzione \verb|MPI_Dims_create| da OpenMPI.\\
+Nel contesto della programmazione a memoria distribuita, 
+la funzione \verb|MPI_Dims_create| consente di determinare una suddivisone bilanciata di un numero di processi in una topologia 
+cartesiana n-dimensionale da utilizzare durante il calcolo. \cite{openMPIman}\\
+Nella determinazione della griglia di partizionamento per implementazioni bidimensionali di SpMM ho usato 
+\verb|MPI_Dims_create| per suddividere il numero di thread configurato nei parametri \verb|gridRows gridCols|.
+Nel caso di utilizzare un numero di thread primo è impossibile ottenere una suddivisione esatta non monodimensionale,
+per questo motivo ho gestito questi casi suddividendo $nThread+1$ in luogo di $nThread$, 
+così da poter assegnare almeno un iterazione ad ogni thread.\\
 
 
 \section{Assegnamento dinamico di memoria ai thread \emph{fence-less}} \label{chSpMMAux:atomicSegAssign}
@@ -441,6 +561,30 @@ fine della sotto riga da copiare.\\
 	nell'accedere righe consecutive di una stessa partizione, dato che i \nnz relativi non sono 
 	contigui in memoria.
 \end{itemize}
+
+\section{Verfica correttezza delle implementazioni}
+Tutte le implementazioni parallele realizzate per Sp3MM sono state verificate 
+mediante un confronto con una matrice risultante ottenuta esternamente o
+da una implementazione seriale di riferimento.
+In entrambi i casi, il confronto è considerato positivo se c'è una uguaglianza esatta 
+tra le dimensioni delle matrici e gli indici degli elementi \nnz (il componente \vvv{JA} del formato CSR)
+e se i valori floating point delle matrici sono uguali a meno di una soglia di tolleranza (configarata con $7~10^{-4}$.\\
+È importante sottolineare la necessità di effettuare il confronto tra valori \nnz delle matrici con una soglia,
+%dato che le rappresentazioni floating-point per i numeri reali sono soggetti ad errori di approssimazione, 
+dato che le operazioni tra rappresentazioni floating-point sono soggette ad errori di approssimazione che possono portare 
+a risultati diversi in base al sequenziamento delle operazioni effettuate (non prevedibile in una implementazione parallela)
+\cite{goldmanFP}
+
+\subsection{implementazione seriale di riferiemento}	\label{implSerialeRiferimento}
+L'implementazione seriale di riferimento è stata realizzata con una coppia di operazioni di SpMM
+realizzate con un approccio \rowbyrow, in modo molto simile alle implementazioni monodimensionali descritte in \ref{chSpMMNum:part1DGroup}.
+A differenza della controparte parallela, l'implementazione seriale gode della grande facilitazione 
+di poter scrivere le righe della matrice risultante direttamente nell'output dell'operazione senza una fase simbolica precedente,
+data la possibilità di accumulare le lunghezze delle righe calcolate precedentemente alla corrente.\\
+\voidLine
+Per validare gli output dell'implementazione seriale per alcuni input di piccola dimensione,
+è stato effettuato un confronto con una implementazione di riferimento per matrici dense: \vvv{CBLAS} \cite{CBLAS},
+in seguito ad una trasformazione delle matrici da un formato sparso ad uno denso.\\
 
 \section{Distribuzione uniforme del lavoro tra i thread}	\label{chSpMMAux:UNIF_REMINDER_DISTRI}
 Distribuire uniformemente il carico di lavoro tra i thread è un'operazione importante,

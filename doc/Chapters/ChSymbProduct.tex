@@ -218,7 +218,6 @@ per gestire il mantenimento degli indici \nnz per il Prodotto Simbolico, come fa
 %Dato il pattern di accesso write-mostly %TODO better CHECKKKK ANd explain
 %della fase simbolica dell'operazione di SpMM ho deciso di utilizzare dei RedBlack tree piuttosto che degl'alberi AVL.\\
 Tra le varie possibilità disponibili, ho scelto di usare una implementazione di RedBlack tree.\\
-\label{chSpMMSymb:usoRBTree}
 L'implementazione dei RedBlack l'ho ricavata personalmente dalla implementazione disponibile nel kernel Linux 5.10.85 (LTS),
 mediante un processo di porting in user-space.\\
 Il porting in userspace che ho realizzato dei RedBlack tree di linux è disponibile nella mia pagina: \url{https://github.com/andreadiiorio/redblackTree_linux_userspace}.
@@ -330,7 +329,7 @@ L'operazione appena descritta è eseguita in parallelo per ogni riga di $AC_{i+1
 
 \subsection{Pro e contro UpperBound o Prodotto simbolica Accurato} \label{chSpMMSymb:UB_VS_SYMBACC}
 La analisi delle differenze prestazionali di implementazioni di SpMM con fase Simbolica Accurata o UpperBound
-sarà analizzata in seguito nel capitolo dedicato all'analisi delle performance \ref{ChPerformance}.\\
+sarà analizzata in seguito nel capitolo dedicato all'analisi delle performance \ref{ChPerf}.\\
 Di seguto qualche considerazione di carattere generale che è possibile trarre dall'analisi di questi approcci differenti.\\
 \begin{enumerate}
 	\item L'UpperBound gode sicuramente di un costo computazione nettamente inferiore 

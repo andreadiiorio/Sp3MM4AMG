@@ -85,38 +85,74 @@ def getReMatchFull(pattern,string):
     except: out=""
     return out
 
-GRID_PATTERN="\d+x\d+"
-SIZE_PATTERN=GRID_PATTERN+"-\d+NNZ-\d+=MAX_ROW_NZ"
+GRID_PATTERN    = "\d+x\d+"
+SIZE_PATTERN    = GRID_PATTERN+"-\d+NNZ-\d+=MAX_ROW_NZ"
+FP_EXP_PATTERN  = "[-+]?\d+\.?\d+e[-+]\d+"
+FP_PATTERN      = "[-+]?\d+\.\d+"
+parseSizes      = lambda s:  s #[int(x) for x in s.split("x")] #TODO not good CSV PARSED
 parseGridPattern = lambda s: s.strip().split("x")
-FP_PATTERN="[-+]?\d+\.?\d+e[-+]\d+"
-parseSizes=lambda s:  s #[int(x) for x in s.split("x")] #TODO not good CSV PARSED
 
 BuildConf = namedtuple("BuildConf","symbUBAssignType bitmapLimbSize")
+BuildConfIDOrder = {k:i for i,k in enumerate(BuildConf._fields)}
+
+def parseMatSizes(confLine):
+    srcSize     = parseSizes(getReMatch("COARSENING AC:\s*(" + GRID_PATTERN + ")", confLine))
+    dstSize     = parseSizes(getReMatch("-->\s*(" + GRID_PATTERN + ")", confLine))
+    sampleSize  = int(getReMatch("AVG_TIMES_ITERATION:(\d+)", confLine))
+    nnz_racp    = getReMatch("NNZ:\s*(\d+-\d+-\d+)", confLine)
+    nnz_r_ac_p  = [int(x) for x in nnz_racp.split("-")]
+    return srcSize,dstSize,nnz_r_ac_p,sampleSize
+
 def parseConfig(confLine):
-    srcSize  = parseSizes(getReMatch("COARSENING AC:\s*("+GRID_PATTERN+")",confLine))
-    dstSize  = parseSizes(getReMatch("-->\s*("+GRID_PATTERN+")",confLine))
-    sampleSize          = int(getReMatch("AVG_TIMES_ITERATION:(\d+)",confLine))
-    parallGridSize      = parseSizes(getReMatch("grid:\s*("+GRID_PATTERN+")",confLine))
-    nnz_racp            = getReMatch("NNZ:\s*(\d+-\d+-\d+)",confLine)
-    nnz_r,nnz_ac,nnz_p  = [int(x) for x in nnz_racp.split("-")]
+    srcSize, dstSize, nnz_r_ac_p, sampleSize = parseMatSizes(confLine)
+    parallGridSize = parseSizes(getReMatch("grid:\s*(" + GRID_PATTERN + ")", confLine))
+
     #get current build config
     symbUBAssignType    = getReMatch("symbUBAssignType:(\w+)",confLine)
     bitmapLimbSize      = int(getReMatch("bitmapLimbSize:(\d+)",confLine))
 
-    return parallGridSize,srcSize,dstSize,nnz_r,nnz_ac,nnz_p,sampleSize,\
+    return parallGridSize,srcSize,dstSize,*nnz_r_ac_p,sampleSize,\
       BuildConf(symbUBAssignType,bitmapLimbSize)
 
+Source = namedtuple("Source","AMG_Method size smoothness mtxs",defaults=[None])
+def classifySrcMatrixes(srcStr):
+    #classify triple product matrix from VanekBrezina/Medium/Smoothed/dump_lev_d_p0_l002_r.mtx to Inputclass
+    matricesFields = [m.split("/") for m in srcStr.split()]
+    #check other matrixes in srcStr are the same type
+    matricesInputClasses = [ Source(*m[:-1]) for m in matricesFields ] #just take the input class of each matrix
+    m_r = matricesInputClasses[0]
+    for m in matricesInputClasses[1:]:  assert( m == m_r)       #TODO validation srcStr matrixes of same class!
+    return m_r._replace(mtxs=tuple([mFields[-1] for mFields in matricesFields])) #add mtxs directly
+def srcReplaceMtxWithLev(source):
+    levStart = source.mtxs[1].find("00")
+    lev = int(source.mtxs[1][levStart:levStart + 3])
+    return source._replace(mtxs=lev)
+
+##FUNC ID CONSTS -runtime part-
 FuncID = namedtuple("FuncID","implNum sp3MMComboType symbType symbAccType")
+FuncIDOrder = {f:i for i,f in enumerate(FuncID._fields)}
+FUNC_ID_DIM = {0:"1D",1:"1D",2:"2D",3:"2D"}
+def getDimensionality(funcID):    return FUNC_ID_DIM[funcID.implNum]
+
+def mapFuncIDToStr(funcID):
+    dim = getDimensionality(funcID)
+    pref = funcID.symbType
+    if funcID.symbAccType != "None":          pref+="_"+funcID.symbAccType
+    elif funcID.sp3MMComboType == DIRECT:   pref+="_direct"
+    return pref+"_"+str(dim)
+
+UB,SYMBACC  =   "UpperBound","SymbolicAccurate"     #symb phase kind
+SPMM,DIRECT =   "pairMuls","direct"                 #composition of Sp3MM kind
 def parseComputeFuncID(l):
     #gather func identifiers + its subversion
     implNum = int(getReMatch("func:\s*(\d+)",l))
-    sp3MMComboType = "pairMuls"
-    if "direct" in l:   sp3MMComboType = "direct"
-    symbType = "upperBounded"
-    if "SymbolicAccurate" in l: symbType = "symbAcc"
+    sp3MMComboType =    SPMM
+    if "direct" in l:   sp3MMComboType = DIRECT
+    symbType = UB
+    if "SymbolicAccurate" in l: symbType = SYMBACC
     #symbAccType
     try:    symbAccType = getReMatch("with (\w+) ",l)
-    except: symbAccType = None
+    except: symbAccType = "None"
 
     return FuncID(implNum, sp3MMComboType, symbType, symbAccType)
 
@@ -135,21 +171,21 @@ def parseSingleRun(l):
     """
     threadNum,ompGridSize=0,[None,None]     #expected 2D  ompGridSize
     if "omp" in l:
-            threadNum = getReMatch("threadNum:\s*(\d+)",l)
+            threadNum   = int(getReMatch("threadNum:\s*(\d+)",l))
             ompGridSize = parseSizes(getReMatch("ompGridSize:\s*("+GRID_PATTERN+")",l))
             ompGridSize = parseGridPattern(ompGridSize)
     cudaBlkSize,cudaGridSize = [None]*3,[None]*3
     if "cuda" in l:
             cudaBlkSize   = getReMatch("cudaBlockSize:\s*(\d+\s+\d+\s+\d+)",l).split()
             cudaGridSize  = getReMatch("cudaGridSize:\s*(\d+\s+\d+\s+\d+)",l).split()
-    timeAvg = float(getReMatch("timeAvg:\s*("+FP_PATTERN+")",l))
-    timeVar = float(getReMatch("timeVar:\s*("+FP_PATTERN+")",l))
-    timeInternalAvg = float(getReMatch("timeInternalAvg:\s*("+FP_PATTERN+")",l))
-    timeInternalVar = float(getReMatch("timeInternalVar:\s*("+FP_PATTERN+")",l))
+    timeAvg = float(getReMatch("timeAvg:\s*(" + FP_EXP_PATTERN + ")", l))
+    timeVar = float(getReMatch("timeVar:\s*(" + FP_EXP_PATTERN + ")", l))
+    timeInternalAvg = float(getReMatch("timeInternalAvg:\s*(" + FP_EXP_PATTERN + ")", l))
+    timeInternalVar = float(getReMatch("timeInternalVar:\s*(" + FP_EXP_PATTERN + ")", l))
     return timeAvg,timeVar,timeInternalAvg,timeInternalVar,\
       threadNum,ompGridSize,cudaBlkSize,cudaGridSize
 
-def parseFuncsExes(lGroup,confLine,ompSched,src):
+def parseFuncsExes(lGroup,confLine,ompSched,srcs):
     """
     parse lines related to diff configurations executions of a function in @lGroup
     composed of a series of (at least 2) lines, an headerLine (funcID) and compute times (times and conf)
@@ -160,6 +196,7 @@ def parseFuncsExes(lGroup,confLine,ompSched,src):
     @Returns:   list of Execution namedtuple of parsed lines @lGroup
     """
     out = list()
+    src = classifySrcMatrixes(srcs)
     exeConf = parseConfig(confLine)
     parallGridS,matSizes,sampleSize,buildConf=exeConf[0],exeConf[1:-2],exeConf[-2],exeConf[-1]
     ompSched = parseOmpRuntimeSchedule(ompSched)
@@ -213,8 +250,32 @@ def groupExesExtendPivot(executionTimes,fieldsToExpand=GROUP_IMPLEMENTATIONS_TRG
     
     return out
 
-   
-def parseLog(log,groupImplementations=GROUP_IMPLEMENTATIONS):
+def parseFlopsLine(l):
+    flopN          = int(getReMatch("flop:(\d+)", l))
+    serialTimeAvg   = float(getReMatch("elapsedAvg:(%s)\t" % FP_PATTERN, l))
+    serialTimeVar   = float(getReMatch("elapsedVar:(%s)" % FP_PATTERN, l))
+    serialMFlops    = float(getReMatch("MegaflopsAvg:(%s)" % FP_PATTERN, l))
+    return  flopN, serialTimeAvg, serialTimeVar, serialMFlops
+
+FlopsSp3MM = namedtuple("Flops","source flopN srcSize dstSize NNZ_R NNZ_AC NNZ_P  AVG_TIMES_ITERATION serialTimeAvg serialTimeVar serialFlops")
+def parseFlopsLog(log):
+    """
+    parse flops program log, like:
+    #r ac p ac_next
+    COARSENING AC: 2744x2744 ---> 343x343	conf grid: 20x2,	NNZ:12642-18032-12642	 AVG_TIMES_ITERATION:40	symbUBAssignType:STATIC_ASSIGN	bitmapLimbSize:128
+    Sp3MM as 2 SpMM	flop:9350720	elapsedAvg:0.004522	elapsedVar:0.000000	MegaflopsAvg:2067.960706
+    """
+    out = list()
+    matrixGroup = [mg.strip().split("\n") for mg in log.split("#")[1:]]       #different runs' lines  of the test program blocks
+    for mg in matrixGroup:
+        sources,confLine,flopLine = mg
+        srcs = " ".join(("/".join(m.split("/")[-4:])  for m in sources.split()))
+        srcSize, dstSize, nnz_r_ac_p, sampleSize  = parseMatSizes(confLine)
+        flopN,serialTimeAvg,serialTimeVar,serialMFlops      = parseFlopsLine(flopLine)
+        out.append(FlopsSp3MM(classifySrcMatrixes(srcs),flopN,srcSize,dstSize,*nnz_r_ac_p,sampleSize,serialTimeAvg,serialTimeVar,serialMFlops))
+    return out
+
+def parseExecutionsLog(log, groupImplementations=GROUP_IMPLEMENTATIONS):
     """
     extract Execution tuples from the string @log
     eventually appling pivots if @groupImplementations....
@@ -228,9 +289,9 @@ def parseLog(log,groupImplementations=GROUP_IMPLEMENTATIONS):
         mg = head.split("\n")
         if len(mg) < 2:  print("not complete mGroup",i,mGroup,file=stderr);continue
         header,ompSched,confLine = mg[0],mg[1],mg[2]
-        src = header.replace(" ","_").split("/")[-1]
+        srcs = " ".join(("/".join(m.split("/")[-4:])  for m in header.split()))
         #parse compute lines
-        computeEntries = parseFuncsExes(computes,confLine,ompSched,src) #Execution tuples
+        computeEntries = parseFuncsExes(computes,confLine,ompSched,srcs) #Execution tuples
         #merge all Execution tuples with a common config in a single one (threading tests)
         if groupImplementations:   computeEntries=[groupExesExtendPivot(computeEntries)]
 
@@ -282,7 +343,7 @@ if __name__ == "__main__":
     if len(argv) < 2 or "-h" in argv[1]:  print(__doc__);exit(1)
     outCsv = argv[1]+".csv"
     with open(argv[1]) as f:    log=f.read()
-    executesTuples = parseLog(log)
+    executesTuples = parseExecutionsLog(log)
     assert len(executesTuples) > 0,"nothing parsed:("
     out = ""
     if not GROUP_IMPLEMENTATIONS:   #just print different tuples formatted

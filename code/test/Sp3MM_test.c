@@ -155,6 +155,7 @@ static inline int testSp3MMImplOMP(SP3MM_INTERF sp3mm,SPMM_INTERF spmm,spmat* or
  *	3 -> SpMM 2D allocated
  */
 static inline void _adaptGridByImpl(uint fID,const ushort ORIG_GRID_CONF[2]){
+	int dims[2] = {0,0};
 	switch(fID){
 		case _1D_DIRECT:	return;
 		case _1D_BLOCKS:
@@ -166,7 +167,6 @@ static inline void _adaptGridByImpl(uint fID,const ushort ORIG_GRID_CONF[2]){
 			Conf.gridRows = FIXED_2D_PARTITIONING_ROWS
 			Conf.gridCols = FIXED_2D_PARTITIONING_COLS
 			#elif	defined	MPI_CART_DIMFACT_DIVISION_2D_PARTITIONING
-			int dims[2] = {0,0};
 			if(MPI_Dims_create(Conf.threadNum,2,dims)) {ERRPRINT("MPIDimscreate ERRD!!!\n");exit(55);}
 			if(dims[1] == 1){ 
 				//threadNum is prime ... not fully dividable... add some reminder dividing threadNum+1

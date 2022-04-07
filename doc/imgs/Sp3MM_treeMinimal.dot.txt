@@ -1,0 +1,37 @@
+graph ""
+   {
+    fontname="Helvetica,Arial,sans-serif"
+    node [fontname="Helvetica,Arial,sans-serif"]
+    edge [fontname="Helvetica,Arial,sans-serif"]
+	#node [fontsize=10,width=".2", height=".2", margin=0];
+	#graph[fontsize=8];
+    #label="Bottom"
+
+	Sp3MM -- UpperBound
+	Sp3MM -- SymbAccurate
+
+		UpperBound 		-- 	"TmpSpace StaticAssign"
+		UpperBound 		-- 	"TmpSpace DynAssign"
+			"TmpSpace StaticAssign"	-- SpMM1D_0 
+			"TmpSpace StaticAssign"	-- SpMM2D_1 
+			"TmpSpace DynAssign" 	-- SpMM1D_2 
+			"TmpSpace DynAssign" 	-- SpMM2D_3 
+			"TmpSpace DynAssign" 	-- Sp3MM_1D
+
+		SymbAccurate	--	 RBTree
+		SymbAccurate	--	 idxMap
+			#NB nodes name shouldn't start with number --> added _
+			RBTree	--	SpMM1D
+			#idxMap	--	limb_32bit 	--	_1D_0
+			idxMap	--	limb_64bit 	--	_1D_1
+			idxMap	--	limb_128bit	--	_1D_2
+
+	#common names nodes separated by num suffix now removed with label
+	SpMM1D_0 [ label="SpMM_1D" ]
+	SpMM2D_1 [ label="SpMM_2D" ]
+	SpMM1D_2 [ label="SpMM_1D" ]
+	SpMM2D_3 [ label="SpMM_2D" ]
+	_1D_0	 [ label="SpMM_1D" ]
+	_1D_1	 [ label="SpMM_1D" ]
+	_1D_2	 [ label="SpMM_1D" ]
+   }
