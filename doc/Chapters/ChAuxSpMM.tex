@@ -194,7 +194,7 @@ La navigazione da una struttura \verb|rb_node| alla struttura nodo che la contie
 semplicemente con la macro \verb|container_of| .\\%wrappata dalla macro \verb|rb_entry|
 
 \voidLine
-Le tipologie principali di RedBlack tree presenti nel kernel linux sono:
+Le tipologie principali di RedBlack tree presenti nel kernel linux sono:	\label{linuxRBTree_}
 \begin{enumerate}
 	\item normali  		identificati da una radice di tipo \verb|rb_root|
 	\item left-cached 	identificati da una radice di tipo \verb|rb_root_cached|
@@ -210,7 +210,7 @@ Le tipologie principali di RedBlack tree presenti nel kernel linux sono:
 	%Where the traditional RCU/lockless data structures rely on atomic modifications to ensure queries observe either the old or the new state the latch allows the same for non-atomic updates. The trade-off is doubling the cost of storage; we have to maintain two copies of the entire data structure.
 \end{enumerate}
 
-\subsection{Porting in UserSpace}
+\subsection{Porting in UserSpace} 
 Ho effettuato il porting in UserSpace dei primi due tipi di RedBlack tree del kernel linux 5.10.27 menzionati precedentemente 
 ed ho reso disponibile il lavoro ad altri usi nel mio repository \url{https://github.com/andreadiiorio/redblackTree_linux_userspace}.\\
 Per effettuare il porting delle funzioni necessarie al prodotto simbolico con RedBlack Tree è stato necessario 

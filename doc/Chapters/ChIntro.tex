@@ -61,7 +61,7 @@ L'High Performance Computing si riferisce a tecnologie hardware e software
 usate per realizzare sistemi di elaborazione ad alte prestazioni 
 per applicazioni che richiedono computazioni molto onerose, non risolvibili con sistemi informatici tradizionali.\\
 
-\section{Uso di Metodi basati su Algebraic Multi Grid nel calcolo scientifico}
+\section{Uso di Metodi basati su Algebraic Multi Grid nel calcolo scientifico} \label{chIntro:PDE_intro}
 Applicazioni HPC tipiche sono provenienti dal mondo ingegneristico e dal calcolo scientifico,
 come ad esempio la risoluzione di equazioni differenziali alle derivate parziali (\emph{PDE}) su dominii 2D o 3D.\\
 Le PDE sono usate per descrivere moltissimi fenomeni fisici relativi alla
@@ -101,7 +101,7 @@ si rende indispensabile sfruttare questa proprietà quando presente,
 dato che tecniche classiche per matrici dense necessiterebbero di una quantità di memoria 
 quadratica nella dimensione della matrice, contro una quantità lineare nel numero dei non zeri con tecniche di algebra sparsa.
 \voidLine	%prefer of iterative solver to keep sparsity
-\subsection{Tecniche risolutive efficienti di sistemi sparsi}
+\subsection{Tecniche risolutive efficienti di sistemi sparsi} \label{directVsIndirectSpLinSysSolvers}
 Solutori per problemi del tipo \ref{eq:1}, possono essere di tipo diretto o iterativo.\\
 Solutori di tipo diretto tipicamente impiegano una fattorizzazione della matrice $A$ 
 in matrici di struttura semplice (triangolare, diagonale, ortogonale) 
@@ -136,7 +136,7 @@ può essere riutilizzata per sistemi in cui viene cambiato il lato destro di \re
 %o anche in caso in cui la matrice $A$ cambia i valori \nnz ma non il loro pattern di sparsità... 50% del tempo
 come analizzato in \cite{sparseLinearSolverTR}.\\
 \voidLine
-\subsection{Solutori MultiGrid}
+\subsection{Solutori MultiGrid} \label{multiGrid}
 Tra i solutori iterativi più efficienti ci sono quelli basati su metodi \emph{MultiGrid}, 
 che godono di ottime caratteristiche di scalabilità come avere un numero di iterazioni e 
 un costo per iterazione approssimatamente costante all'incrementare della dimensione del problema \cite{AMGgeneralANY,Sp3MM4AMG}.\\
@@ -197,7 +197,7 @@ Realizzare il triplo prodotto tra matrici sparse,in gergo \emph{Sp3MM: Sparse Tr
 in parallelo è l'obbiettivo di questa tesi, al fine di potenziare progetti come \cite{AMG4PSBLAS} che sfruttano solutori basati su AMG.\\
 %organizzazione seguito
 %Il seguito della tesi è strutturato come segue
-\section{Algebraic MultiGrid for Parallel Sparse BLAS}
+\section{Algebraic MultiGrid for Parallel Sparse BLAS} \label{amg4psblas}
 PSBLAS è una libreria software che punta a consentire la realizzazione di varie applicazioni di calcolo scientifico computazionalmnte intense,
 mediante implementazioni di risolutori iterativi per sistemi lineari sparsi 
 usando il padarigma di programmazione per sistemi a memoria distribuita.\\

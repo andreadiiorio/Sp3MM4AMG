@@ -15,7 +15,7 @@ Tutti i test sono stati effettuati sul server dell'Ateneo, caratterizato dai seg
 	\item	RAM:	64GB
 \end{itemize}
 
-\section{Matrici di input utilizzate}
+\section{Matrici di input utilizzate} \label{chPerf:inputs}
 Il problema originario risolto è un sistema lineare ottenuto da 
 una discretizzazione alle differenze finite 
 di una PDE di secondo ordine,
@@ -131,7 +131,7 @@ Come è possibile notare dalla figura \ref{fig:q3}, si hanno performance molto d
 In particolare, le implementazioni su matrici di tipo \emph{Unsmoothed} soffrono di prestazione nettamente inferiori di quelle 
 su matrici \emph{Smoothed}.\\
 Le implemenetazioni con performance migliori variano tra le classi di input considerate, tuttavia è possibile osservare che:
-\begin{itemize}
+\begin{itemize}		\label{chPerf:inClassPerfOss}
 	\item il triplo prodotto diretto dia prestazioni migliori degli altri in tutte le classi salvo \emph{VarnekBenzina,Unsmoothed}.
 	\item la configurazione di scheduling openMP static sembra dare prestazioni migliori per le implementazioni bidimensionali,
 		  viceversa la controparte dynamic con adattato dei chunk da risultati migliori per implementazioni monodimensionali e per il triplo prodotto diretto.

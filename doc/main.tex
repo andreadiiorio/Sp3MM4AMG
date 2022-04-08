@@ -56,6 +56,12 @@ headsepline,    %  get a line under the header
 \graphicspath{ {./imgs/} } % imgs searched from this dir
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%% CODE EMBEDD %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \usepackage{listings,color,tcolorbox} 
+
+%\newcommand{\vvv}[1]{\verbatim{#1} }
+\newcommand{\vvv}[1]{{\small\texttt{#1}}}
+\newcommand{\voidLine}{\par\null\par}
+\newcommand{\paragraphh}[1]{\paragraph{#1}\mbox{}\\}
+
 %CONFIG CODE LISTINGS
 \definecolor{mygreen}{rgb}{0,0.6,0}      
 \definecolor{mygray}{rgb}{0.5,0.5,0.5}   
@@ -171,7 +177,7 @@ headsepline,    %  get a line under the header
 \subject{HPC} % Your subject area, this is not currently used anywhere in the template, print it elsewhere with \subjectname
 \keywords{HPC,OpenMP,SpMM,AMG} % Keywords for your thesis, this is not currently used anywhere in the template, print it elsewhere with \keywordnames
 \university{\href{http://ing.uniroma2.it/}{Università degli studi di Roma Tor Vergata}} % Your university's name and URL, this is used in the title page and abstract, print it elsewhere with \univname
-%\department{\href{http://inginformatica.uniroma2.it}{Ingegneria Informatica}} % Your department's name and URL, this is used in the title page and abstract, print it elsewhere with \deptname
+\department{}{} %\department{\href{http://dicii.uniroma2.it/}{Dipartimento di Ingegneria Civile e Ingegneria Informatica}} % Your department's name and URL, this is used in the title page and abstract, print it elsewhere with \deptname
 %\group{\href{http://researchgroup.university.com}{Research Group Name}} % Your research group's name and URL, this is used in the title page, print it elsewhere with \groupname
 \faculty{\href{http://inginformatica.uniroma2.it}{Ingegneria Informatica}} % Your faculty's name and URL, this is used in the title page and abstract, print it elsewhere with \facname
 
@@ -198,6 +204,17 @@ headsepline,    %  get a line under the header
 \newcommand{\code}[1]{\texttt{#1}}
 \newcommand{\file}[1]{\texttt{\bfseries#1}}
 \newcommand{\option}[1]{\texttt{\itshape#1}}
+
+%ABSTRACT CONF:	SHORTER HEADER ... TODO see cls stuff about it 
+\DeclareDocumentEnvironment{abstract}{ O{} }{
+  \checktoopen
+  \tttypeout{\abstractname}
+    #1	%added to be able to have abstract more than one page long
+  \thispagestyle{plain}
+  \begin{center}
+    {\huge\textit{\abstractname} \par}
+  \end{center}
+}
 
 \begin{document}
 %%%%%%%%%%%%	TITLE PAGE	%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -274,9 +291,8 @@ Ai miei genitori Rosaria e Antonio \\
 e al mio caro fratello Enrico,\\
 che mi hanno supportato costantemente in ogni modo\\
 \par\null\par
-Ai miei nonni, che mi sono stati sempre accanto,\\
-specialmente a Vincenzina e Michele\\
-%Ai tutta la mia famigla
+Ai miei nonni,Vincenzina e Michele, che mi sono stati sempre accanto\\
+e a Domenico e Annina che sono saliti in cielo\\
 \par\null\par
 Alla mia meravigliosa compagna Cynthia,\\
 che mi è stata vicino in questo periodo difficile 
@@ -307,10 +323,10 @@ che mi è stata vicino in questo periodo difficile
 %%	ABSTRACT PAGE
 %%----------------------------------------------------------------------------------------
 %
-%\begin{abstract}
+\begin{abstract}
 %\addchaptertocentry{\abstractname} % Add the abstract to the table of contents
-%The Thesis Abstract is written here (and usually kept to just this page). The page is kept centered vertically so can expand into the blank space above the title too\ldots
-%\end{abstract}
+\input{Chapters/ChAbstract}		%3PAGE SUMMING REQUIRED
+\end{abstract}
 %
 %%----------------------------------------------------------------------------------------
 %%	ACKNOWLEDGEMENTS
@@ -385,21 +401,17 @@ che mi è stata vicino in questo periodo difficile
 
 \pagestyle{thesis} % Return the page headers back to the "thesis" style
 
-%\newcommand{\vvv}[1]{\verbatim{#1} }
-\newcommand{\vvv}[1]{{\small\texttt{#1}}}
-\newcommand{\voidLine}{\par\null\par}
 % Include the chapters of the thesis as separate files from the Chapters folder
 % Uncomment the lines as you write the chapters
 
 %--CHAPTERS-------------------------------------------------------------------------------
-\include{Chapters/ChSummarization}		%3PAGE SUMMING REQUIRED
 \include{Chapters/ChIntro}				%HPC context (poco poco), pdeDiscretized -> psBlas -> amg4psblas -> criticità prodotto -> ottimizzazione
 \include{Chapters/ChExistingTecqs}		%soluzione esistenti in letteratura
 \include{Chapters/ChSymbProduct}		%tecq symb product
 \include{Chapters/ChNumProduct}			%tecq num  product
 \include{Chapters/ChAuxSpMM}			%auxiliary solutions (referenced from behind)
 \include{Chapters/ChPerformance}		%timing any confronto
-\include{Chapters/ChConclusion}			%??, ripetizione di any confronto perfs? inglobabile in perfs? 
+%\include{Chapters/ChConclusion}			%??, ripetizione di any confronto perfs? inglobabile in perfs? 
 										%configurazioni ottimali per Sp3MM + matrici da problemi diagonali
 %%----------------------------------------------------------------------------------------
 %%	THESIS CONTENT - APPENDICES
