@@ -1,10 +1,10 @@
-@article{amgProf,
-	Title = {AMG PRECONDITIONERS FOR LINEAR SOLVERS TOWARDS EXTREME SCALE},
-	Author = {PASQUA D’AMBRA, FABIO DURASTANTE, AND SALVATORE FILIPPONE},
-	Year = {2020}}
+@article{AMG4PSBLAS,
+	Title = {AMG Preconditioners for Linear Solvers towards Extreme Scale},
+	Author = {D'Ambra, Pasqua and Durastante, Fabio and Filippone, Salvatore},
+	Year = {2021}}
 @article{spMVfanf,
 	Title = {Sparse Matrix-Vector Multiplication on GPGPUs},
-	Author = {SALVATORE FILIPPONE,VALERIA CARDELLINI,DAVIDE BARBIERI,ALESSANDRO FANFARILLO},
+	Author = {Salvatore Filippone,Valeria Cardellini,Davide Barbieri,Alessandro Fanfarillo},
 	Year = {2017}}
 @article{pdeSparsfd1,
 	Title = {Finite Difference Methods for Ordinary and Partial Differential Equations},
@@ -21,10 +21,6 @@
 
 
 
-@article{AMG4PSBLAS,
-	Title = {AMG4PSBLAS},
-	Author = {Salvatore Filippone},
-	Year = {2019}}
 @article{AMG4PSBLASman,
 	Title = {AMG4PSBLAS User’s and Reference Guide A guide for the Algebraic MultiGrid Preconditioners Package based on PSBLAS},
 	Author = {Salvatore Filippone,Pasqua D’Ambra,Fabio Durastante},
@@ -39,19 +35,33 @@
 @Misc{psctoolkit-web-page,
 	author = {D'Ambra, Pasqua and Durastante, Fabio and Filippone, Salvatore},
 	title = {{PSCToolkit} {W}eb page},
-	url =
-	 {https://psctoolkit.github.io/},
-	howpublished = {\url{https://psctoolkit.github.io/}},
+	url =	 {https://psctoolkit.github.io/},
 	year = {2021}}
 
 @article{PSBLAS3man,
 	Title = {PSBLAS: a library for parallel linear algebra computation on sparse matrices},
-	Author = {Salvatore Filippone,Buttari},
+	Author = {Salvatore Filippone,Buttari Alfredo},
 	Year = {2019}}
-@article{PSBLAS3Git,
-	Title = {PSBLAS3GIT},
-	Author = {Salvatore Filippone},
-	Year = {2019}}
+
+@article{PSBLAS3,
+	Title = {Object-Oriented Techniques for Sparse Matrix Computations in Fortran 2003},
+	Author = {Filippone, Salvatore and Buttari, Alfredo},
+	Year = {2012}
+	%issue_date = {August 2012},
+	%publisher = {Association for Computing Machinery},
+	%address = {New York, NY, USA},
+	%volume = {38},
+	%number = {4},
+	%issn = {0098-3500},
+	%url = {https://doi.org/10.1145/2331130.2331131},
+	%doi = {10.1145/2331130.2331131},
+	%abstract = {The efficiency of a sparse linear algebra operation heavily relies on the ability of the sparse matrix storage format to exploit the computing power of the underlying hardware. Since no format is universally better than the others across all possible kinds of operations and computers, sparse linear algebra software packages should provide facilities to easily implement and integrate new storage formats within a sparse linear algebra application without the need to modify it; it should also allow to dynamically change a storage format at run-time depending on the specific operations to be performed. Aiming at these important features, we present an Object Oriented design model for a sparse linear algebra package which relies on Design Patterns. We show that an implementation of our model can be efficiently achieved through some of the unique features of the Fortran 2003 language. Experimental results show that the proposed software infrastructure improves the modularity and ease of use of the code at no performance loss.},
+	%journal = {ACM Trans. Math. Softw.},
+	%month = {aug},
+	%articleno = {23},
+	%numpages = {20},
+	%keywords = {Mathematics of computing, object-oriented design, sparse matrices}
+}
 @article{AMG4PSBLASGit,
 	Title = {AMG4PSBLAS_Git},
 	Author = {Salvatore Filippone},
@@ -59,22 +69,23 @@
 
 @article{sparseLinearSolverTR,
 	Title = {Efficient Linear System Solvers for Mesh Processing},
+	year = {2005},
 	Author = {Mario Botsch, David Bommes, and Leif Kobbelt},
 }
 
 
 @article{GMP,
 	Title = {GNU Multiple Precision Arithmetic Library},
-	Author = {}
+	year = {n.d.},
 	URL={https://gmplib.org/}}
 
 @article{adaptiveTilingSpMM,
-	Title = {Adaptive Sparse Tiling for Sparse Matrix Multiplication}
-	Author = {Changwan Hong,Aravind Sukumaran-Rajam,Israt Nisa,Kunal Singh,P. Sadayappan}
+	Title = {Adaptive Sparse Tiling for Sparse Matrix Multiplication},
+	Author = {Changwan Hong,Aravind Sukumaran-Rajam,Israt Nisa,Kunal Singh,P. Sadayappan},
 	Year = {2019}}
 
 @article{SPA_mathlab,
-	Title = {SPARSE MATRICES IN MATLAB: DESIGN AND IMPLEMENTATION}
+	Title = {Sparse matrices in matlab: design and implementation},
 	Author = {John R. Gilbert , Cleve Moler , and Robert Schreiber},
 	Year = {1991}}
 
@@ -103,13 +114,13 @@
 	Year = {1997}}
 
 @article{sparseSUMMA,
-	Title = {PARALLEL SPARSE MATRIX-MATRIX MULTIPLICATION AND INDEXING: IMPLEMENTATION AND EXPERIMENTS},
+	Title = {Parallel sparse matrix-matrix multiplication and indexing: implementation and experiments},
 	Author = {Aydin Buluc and John R. Gilbert},
 	Year = {2012}}
 
 
 @article{Split3DSpMM,
-	Title = {EXPLOITING MULTIPLE LEVELS OF PARALLELISM IN SPARSE MATRIX-MATRIX MULTIPLICATION},
+	Title = {Exploiting multiple levels of parallelism in sparse matrix-matrix multiplication},
 	Author = {Ariful Azad , Grey Ballard , Aydin Buluc , James Demmel , Laura Grigori , Oded Schwartz , Sivan Toledo and Samuel Williams},
 	Year = {2016}}
 
@@ -123,9 +134,13 @@
 	Author = {Gunduz Vehbi Demirci and Cevdet Aykana},
 	Year = {2020}}
 
+@article{goldmanFP,
+	author = {Goldberg, David},
+	title = {What Every Computer Scientist Should Know about Floating-Point Arithmetic},
+	year = {1991}}
 
 @article{SpMM_KNL_Multicore_symbsSols,
-	Title = {High-Performance Sparse Matrix-Matrix Products on Intel KNL and Multicore Architectures},
+	Title = {HighPerformance Sparse MatrixMatrix Products on Intel KNL and Multicore Architectures},
 	Author = {Yusuke Nagasaka, Satoshi Matsuoka, Ariful Azad, Aydın Buluç},
 	Year = {2018}}
 
@@ -148,6 +163,7 @@
 
 @article{CBLAS
 	Title = { BLAS (Basic Linear Algebra Subprograms)},
+	author= { BLAS (Basic Linear Algebra Subprograms)},
 	url = {http://www.netlib.org/blas/}}
 
 
@@ -160,7 +176,7 @@
 	Author = {Richard M. Stallman, Zachary Weinberg},
 	Year = {2021}}
 @article{isoc11,
-	Title = {NCITS/ISO/IEC 9899-2011[2012] (ISO/IEC 9899-2011, IDT)},
+	Title = {NCITS/ISO/IEC 9899-2011 [2012] (ISO/IEC 9899-2011, IDT)},
 	Author = {American National Standards Institute},
 	Year = {2012}}
  
@@ -174,6 +190,31 @@
 	Author = {OpenMP Architecture Review Board},
 	Year = {2020}}
 
+@article{mpi,
+	Title = {MPI: A Message-Passing Interface Standard Version 4.0},
+	Author = {Message Passing Interface Forum},
+	Year = {2021}}
+
+@article{ulk,
+	author = {Bovet, Daniel and Cesati, Marco},
+	title = {Understanding The Linux Kernel},
+	year = {2005}}
+
+@article{lwnRBtrees,
+	Title = {Linux Weekly News:Trees II: red-black trees},
+	Author = {Jonathan Corbet},
+	url = 	 {https://lwn.net/Articles/184495/},
+	Year = {2006}}
+@article{lwnAgumentedRBtrees,
+	Title = {Linux Weekly News:Augmented red-black trees},
+	Author = {Jonathan Corbet},
+	url = 	 {https://lwn.net/Articles/388118/},
+	Year = {2010}}
+@article{rbtreeRst,
+	Title = {Red-black Trees (rbtree) in Linux},
+	Author = {Rob Landley},
+	url = 	 {https://www.kernel.org/doc/Documentation/core-api/rbtree.rst},
+	Year = {2007}}
 @article{modernFortranExplained,
 	Title = {Modern Fortran explained incorporating ortran 2018},
 	Author = {Michael Metcalf, John Reid, Malcom Cohen},
@@ -182,31 +223,3 @@
 	Title = {pandas: powerful Python data analysis toolkit Release 1.4.2},
 	Author = {Wes McKinney and the Pandas Development Team},
 	Year = {2022}}
-
-
-
-@article{Reference3,
-	Author = {A. S. Arnold and J. S. Wilson and M. G. Boshier and J. Smith},
-	Journal = {Review of Scientific Instruments},
-	Month = {3},
-	Number = {3},
-	Numpages = {4},
-	Pages = {1236--1239},
-	Title = {A Simple Extended-Cavity Diode Laser},
-	Volume = {69},
-	Url = {http://link.aip.org/link/?RSI/69/1236/1},
-	Year = {1998}}
-
-@article{Reference2,
-	Author = {Carl E. Wieman and Leo Hollberg},
-	Journal = {Review of Scientific Instruments},
-	Keywords = {Diode Laser},
-	Month = {1},
-	Number = {1},
-	Numpages = {20},
-	Pages = {1--20},
-	Title = {Using Diode Lasers for Atomic Physics},
-	Volume = {62},
-	Url = {http://link.aip.org/link/?RSI/62/1/1},
-	Year = {1991}}
-

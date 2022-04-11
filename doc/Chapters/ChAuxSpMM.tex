@@ -2,12 +2,13 @@
 In questo capitolo verranno analizzati diversi componenti ausiliari
 sviluppati ed integrati per supportare le operazioni di SpMM e Sp3MM.\\
 %%%%%%%%%%%%%%%%%%%%%%  CORE  -- >> << -- xD  %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-\section{Derivazione automatica di molteplici implementazioni mediante PreProcessore C}	\label{chSpMMAux:multiImpl}
+\section[Derivazione di molteplici implementazioni con PreProcessore C]	
+{Derivazione automatica di molteplici implementazioni mediante PreProcessore C}	\label{chSpMMAux:multiImpl}
 Sfruttando una serie di direttive del pre processore C, sono riuscito ad ottenere
 per molte funzioni scritte nei sorgenti, varie versioni differenti ottenute a tempo di pre-processamento, 
-accessibili in altre funzioni mediante una segnatura modificata in base alle necessità.\\
+accessibili in altre funzioni mediante una segnatura modificata.\\
 La necessità principale di realizzare questo approccio è stato quello di supportare, con
-un'alta efficienza, l'integrazione del codice C in un progetto fortran come \cite{PSBLAS3\_GIT},
+un'alta efficienza, l'integrazione del codice C in un progetto fortran come \cite{PSBLAS3},
 come verrà trattato a breve in \ref{chSpMMAux:fortranIntegrate}.\\
 %PRO GENERAL CPP MULTI VERSION IMPLEMENTATIONS
 I vantaggi di usare il pre processore per ottenere molteplici versioni di una funzione sono diverse:
@@ -27,14 +28,15 @@ I vantaggi di usare il pre processore per ottenere molteplici versioni di una fu
 	\end{itemize}
 \end{itemize}
 Ho pubblicato un semplice esempio di questo approccio implementativo in \url{https://github.com/andreadiiorio/C_Compile_Multi_Implementation_Automatically}.\\
+\voidLine
 Per ottenere diverse implementazioni da una funzione è necessario:
 \begin{itemize}
 	\item	racchiudere le differenze richieste da ogni versione in una funzione \emph{base o generica} con una serie di direttive \verb|#if ... #endif| ,\\
 			così da consentire al preprocessore l'aggiunta del codice necessario a modificare la funzione base.%ad una particolare versione.
 	\item	Le diverse versioni della funzione \emph{generica} devono essere esportate ad altre funzioni mediante una segnatura differente.\\
-			Per questo è possibile aggiungere un  suffisso al nome, ed eventualmente argomenti addizionali, alla funzione 
+			Per questo è possibile aggiungere un  suffisso al nome ed eventualmente argomenti addizionali alla funzione 
 			\emph{base}, mediante la concatenazione di stringhe del pre-processore C.\\
-			Un possibile approccio per supportare la concatenazione di stringhe e macro di configurazione, i
+			Un possibile approccio per supportare la concatenazione di stringhe e macro di configurazione
 			in questo contesto è quello di usare la macro \vvv{CAT} del seguente blocco di codice.\\
 			\begin{lstlisting}
 #define _STR(s) #s
@@ -47,7 +49,7 @@ Per ottenere diverse implementazioni da una funzione è necessario:
 			\end{lstlisting}
 	\item	Le funzioni generiche devono essere racchiuse in un sorgente dedicato, ed incluse da un altro mediante \verb|#include|,
 			per un numero di volte pari al numero di versioni che è necessario ottenere,
-			ridefininendo le macro di ausiliare di configurazione delle implementazioni differenti.
+			ridefininendo le macro ausiliare di configurazione delle implementazioni differenti.
 	\item	per avere esportate le dichiarazioni delle versioni differenti realizzate, è possibile reiterare l'approccio 
 			appena descrito agli header files.
 \end{itemize}
@@ -59,9 +61,9 @@ Una differenza sostanziale di questi due linguaggi è l'uso di una differente in
 dove il C è a base 0 e il Fortran è a base 1.\\
 %need double indexing generic
 È necessario tenere a mente questa differenza dato che in ogni formato di memorizzazione sparso di matrici 
-sono presenti degli indici relativi alla posizione relativa dei valori \nnz nella matrice.\\
+sono presenti degli indici relativi alla posizione dei valori \nnz nella matrice.\\
 %efficient approch
-Per supportare l'integrazione di questo lavoro in \cite{AMG4PSBLAS\_Git},
+Per supportare l'integrazione di questo lavoro in \cite{AMG4PSBLAS},
 è stato necessario supportare efficientemente un passaggio tra l'indicizzazione
 dell'applicazione fortran a quella C per eseguire il prodotto, eseguendo poi il vicerversa 
 nel ritorno all'applicazione chiamante.\\
@@ -69,7 +71,7 @@ Al fine di supportare efficientemente il cambio di questi indici
 ho sfruttato l'approccio descritto per ottenere 2 versione per ogni funzione,
 una che accetti l'indicizzazione nativa del C e un'altra che accetti l'indicizzazione del Fortran,
 mediante l'aggiunta di un suffisso numerico ad ogni nome di funzione %.\\
-,come nell'esempio successivo.\\ 
+come nell'esempio successivo.\\ 
 \begin{lstlisting}
 spmat* CAT(spmmRowByRow_SymbNum_,OFF_F)(spmat* A,spmat* B, CONFIG* cfg){...}
 \end{lstlisting}
@@ -93,13 +95,13 @@ come CSR o ELL, mentre \vvv{CONFIG} contiene la configurazione per le esecuzioni
 come ad esempio la griglia di parallelizzazione del lavoro o il numero di thread da utilizzare.\\
 
 Per supportare il lato Fortran dell'integrazione è stato sfruttato il modulo \verb|iso_c_binding| 
-per definire le interfacce e strutture, definite anche nel codice C, in un modulo di supporto.\\
+per definire le interfacce e strutture con controparte nel codice C, in un modulo di supporto.\\
 
-\subsection{Supporto alla generazione efficiente di diverse versioni di una funzione base}	\label{chSpMMAux:multiImplMany}
+\subsection{Generazione efficiente di diverse versioni di una funzione base}	\label{chSpMMAux:multiImplMany}
 Estendendo la soluzione appena riportata per generare una coppia di implementazioni per gestire una doppia indicizzazione,
 ho realizzato un supporto alla generazione di otto versioni differenti di una funzione generica nel modulo relativo al prodotto simbolico.\\
 Per realizzare le varie combinazioni di versioni richieste di ogni funzione per generare i vari livelli di dettaglio dell'output 
-del prodotto simbolico descritti in \ref{chSpMMSymb:outputDetailLevel_coreFuncsVersions} 
+del prodotto simbolico descritti in \ref{chSpMMSymb:outputDetailLevel_coreFuncsVersions},
 ho usato il seguente approccio basato su redefinizioni di alcune macro di supporto:\\
 \begin{lstlisting}
 #define OFF_F 0
@@ -123,7 +125,7 @@ ho usato il seguente approccio basato su redefinizioni di alcune macro di suppor
 ...
 \end{lstlisting}
 Nel frammento di codice precedente vengono generate dal preprocessore C otto diverse versioni
-della maggior parte delle funzioni definite nei sergenti, 
+della maggior parte delle funzioni definite nel sorgente \\ \verb|Sp3MM_CSR_OMP_SymbStep_Generic.c|
 combinando la ridefinizione delle macro di configurazione \verb|OUT_IDXS COL_PARTS OFF_F|.\\
 
 \section{Linux Kernel 5.10.85 RedBlack Tree Userspace porting} \label{chSpMMAux:linuxRBTree}
@@ -131,8 +133,8 @@ L'implementazione dei RedBlack Tree usati nel prodotto simbolico è ottenuta eff
 userspace dei moduli relativi del kernel Linux 5.10.85.\\
 \subsection{RedBlack nel kernel Linux}
 \begin{figure}[H]
-  \centering \includegraphics[width=\linewidth,keepaspectratio]{Red-black_tree_example.svg.png}
-  \caption[Rappresentazione grafica di un RedBlack Tree]
+  \centering \includegraphics[width=.7\linewidth,keepaspectratio]{Red-black_tree_example.svg.pdf}
+  \caption{Rappresentazione grafica di un RedBlack Tree}
   \decoRule \label{fig:rbtree}
 \end{figure}
 I RedBlack Tree sono delle strutture di ricerca molto efficienti catalogabili come 
@@ -140,7 +142,7 @@ I RedBlack Tree sono delle strutture di ricerca molto efficienti catalogabili co
 La loro formulazione comprende diversi vincoli strutturali, da mantenre in seguito ad ogni operazione di inserimento o cancellazione,
 che garantiscono ottime proprietà di bilanciamento tra cui avere che:\\ %| path: root ⟶ foglia più lontana | ≤  2* | path: root ⟶ foglia più vicina |
 la distanza tra la radice dell'albero e la foglia più lontana è minore o uguale della distanza tra la radice e la foglia più vicina.\\
-Le proprietà di bilanciamento assieme ai vincoli strutturali ne garantiscono ai RedBlack Tree
+Le proprietà di bilanciamento assieme ai vincoli strutturali garantiscono ai RedBlack Tree
 un costo computazione logaritmico al numero di elementi inseriti per ogni operazione.\\
 \voidLine
 Il kernel del sistema operativo Linux usa i RedBlack Tree per vari scopi, tra cui:
@@ -154,7 +156,7 @@ Il kernel del sistema operativo Linux usa i RedBlack Tree per vari scopi, tra cu
 	\item	la gestione degli epoll file descriptors
 	\item	la gestione delle chiavi crittografiche
 \end{itemize}  
-\cite{lwnAgumentedRBtrees}
+\cite{lwnAgumentedRBtrees,lwnRBtrees}
 \voidLine
 \label{chSpMMAux:memRegionRBTree}
 Un esempio dell'importanza dei RedBlack Tree è il primo punto della lista precedente,
@@ -170,8 +172,9 @@ mentre per operazioni di scansione completa dello spazio degli indirizzi viene u
 Segue una rappresentazione schematica delle strutture relative alla gestione delle regioni di memoria, con
 un focus sui RedBlack 
 \begin{figure}[H]
-  \centering \includegraphics[width=\linewidth,keepaspectratio]{RBtreeInMMDesriptor.dot.colored.svg.png}
-  \caption{Rappresentazione delle strutture usate per la gestione dello spazio degli indirizzi di un processo
+  \centering \includegraphics[width=.7\linewidth,keepaspectratio]{RBtreeInMMDesriptor.dot.colored.svg.pdf}
+  \caption[RedBlackTree nella gestione degli address space in Linux]
+  {Rappresentazione delle strutture usate per la gestione dello spazio degli indirizzi di un processo
 			evidenziando la presenza dei RedBlack Tree}
   \decoRule \label{fig:RBtreeInMMDesriptor}
 \end{figure}
@@ -202,8 +205,8 @@ Le tipologie principali di RedBlack tree presenti nel kernel linux sono:	\label{
 	\item augmented		identificati da avere il suffisso \verb|_augmented| nelle operazioni associate,
 		caratterizzati dall'avere salvati in ogni nodo \vvv{n} dei dati derivati dal contenuto del sotto albero con radice in \vvv{n}.\\
 		Con questo tipo di RedBlack Tree è possibile implementare un supporto efficiente alla gestione di range come chiavi,
-		e.g. Interval Tree \cite{rbtree.rst,algoIntro}
-	\item latched		identificati dalle strutture radice e nodo rispettivamente \verb|latch_tree_root latch_tree_node|
+		e.g. Interval Tree \cite{rbtreeRst}
+	\item latched		identificati dalle strutture radice e nodo rispettivamente \\ \verb|latch_tree_root latch_tree_node|
 		utili a supportare proprietà di consistenza in esecuzioni concorrenti lock-less,
 		mediante la tecnica basata su multiple versioni dei dati \emph{latch}
 	%The latch technique is a multiversion concurrency control method that allows queries during non-atomic modifications. If you can guarantee queries never interrupt the modification – e.g. the concurrency is strictly between CPUs – you most likely do not need this.
@@ -212,12 +215,13 @@ Le tipologie principali di RedBlack tree presenti nel kernel linux sono:	\label{
 
 \subsection{Porting in UserSpace} 
 Ho effettuato il porting in UserSpace dei primi due tipi di RedBlack tree del kernel linux 5.10.27 menzionati precedentemente 
-ed ho reso disponibile il lavoro ad altri usi nel mio repository \url{https://github.com/andreadiiorio/redblackTree_linux_userspace}.\\
+ed ho reso disponibile il lavoro ad altri usi nel mio repository \url{https://github.com/andreadiiorio/redblackTree_linux_userspace}.
+\voidLine
 Per effettuare il porting delle funzioni necessarie al prodotto simbolico con RedBlack Tree è stato necessario 
 rimpiazzare varie dipendenze definite in altri moduli del kernel linux come 
 le macro \verb|container_of READ_ONCE WRITE_ONCE| \dots  o le funzioni di (de)allocazione
 con soluzioni alternative in userspace.\\Sono state inoltre rimosse le versioni RCU delle operazioni sui RedBlack Tree per questioni di semplicità. 
-
+\voidLine
 Per supportare la fase simbolica per l'operazione di SpMM è stata realizzata una seconda versione minimalizzata del porting,
 senza le funzioni non indispensabili al prodotto.\\
 
@@ -243,13 +247,14 @@ senza le funzioni non indispensabili al prodotto.\\
 %%-ffunction-section:	ogni funzione/data item deve andare in una sezione dedicata
 %%-Map: salva in \vvv{mapfile} una tabbella con informazioni di linking come il mapping in memoria di file oggetto e simboli
 
-\section{Uso Bitmaps per inserimento efficiente di indici}	\label{chSpMMAux:bitmapInsert}
+\section{Uso Bitmaps per inserimento efficiente di indici} \label{chSpMMAux:bitmapInsert}
 Per supportare l'inserimento efficiente di indici senza ripetizioni,
 in alcune versioni del prodotto simbolico descritte in \ref{chSpMMSymb:bitmapsUse} e nel gestire gl'indici di colonna 
 negli accumulatori densi calcolati durante le moltiplicazioni scalari ho adottato
 una struttura di ricerca basata su un insieme di bitmaps.\\
 La struttura contiene una zona di memoria in cui ogni bit può rappresentare la presenza di un indice specifico
-se è posto ad \vvv{1}.\\
+se è posto ad \vvv{1}.
+\voidLine
 %GMP quote
 L'approccio usato è in qualche modo correlato all'idea sfruttata in \cite{GMP},
 ovvero di supportare una variabile di dimensione arbitraria (in questo caso il numero massimo di indici inseribili)
@@ -267,11 +272,11 @@ typedef unsigned __int128	uint128;
 	typedef uchar* nnz_idxs_flags_t;
 #endif
 ...
-typedef struct{					//smart index keeping in a dense map
-	idx_t	len;				//num of nnz idx accumulated
+typedef struct{                //smart index keeping in a dense map
+	idx_t	len;               //num of nnz idx accumulated
 	/* nnz index presence packing, implict space enough for all possible indexes*/
 	nnz_idxs_flags_t idxsMap;
-	uint idxsMapN;				//either num of limbs or len of char flag array
+	uint idxsMapN;             //either num of limbs or len of char flag array
 } SPVECT_IDX_DENSE_MAP;
 \end{lstlisting}
 Nel frammento di codice precedente è riportata la struttura \verb|SPVECT_IDX_DENSE_MAP|, che supporta
@@ -281,6 +286,7 @@ La macro di configurazione a riga 2 \verb|SPVECT_IDX_BITWISE| determina se la st
 mediante bitmaps o array di char.\\
 Nel caso in oggetto di analisi, il tipo definito \verb|nnz_idxs_flags_t| conterrà l'indirizzo
 di un array di bitmaps o \emph{limb}.
+\voidLine
 La dimensione di ogni \emph{limb} è definibile nel tipo \verb|limb_t| a tempo di compilazione a riga 3, 
 configurato di default all'estensione C di GCC per interi a 128bit con il tipo \verb|__int128| \cite{gcc10.1}.\\
 %Insert details
@@ -289,7 +295,7 @@ saranno necessari $\left\lceil \frac{N}{b}  \right\rceil$ \emph{limb}.
 L'inserimento dell'indice $i$ è effettuato mediante un'operazione di OR logico di un \vvv{1} nell'
 $\left\lceil \frac{i}{b}  \right\rceil$-esimo \emph{limb} nel $i ~mod~ b$-esimo bit.\\
 Per supportare efficientemente il mantenimento del numero di indici inseriti, ad ogni inserimento 
-viene associato una preventiva operazione di controllo se il bit target è già posto ad 1,
+viene associata una preventiva operazione di controllo se il bit target è già posto ad 1,
 in caso contrario avviene l'operazione OR e viene incrementato un contatore.\\
 \begin{lstlisting}
 static inline int spVect_idx_in(idx_t idx, SPVECT_IDX_DENSE_MAP* idxsMapAcc){
@@ -306,7 +312,6 @@ static inline int spVect_idx_in(idx_t idx, SPVECT_IDX_DENSE_MAP* idxsMapAcc){
 \end{lstlisting}
 Nel frammento di codice precedente viene implementata l'operazione di inserimento di un indice nel set di bitmaps (riga 6) 
 incrementando il contantore degli indici inseriti senza duplicati a riga 7 come descritto.\\
-
 % TODO TODO  \paragraph{Prodotto simbolico di una (partizione di) riga della matrice output con Bitmaps VS RedBlack Tree}
 % È possibile affermare che nel caso di dover generare un prodotto simbolico accurato, con output limitato
 % al numero di \nnz per riga \ref{chSpMMSymb:outputDetailLevel},
@@ -317,9 +322,9 @@ incrementando il contantore degli indici inseriti senza duplicati a riga 7 come 
 Usare uno scheduling di tipo Dynamic in un ciclo parallelizzato con OpenMP 
 può essere molto utile nel caso di problemi in cui il lavoro assegnabile ai thread ha una grande variabilità.\\
 Nelle operazioni di SpMM e Sp3MM, la variabilità del lavoro è dovuta 
-al pattern di sparsità dei \nnz nelle matrici di input.\\
+al pattern di sparsità dei \nnz nelle matrici di input.
 %vs static: vantaggio per lavoro variabile
-\par\null\par
+\voidLine
 %false cache sharing
 Lo scheduling Dynamic assegna un chunksize di dimensione pari ad 1 di default, 
 il che può facilmente causare problemi di \emph{false cache sharing}.
@@ -328,8 +333,8 @@ Ovvero situazioni in cui il lavoro assegnato ad un thread \vvv{a} modifica una p
 troppo vicina a quello di un altro thread \vvv{b}, 
 al punto in cui le due aree mappano su linee di cache con una intersezione. 
 In questo caso, una modifica del thread \vvv{a} sulla sua area di memoria invalida la 
-copia della linea di cache intersezionata del thread \vvv{b}, causando un pessimo uso della memoria.\\
-\par\null\par
+copia della linea di cache intersezionata del thread \vvv{b}, causando un pessimo uso della memoria.
+\voidLine
 %CORE
 Lo scheduling Dynamic in confronto allo scheduling static di OpenMP, al costo di un overhead di istanziazzione e gestione maggiore,
 consente ad un thread che ha terminato il proprio lavoro di prenderne altro da una coda acceduta concorrentemente,
@@ -346,20 +351,21 @@ Nelle implementazioni parallele di SpMM descritte in \ref{Chapter3} è prevista 
 tra i vari thread mediante sia il chunksize configurato in openMP, sia tramite una griglia di partizionamento del lavoro.\\
 Il chunksize dello scheduling openMP configurato determina quante iterazioni di un ciclo parallelizzato affidare ad un thread
 ed è configurato automaticamente in base al tipo di scheduling come descritto precedentemente in \ref{chSpMMAux:dynChunkFairAdapting}.\\
-La griglia di partizionamento consiste in un partizionamento del risultato da calcolare in blocchi 1D o 2D.\\
+La griglia di partizionamento consiste in una suddivisione del risultato da calcolare in blocchi 1D o 2D.
 \voidLine
 Nel caso di implementazioni monodimensionali è possibile suddividere la computazione in blocchi di righe sia automaticamente 
 mediante il chunksize di openMP, sia mediante un pre-partizionamento delle righe in blocchi all'interno del ciclo parallelizzato.
 L'approccio usato in quest'ultimo caso è quello di suddividere le righe del risultato in blocchi di dimensione simile,
-in numero pari \verb|SPMM_1DBLOCKS_THREAD_ITERATION_FACTOR| volte il numero di thread configurato per il calcolo.\\
+in numero pari \\ \verb|SPMM_1DBLOCKS_THREAD_ITERATION_FACTOR| volte il numero di thread configurato per il calcolo.\\
+\voidLine
 Nel caso di implementazioni bidimensionali di SpMM è necessario strutturare il calcolo del risultato in blocchi 2D, corrispondenti
 a una suddivisione delle righe di A e delle colonne di B rispettivamente in \vvv{gridRows}x\vvv{gridCols} blocchi.\\
-Mediante le seguenti euristiche, la determinazione della griglia di partizionamento in questo caso è stata resa configurabile 
-basate sul numero di thread configurato per l'esecuzione:\\
+Mediante le seguenti euristiche, la determinazione della griglia di partizionamento è stata resa configurabile 
+in base al numero di thread configurato per l'esecuzione:\\
 \begin{itemize}
 	\item	automaticamente in una griglia di blocchi determinata mediante un porting che ho realizzato 
 			della funzione \verb|MPI_Dims_create| da OpenMPI
-	\item	a partire da una suddivisione delle colonne di B (associata a un costo di preprocessamento nel caso d'analisi CSR, come descritto in \ref{chSpMMAux:csrColPartitioning})
+	\item	a partire da una suddivisione delle colonne di B 
 			da cui derivare un partizionamento delle righe di A pari a $\left\lceil \frac{numThread}{gridCols}  \right\rceil$
 	\item	un partizionamento fisso, configurabile manulamente a tempo di compilazione con le macro
 			\verb|FIXED_2D_PARTITIONING_ROWS FIXED_2D_PARTITIONING_COLS|
@@ -367,14 +373,15 @@ basate sul numero di thread configurato per l'esecuzione:\\
 \subsection{porting funzione MPI\_Dims\_create da OpenMPI}	\label{ompiDimsCreate}
 Al fine di supportare una suddivisione del lavoro di SpMM per il numero di thread $nThread$ configurato
 in una griglia di partizionamento 2D, il più quadrata possibile, ho realizzato un porting della 
-funzione \verb|MPI_Dims_create| da OpenMPI.\\
+funzione \verb|MPI_Dims_create| da OpenMPI.
+\voidLine
 Nel contesto della programmazione a memoria distribuita, 
-la funzione \verb|MPI_Dims_create| consente di determinare una suddivisone bilanciata di un numero di processi in una topologia 
-cartesiana n-dimensionale da utilizzare durante il calcolo. \cite{openMPIman}\\
+la funzione \\ \verb|MPI_Dims_create| consente di determinare una suddivisone bilanciata di un numero di processi in una topologia 
+cartesiana n-dimensionale da utilizzare durante il calcolo \cite{mpi}.\\
 Nella determinazione della griglia di partizionamento per implementazioni bidimensionali di SpMM ho usato 
 \verb|MPI_Dims_create| per suddividere il numero di thread configurato nei parametri \verb|gridRows gridCols|.
 Nel caso di utilizzare un numero di thread primo è impossibile ottenere una suddivisione esatta non monodimensionale,
-per questo motivo ho gestito questi casi suddividendo $nThread+1$ in luogo di $nThread$, 
+ma ho gestito questi casi suddividendo $nThread+1$ in luogo di $nThread$, 
 così da poter assegnare almeno un iterazione ad ogni thread.\\
 
 
@@ -382,42 +389,44 @@ così da poter assegnare almeno un iterazione ad ogni thread.\\
 Nel caso di effettuare la \emph{sparsificazione} di un accumulatore denso 
 durante il prodotto numerico di SpMM, descritta precedentemente in \ref{chSpMMNum:sparsify},
 in assenza di informazioni sulla quantità di memoria necessaria ad ogni thread, 
-è necessario assegnare dinamicamente partizioni di memoria (pre allocata), in maniera concorrente.\\
-\par\null\par
+è necessario assegnare dinamicamente partizioni di memoria (pre allocata), in maniera concorrente.
+\voidLine
 Un approccio semplice allo scopo è quello di utilizzare una qualche primitiva di sincronizzazione
-,funzionalmente simile ad un \emph{lock}, per proteggere una sezione critica in cui
+, funzionalmente simile ad un \emph{lock}, per proteggere una sezione critica in cui
 si annota che il thread corrente si è riservato un segmento del blocco di memoria condiviso.\\
 %TODO TODO CHECK TRIVIAL LOCK APROCH:	USELESS FENCE
 Tuttavia, quest'approccio potrebbe introdurre istruzioni di \vvv{fence} intorno alla sezione critica,
-causando una serializzazione di tutti gli accessi di memoria effettuati fin a quel momento.\\
+causando una serializzazione deli accessi di memoria effettuati fin a quel momento.\\
 %ATOMIC BUILT IN APPROCH
 Per ridurre al minimo l'overhead di sincronizzazione per realizzare questa assegnazione
 ho usato due approcci equivalenti.
 %per effettuare una somma atomica di una variabile, salvandone il contenuto precedente all'incremento.\\
 
-\subsection{Riservazione concorrente di memoria mediante built-in atomiche di GCC}
+\subsection[Uso built-in atomiche di GCC]
+{Riservazione concorrente di memoria mediante built-in atomiche di GCC}
 Un approccio diretto al problema è quello di usare la built-in atomica offerta da gcc
 \verb|type __atomic_fetch_add (type *ptr, type val, int memorder)|
-su una variabile atomica, contente l'indice dell'ultimo elemento assegnato ad un thread dal blocco di memoria condiviso.\\
+su una variabile atomica, contente l'indice dell'ultimo elemento assegnato del blocco di memoria condiviso ad un thread.\\
 %Il thread che necessita di uno spazio $s$ dalla zona di memoria pre allocata, ....
 \begin{lstlisting}
 sparsifyStartV = __atomic_fetch_add(&(acc->lastAssigned),nnz,__ATOMIC_ACQ_REL); 
-\begin{lstlisting}
+\end{lstlisting}
 Nel frammento di codice precedente, relativo alla sparsificazione di un accumulatore denso,
 viene mantenuto l'indice iniziale dello spazio di memoria condiviso non assegnato.\\
 Ogni thread riserverà uno spazio di memoria mediante l'incremento atomico 
-del numero di elementi da salvare (\vvv{nnz}) sulla variabile \vvv{lastAssigned}.
+del numero di elementi da salvare (\vvv{nnz}) sulla variabile \vvv{lastAssigned}.\\
 L'indirizzo iniziale del blocco di memoria riservato al thread sarà il valore precedente all'incremento
-di \vvv{lastAssigned} ed è salvato nella variabile \vvv{sparsifyStartV}.\\
-\par\null\par
+di \vvv{lastAssigned} ed è salvato nella variabile \vvv{sparsifyStartV}.
+\voidLine
 L'uso di questa primitiva è da associare ad un modello di ordine di memoria \vvv{memorder}.\\
-Per l'operazione da realizzare dovrebbe essere sufficiente il modello \verb|__ATOMIC_ACQ_REL|,
+Per l'operazione da realizzare dovrebbe essere sufficiente il modello \\ \verb|__ATOMIC_ACQ_REL|,
 che sostanzialmente crea una relazione di tipo \emph{happens-before} tra le operazioni di 
-\emph{acquire} e \emph{release} sulla variabile atomica  \cite{isoc11},gcc10.1}.\\
+\emph{acquire} e \emph{release} sulla variabile atomica  \cite{isoc11,gcc10.1}.\\
 
-\subsection{Riservazione concorrente di memoria mediante OpenMP}
+\subsection[Uso clausola \vvv{capture} di OpenMP]
+{Riservazione concorrente di memoria mediante OpenMP}
 Un approccio del tutto equivalente è usare la clausola \vvv{capture} al construttuto \vvv{atomic} di openMP.\\
-Segue una porzione di codice per realizzare la funzionalità in analisi.\\
+Segue una porzione di codice per realizzare la funzionalità in analisi.
 \begin{lstlisting}
 #pragma omp atomic capture
 {   //fetch and add like 
@@ -465,7 +474,7 @@ configurato ad usare rispettivamente:
 	\item il costrutto openMP \vvv{atomic} precedentemente visto.\\
 \end{itemize}
 È possibile notare come il codice Assembly prodotto sia sempre lo stesso,
-basato sull'uso di un'operazione di Exchange and Add con prefisso \vvv{LOCK}.
+basato sull'uso di un'operazione di Exchange and Add con prefisso \vvv{LOCK}.\\
 L'atomicità dell'implementazione è provata dalla presenza di questo prefisso,
 che come la documentazione intel riporta, 
 %LOCK prefix intel man 2
@@ -479,9 +488,10 @@ Dato che il vettore IRP della rappresentazione CSR permette di accederene facilm
 avendo la conoscenza addizionale dei limiti di ogni partizione di colonne è possibile accedere blocchi bidimensionali
 della matrice.\\
 Una rappresentazione grafica dell'operazione è raffigurata nell'immagine seguente.\\
-\begin{figure}[h!]
-  \centering \includegraphics{csrTilingCSR_only.svg.png} 
-  \caption[Rappresentazione grafica di un partizionamento 2D di una matrice CSR, \cite{adaptiveTilingSpMM}]
+\begin{figure}[H]
+  \centering \includegraphics[width=.7\linewidth,keepaspectratio]{csrTilingCSR_only.svg.pdf} 
+  \caption[partizionamento 2D CSR]
+  {Rappresentazione grafica di un partizionamento 2D di una matrice CSR, \cite{adaptiveTilingSpMM}}
   \decoRule \label{fig:csrTilingCSR_only}
 \end{figure}
 
@@ -492,8 +502,8 @@ Nel seguito saranno descritte due soluzione che ho realizzato per effettuare l'o
 
 \subsection{Partizionamento colonne in loco mediante offsets di supporto} 
 \label{chSpMMAux:csrColPartitioning}
-Per accedere in loco una matrice CSR $MXN$ in blocchi bidimensionali di $\frac{M}{gridRows}X\frac{N}{gridCols}$, 
-ho realizzato un supporto alla generazione di una matrice di offset $MXgridCols$, dove l'elemento
+Per accedere in loco una matrice CSR $M\times N$ in blocchi bidimensionali di $\frac{M}{gridRows}\times\frac{N}{gridCols}$, 
+ho realizzato un supporto alla generazione di una matrice di offset $M\times gridCols$, dove l'elemento
 $i,j$ è relativo all'inizio della $j$-esima partizione di colonne della $i$-esima riga.\\
 \begin{lstlisting}
 ///OFFSETS COMPUTE FOR COL GROUPS -> O( A.NZ )
@@ -583,7 +593,7 @@ di poter scrivere le righe della matrice risultante direttamente nell'output del
 data la possibilità di accumulare le lunghezze delle righe calcolate precedentemente alla corrente.\\
 \voidLine
 Per validare gli output dell'implementazione seriale per alcuni input di piccola dimensione,
-è stato effettuato un confronto con una implementazione di riferimento per matrici dense: \vvv{CBLAS} \cite{CBLAS},
+è stato effettuato un confronto con una implementazione di riferimento per matrici dense: \vvv{CBLAS} in \url{http://www.netlib.org/blas/},
 in seguito ad una trasformazione delle matrici da un formato sparso ad uno denso.\\
 
 \section{Distribuzione uniforme del lavoro tra i thread}	\label{chSpMMAux:UNIF_REMINDER_DISTRI}
@@ -597,11 +607,9 @@ un'impossibilità di determinare efficientemente il carico di lavoro di effettiv
 relativo ad una partizione dell'input.
 Nonostante ciò, può essere utile distribuire il più uniformente possibile ogni partizione 
 di dati e iterazioni tra i thread .\\%in assenza di informazioni che consentano di effettuare un partizio
-Considerando un input di dimensione $n$ da suddividere tra $t$ threads, avendo 
+Considerando un input di dimensione $n$ da suddividere tra $t$ threads, avendo\\
 $div=\left\lfloor \frac{n}{t}  \right\rfloor ~ rem=n ~mod ~t$,
 l'approccio seguito per minimizzare il divario delle partizioni assegnate %a vari thread
-è realizzato dalla seguente macro:
-\begin{lstlisting}
-#define UNIF_REMINDER_DISTRI(i,div,rem)	( (div) + ( (i) < (rem) ? 1 : 0 ) )
-\end{lstlisting}
+è realizzato dalla seguente macro:\\
+\verb|#define UNIF_REMINDER_DISTRI(i,div,rem) ((div)+((i)<(rem)?1:0 ))|
 dove viene redistribuito il resto della divisione $rem$ tra i thread.\\

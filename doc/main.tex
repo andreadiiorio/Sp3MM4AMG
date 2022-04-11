@@ -24,11 +24,11 @@ italian,
 %singlespacing,  % Single line spacing, alternatives: onehalfspacing or doublespacing
 %draft,         %  enable draft mode (no pictures, no links, overfull hboxes indicated)
 %nolistspacing, % If the document is onehalfspacing or doublespacing, uncomment this to set spacing in lists to single
-%liststotoc,    %  add the list of figures/tables/etc to the table of contents
-%toctotoc,      %  add the main table of contents to the table of contents
+liststotoc,    %  add the list of figures/tables/etc to the table of contents
+toctotoc,      %  add the main table of contents to the table of contents
 %parskip,       %  add space between paragraphs
 %nohyperref,    %  not load the hyperref package
-headsepline,    %  get a line under the header
+%headsepline,    %  get a line under the header
 %chapterinoneline, %  place the chapter title next to the number on one line
 %consistentlayout, %  change the layout of the declaration, abstract and acknowledgements pages to match the default layout
 ]{MastersDoctoralThesis} % The class file specifying the document structure
@@ -40,7 +40,9 @@ headsepline,    %  get a line under the header
 	style=alphabetic,
 	sorting=ynt
 	]{biblatex}
-\usepackage{float}
+\usepackage{float,caption}
+\usepackage{amsmath}
+\usepackage[raggedright]{titlesec}
 \addbibresource{references.bib} % The filename of the bibliography
 
 %%TEMPLATE IMPORTS
@@ -54,14 +56,107 @@ headsepline,    %  get a line under the header
 %
 \usepackage{graphicx}
 \graphicspath{ {./imgs/} } % imgs searched from this dir
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%% CODE EMBEDD %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-\usepackage{listings,color,tcolorbox} 
 
 %\newcommand{\vvv}[1]{\verbatim{#1} }
 \newcommand{\vvv}[1]{{\small\texttt{#1}}}
-\newcommand{\voidLine}{\par\null\par}
+\newcommand{\voidLine}{\par\null\par\noindent}
 \newcommand{\paragraphh}[1]{\paragraph{#1}\mbox{}\\}
 
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%	chapter mod
+%\ProvideDocumentCommand{\abovechapterskip}{}{\vspace*{20pt}}
+%%%REDEFINE FROM DEFAULT... with no space above :=
+%\makeatletter
+%    \renewcommand*\@makechapterhead[1]{%
+%%       \vspace*{50\p@}%
+%        {%
+%            \parindent\z@\raggedright\normalfont
+%           \ifnum\c@secnumdepth>\m@ne
+%               \huge\bfseries\@chapapp\space\thechapter\par
+%               \nobreak\vskip 20\p@
+%           \fi
+%           \interlinepenalty\@M
+%            \Huge\bfseries
+%            #1\par
+%            \nobreak\vskip 40\p@
+%        }
+%    }
+%tizio su internet grazie
+\makeatletter
+	\def\thickhrulefill{\leavevmode \leaders \hrule height 1ex \hfill \kern \z@}
+	\def\@makechapterhead#1{%
+	  %\vspace*{50\p@}%
+	  \vspace*{3\p@}%
+	  {\parindent \z@ \centering \reset@font
+	        \thickhrulefill\quad
+	        \scshape \@chapapp{} \thechapter
+	        \quad \thickhrulefill
+	        \par\nobreak
+	        \vspace*{10\p@}%
+	        \interlinepenalty\@M
+	        \hrule
+	        \vspace*{10\p@}%
+	        \Huge \bfseries #1\par\nobreak
+	        \par
+	        \vspace*{10\p@}%
+	        \hrule
+	    %\vskip 40\p@
+	    \vskip 100\p@
+	  }}
+	\def\@makeschapterhead#1{%
+	  %\vspace*{50\p@}%
+	  \vspace*{3\p@}%
+	  {\parindent \z@ \centering \reset@font
+	        \thickhrulefill
+	        \par\nobreak
+	        \vspace*{10\p@}%
+	        \interlinepenalty\@M
+	        \hrule
+	        \vspace*{10\p@}%
+	        \Huge \bfseries #1\par\nobreak
+	        \par
+	        \vspace*{10\p@}%
+	        \hrule
+	    %\vskip 40\p@
+	    \vskip 100\p@
+	  }}
+\makeatother
+
+%%%FANCY CHAP PACKAGE, NOT LOWECASABLE :(
+%\makeatother
+%\usepackage[Conny]{fncychap}	%Options: Sonny, Lenny, Glenn, Conny, Rejne, Bjarne, Bjornstrup
+%\makeatletter
+%	\ChNameAsIs
+%\makeatother
+%\makeatletter	%template config from ctan doc 
+%	\ChNameVar{\Large\rm} % sets the style for name
+%	\ChNumVar{\Huge} % sets the style for digit
+%	\ChTitleVar{\Large\rm\centering} % sets the style for title
+%	\ChRuleWidth{4pt} % Set RW=4pt
+%	%\ChNameAsIs
+%	\ChNameLowerCase % Make name uppercase
+%	\renewcommand{\DOCH}{%
+%	\setlength{\fboxrule}{\RW} % Let fbox lines be controlled by
+%	% \ChRuleWidth
+%	\fbox{\CNV\FmN{\@chapapp}\space \CNoV\thechapter}\par\nobreak
+%	\vskip 40\p@}
+%	\renewcommand{\DOTI}[1]{%
+%	\CTV\FmTi{#1}\par\nobreak
+%	\vskip 40\p@}
+%	\renewcommand{\DOTIS}[1]{%
+%	\CTV\FmTi{#1}\par\nobreak
+%	\vskip 40\p@}
+%\makeatother
+%ha funto solo una volta!?!?!
+%\renewcommand{\thechapter}{\arabic{chapter}}
+%\renewcommand{\mdtChapapp}{}{}
+%\renewcommand{\chapteralign}{\raggedleft}
+%\renewcommand{\chapterfont}{\color{black}\huge}
+%\renewcommand{\chapterinbetweenskip}{}{\vspace*{0pt}}
+%\renewcommand{\chapterprefixfont}{\fontsize{56pt}{0pt}\selectfont\color{mdtRed}}
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%% CODE EMBEDD %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\usepackage{listings,color,tcolorbox} 
 %CONFIG CODE LISTINGS
 \definecolor{mygreen}{rgb}{0,0.6,0}      
 \definecolor{mygray}{rgb}{0.5,0.5,0.5}   
@@ -167,7 +262,7 @@ headsepline,    %  get a line under the header
 %	THESIS INFORMATION
 %----------------------------------------------------------------------------------------
 
-\thesistitle{Sp3MM for AMG:\\Sparse triple matrix multiplication for AlgebraicMultiGrid}     %title and abstract, print it elsewhere with \ttitle
+\thesistitle{Sp3MM for AMG:\\Sparse triple Matrix Multiplication for AlgebraicMultiGrid}     %title and abstract, print it elsewhere with \ttitle
 \author{Andrea Di Iorio} % Your name, this is used in the title page and abstract, print it elsewhere with \authorname
 \supervisor{Salvatore Filippone}   % Your supervisor's name, this is used in the title page, print it elsewhere with \supname
 %\examiner{} % Your examiner's name, this is not currently used anywhere in the template, print it elsewhere with \examname
@@ -176,7 +271,7 @@ headsepline,    %  get a line under the header
 
 \subject{HPC} % Your subject area, this is not currently used anywhere in the template, print it elsewhere with \subjectname
 \keywords{HPC,OpenMP,SpMM,AMG} % Keywords for your thesis, this is not currently used anywhere in the template, print it elsewhere with \keywordnames
-\university{\href{http://ing.uniroma2.it/}{Università degli studi di Roma Tor Vergata}} % Your university's name and URL, this is used in the title page and abstract, print it elsewhere with \univname
+\university{\href{http://ing.uniroma2.it/}{Università degli studi di\\Roma Tor Vergata}} % Your university's name and URL, this is used in the title page and abstract, print it elsewhere with \univname
 \department{}{} %\department{\href{http://dicii.uniroma2.it/}{Dipartimento di Ingegneria Civile e Ingegneria Informatica}} % Your department's name and URL, this is used in the title page and abstract, print it elsewhere with \deptname
 %\group{\href{http://researchgroup.university.com}{Research Group Name}} % Your research group's name and URL, this is used in the title page, print it elsewhere with \groupname
 \faculty{\href{http://inginformatica.uniroma2.it}{Ingegneria Informatica}} % Your faculty's name and URL, this is used in the title page and abstract, print it elsewhere with \facname
@@ -189,7 +284,6 @@ headsepline,    %  get a line under the header
 
 
 
-\frontmatter % Use roman page numbering style (i, ii, iii, iv...) for the pre-content pages
 
 \pagestyle{plain} % Default to the plain heading style until the thesis style is called for the body content
 
@@ -230,7 +324,7 @@ headsepline,    %  get a line under the header
 	 
 	\begin{minipage}[t]{0.4\textwidth}
 	\begin{flushleft} \large
-	\emph{Autore: \authorname}\\
+	\emph{Studente:  \authorname\\Matricola: 0277550}\\
 	%\href{http://www.johnsmith.com}{\authorname} % Author name - remove the \href bracket to remove the link
 	\end{flushleft}
 	
@@ -284,6 +378,7 @@ headsepline,    %  get a line under the header
 %\cleardoublepage
 %
 %%%%%%%%%%%%   Dediche  %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\pagenumbering{gobble}
 \dedicatory{
 Dedico questo lavoro di tesi\\
 \par\null\par
@@ -291,14 +386,19 @@ Ai miei genitori Rosaria e Antonio \\
 e al mio caro fratello Enrico,\\
 che mi hanno supportato costantemente in ogni modo\\
 \par\null\par
-Ai miei nonni,Vincenzina e Michele, che mi sono stati sempre accanto\\
+Ai miei nonni,Vincenzina e Michele,\\
+che mi sono stati sempre accanto\\
 e a Domenico e Annina che sono saliti in cielo\\
 \par\null\par
 Alla mia meravigliosa compagna Cynthia,\\
 che mi è stata vicino in questo periodo difficile 
 \par\null\par
-\authorname
+%\authorname
 }
+
+
+\frontmatter % Use roman page numbering style (i, ii, iii, iv...) for the pre-content pages
+
 %
 %%%QUOTATION version (page)
 %%
@@ -343,13 +443,19 @@ che mi è stata vicino in questo periodo difficile
 %
 
 % set TOC level to display also subsubsubsections and paragraphs
-\setcounter{tocdepth}{4}
-\setcounter{secnumdepth}{4}
-\tableofcontents % Prints the main table of contents
+\setcounter{tocdepth}{3}
+\setcounter{secnumdepth}{3}
+{
+  \hyphenchar\font=-1 % disable hyphen
+  \hypersetup{linkcolor=black}
+  \tableofcontents
+}
+%\hyphenchar\font=-1 % disable hyphen
+%\tableofcontents
+%\hyphenchar\font=`\- % reset hyphen
 %\addcontentsline{toc}{chapter}{Bibliografia}
 
 %
-%\listoffigures % Prints the list of figures
 %
 %\listoftables % Prints the list of tables
 %
@@ -401,9 +507,10 @@ che mi è stata vicino in questo periodo difficile
 
 \pagestyle{thesis} % Return the page headers back to the "thesis" style
 
-% Include the chapters of the thesis as separate files from the Chapters folder
-% Uncomment the lines as you write the chapters
 
+
+
+%\setlength{\beforechapskip}{20pt}
 %--CHAPTERS-------------------------------------------------------------------------------
 \include{Chapters/ChIntro}				%HPC context (poco poco), pdeDiscretized -> psBlas -> amg4psblas -> criticità prodotto -> ottimizzazione
 \include{Chapters/ChExistingTecqs}		%soluzione esistenti in letteratura
@@ -425,11 +532,15 @@ che mi è stata vicino in questo periodo difficile
 %\include{Appendices/AppendixA}
 %%\include{Appendices/AppendixB}
 %%\include{Appendices/AppendixC}
-%
-%%-----------------------------BIBLIOGRAPHY----------------------------------------------
-%\section{Bibliografia}
-\printbibliography[heading=bibintoc]
 
+%%%FIGURES
+%add lisf of figures manually to the toc
+%\cleardoublepage
+%% \phantomsection
+%\addcontentsline{toc}{chapter}{\listfigurename}
+\listoffigures % Prints the list of figures
+%%-----------------------------BIBLIOGRAPHY----------------------------------------------
+\printbibliography[heading=bibintoc]
 %----------------------------------------------------------------------------------------
 
 \end{document}  
