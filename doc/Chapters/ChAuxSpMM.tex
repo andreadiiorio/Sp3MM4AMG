@@ -9,7 +9,7 @@ per molte funzioni scritte nei sorgenti, varie versioni differenti ottenute a te
 accessibili in altre funzioni mediante una segnatura modificata.\\
 La necessità principale di realizzare questo approccio è stato quello di supportare, con
 un'alta efficienza, l'integrazione del codice C in un progetto fortran come \cite{PSBLAS3},
-come verrà trattato a breve in \ref{chSpMMAux:fortranIntegrate}.\\
+come verrà trattato a breve in \refbf{chSpMMAux:fortranIntegrate}.\\
 %PRO GENERAL CPP MULTI VERSION IMPLEMENTATIONS
 I vantaggi di usare il pre processore per ottenere molteplici versioni di una funzione sono diverse:
 \begin{itemize}
@@ -22,12 +22,12 @@ I vantaggi di usare il pre processore per ottenere molteplici versioni di una fu
 				su ogni versione ottenuta in seguito al pre processamento, non possibili a run-time,
 				come ad esempio semplificare un offset pari a zero da applicare ad operazioni di indicizzazione
 				%(come ad esempio usare una diversa indicizzazione all'interno di un applicazione Fortran
-				%\ref{chSpMMAux:fortanIdxsDifferent} )
-		\item	evitare istruzioni di branching addizionali nel codice, (come analizzato in \ref{chSpMMSymb:funcsMultiImpleVSmanualMultiFunc} )
+				%\refbf{chSpMMAux:fortanIdxsDifferent} )
+		\item	evitare istruzioni di branching addizionali nel codice, (come analizzato in \refbf{chSpMMSymb:funcsMultiImpleVSmanualMultiFunc} )
 				che potenzialmente permettono ulteriori ottimizzazioni a tempo di compilazione.\\
 	\end{itemize}
 \end{itemize}
-Ho pubblicato un semplice esempio di questo approccio implementativo in \url{https://github.com/andreadiiorio/C_Compile_Multi_Implementation_Automatically}.\\
+Ho pubblicato un semplice esempio di questo approccio implementativo in \\ \url{github.com/andreadiiorio/C_Compile_Multi_Implementation_Automatically}.\\
 \voidLine
 Per ottenere diverse implementazioni da una funzione è necessario:
 \begin{itemize}
@@ -94,14 +94,15 @@ Dove \vvv{spmat} è una struttura con campi per supportare varie rappresentazion
 come CSR o ELL, mentre \vvv{CONFIG} contiene la configurazione per le esecuzioni delle operazioni in oggetto,
 come ad esempio la griglia di parallelizzazione del lavoro o il numero di thread da utilizzare.\\
 
-Per supportare il lato Fortran dell'integrazione è stato sfruttato il modulo \verb|iso_c_binding| 
+Per supportare il lato Fortran dell'integrazione \\è stato sfruttato il modulo \verb|iso_c_binding| 
 per definire le interfacce e strutture con controparte nel codice C, in un modulo di supporto.\\
 
-\subsection{Generazione efficiente di diverse versioni di una funzione base}	\label{chSpMMAux:multiImplMany}
+\subsection[Generazione multiple versioni di funzioni]
+{Generazione efficiente di diverse versioni di una funzione base}	\label{chSpMMAux:multiImplMany}
 Estendendo la soluzione appena riportata per generare una coppia di implementazioni per gestire una doppia indicizzazione,
 ho realizzato un supporto alla generazione di otto versioni differenti di una funzione generica nel modulo relativo al prodotto simbolico.\\
 Per realizzare le varie combinazioni di versioni richieste di ogni funzione per generare i vari livelli di dettaglio dell'output 
-del prodotto simbolico descritti in \ref{chSpMMSymb:outputDetailLevel_coreFuncsVersions},
+del prodotto simbolico descritti in \refbf{chSpMMSymb:outputDetailLevel_coreFuncsVersions},
 ho usato il seguente approccio basato su redefinizioni di alcune macro di supporto:\\
 \begin{lstlisting}
 #define OFF_F 0
@@ -156,7 +157,7 @@ Il kernel del sistema operativo Linux usa i RedBlack Tree per vari scopi, tra cu
 	\item	la gestione degli epoll file descriptors
 	\item	la gestione delle chiavi crittografiche
 \end{itemize}  
-\cite{lwnAgumentedRBtrees,lwnRBtrees}
+{\bf \cite{lwnAgumentedRBtrees,lwnRBtrees}}
 \voidLine
 \label{chSpMMAux:memRegionRBTree}
 Un esempio dell'importanza dei RedBlack Tree è il primo punto della lista precedente,
@@ -184,7 +185,7 @@ regioni di memoria (\verb|vm_area_struct|) relative ai vari intervalli di indiri
 collegati a \vvv{p}.\\
 La gestione delle regioni di memoria è possibile sia mediante la strutturazione degli stessi 
 in lista collegata (campi \verb|vm_next vm_prev| in \verb|vm_area_struct|),
-sia mediante RedBlack tree grazie ai campi evidenziati in rosso in \ref{fig:RBtreeInMMDesriptor}
+sia mediante RedBlack tree grazie ai campi evidenziati in rosso in \refbf{fig:RBtreeInMMDesriptor}
 \voidLine
 Dalle strutture \verb|rb_root rb_node| dei RedBlack appena mostrate è possibile notare l'assenza 
 campi contenenti chiavi o puntatori a strutture nodo. 
@@ -215,11 +216,11 @@ Le tipologie principali di RedBlack tree presenti nel kernel linux sono:	\label{
 
 \subsection{Porting in UserSpace} 
 Ho effettuato il porting in UserSpace dei primi due tipi di RedBlack tree del kernel linux 5.10.27 menzionati precedentemente 
-ed ho reso disponibile il lavoro ad altri usi nel mio repository \url{https://github.com/andreadiiorio/redblackTree_linux_userspace}.
+ed ho reso disponibile il lavoro ad altri usi nel mio repository \url{github.com/andreadiiorio/redblackTree_linux_userspace}.
 \voidLine
 Per effettuare il porting delle funzioni necessarie al prodotto simbolico con RedBlack Tree è stato necessario 
 rimpiazzare varie dipendenze definite in altri moduli del kernel linux come 
-le macro \verb|container_of READ_ONCE WRITE_ONCE| \dots  o le funzioni di (de)allocazione
+le macro \\ \verb|container_of READ_ONCE WRITE_ONCE| \dots  o le funzioni di (de)allocazione
 con soluzioni alternative in userspace.\\Sono state inoltre rimosse le versioni RCU delle operazioni sui RedBlack Tree per questioni di semplicità. 
 \voidLine
 Per supportare la fase simbolica per l'operazione di SpMM è stata realizzata una seconda versione minimalizzata del porting,
@@ -249,7 +250,7 @@ senza le funzioni non indispensabili al prodotto.\\
 
 \section{Uso Bitmaps per inserimento efficiente di indici} \label{chSpMMAux:bitmapInsert}
 Per supportare l'inserimento efficiente di indici senza ripetizioni,
-in alcune versioni del prodotto simbolico descritte in \ref{chSpMMSymb:bitmapsUse} e nel gestire gl'indici di colonna 
+in alcune versioni del prodotto simbolico descritte in \refbf{chSpMMSymb:bitmapsUse} e nel gestire gl'indici di colonna 
 negli accumulatori densi calcolati durante le moltiplicazioni scalari ho adottato
 una struttura di ricerca basata su un insieme di bitmaps.\\
 La struttura contiene una zona di memoria in cui ogni bit può rappresentare la presenza di un indice specifico
@@ -314,7 +315,7 @@ Nel frammento di codice precedente viene implementata l'operazione di inseriment
 incrementando il contantore degli indici inseriti senza duplicati a riga 7 come descritto.\\
 % TODO TODO  \paragraph{Prodotto simbolico di una (partizione di) riga della matrice output con Bitmaps VS RedBlack Tree}
 % È possibile affermare che nel caso di dover generare un prodotto simbolico accurato, con output limitato
-% al numero di \nnz per riga \ref{chSpMMSymb:outputDetailLevel},
+% al numero di \nnz per riga \refbf{chSpMMSymb:outputDetailLevel},
 % l'utilizzo delle bitmap ha un costo unitario per inserimento invece che logaritmico sul numero di nodi inseriti.\\
 % Nel caso di dover generare la versione \verbOutIdxs_| del operazione in oggetto, è necessario tenere traccia
 
@@ -343,14 +344,15 @@ Conseguentemente, per il problema in analisi usare uno scheduling Dynamic con ch
 chunksize statico, dato della divisione del numero di iterazioni per il numero di thread,
 può dare dei benefici prestazionali.\\
 Per realizzare questa funzionalità ho realizzato una funzione che adatta dinamicamente 
-il chunksize di un ciclo parallelizzato ad $\frac{\#\text{iterazioni}}{\# \text{thread} \cdot \text{FAIR\_CHUNKS\_FOLDING}}$
+il chunksize di un ciclo parallelizzato ad \\
+$\frac{\#\text{iterazioni}}{\# \text{thread} \cdot \text{FAIR\_CHUNKS\_FOLDING}}$
 dove \verb|FAIR_CHUNKS_FOLDING| è una macro configurabile a tempo di compilazione.\\
 
 \section{Configurazione automatica della griglia di partizionamento del lavoro}	\label{chSpMMAux:ompGrid}
-Nelle implementazioni parallele di SpMM descritte in \ref{Chapter3} è prevista una suddivisione della computazione del risultato
+Nelle implementazioni parallele di SpMM descritte in \refbf{Chapter3} è prevista una suddivisione della computazione del risultato
 tra i vari thread mediante sia il chunksize configurato in openMP, sia tramite una griglia di partizionamento del lavoro.\\
 Il chunksize dello scheduling openMP configurato determina quante iterazioni di un ciclo parallelizzato affidare ad un thread
-ed è configurato automaticamente in base al tipo di scheduling come descritto precedentemente in \ref{chSpMMAux:dynChunkFairAdapting}.\\
+ed è configurato automaticamente in base al tipo di scheduling come descritto precedentemente in \refbf{chSpMMAux:dynChunkFairAdapting}.\\
 La griglia di partizionamento consiste in una suddivisione del risultato da calcolare in blocchi 1D o 2D.
 \voidLine
 Nel caso di implementazioni monodimensionali è possibile suddividere la computazione in blocchi di righe sia automaticamente 
@@ -387,7 +389,7 @@ così da poter assegnare almeno un iterazione ad ogni thread.\\
 
 \section{Assegnamento dinamico di memoria ai thread \emph{fence-less}} \label{chSpMMAux:atomicSegAssign}
 Nel caso di effettuare la \emph{sparsificazione} di un accumulatore denso 
-durante il prodotto numerico di SpMM, descritta precedentemente in \ref{chSpMMNum:sparsify},
+durante il prodotto numerico di SpMM, descritta precedentemente in \refbf{chSpMMNum:sparsify},
 in assenza di informazioni sulla quantità di memoria necessaria ad ogni thread, 
 è necessario assegnare dinamicamente partizioni di memoria (pre allocata), in maniera concorrente.
 \voidLine
@@ -421,7 +423,7 @@ di \vvv{lastAssigned} ed è salvato nella variabile \vvv{sparsifyStartV}.
 L'uso di questa primitiva è da associare ad un modello di ordine di memoria \vvv{memorder}.\\
 Per l'operazione da realizzare dovrebbe essere sufficiente il modello \\ \verb|__ATOMIC_ACQ_REL|,
 che sostanzialmente crea una relazione di tipo \emph{happens-before} tra le operazioni di 
-\emph{acquire} e \emph{release} sulla variabile atomica  \cite{isoc11,gcc10.1}.\\
+\emph{acquire} e \emph{release} sulla variabile atomica  {\bf \cite{isoc11,gcc10.1}}.\\
 
 \subsection[Uso clausola \vvv{capture} di OpenMP]
 {Riservazione concorrente di memoria mediante OpenMP}
@@ -478,7 +480,7 @@ basato sull'uso di un'operazione di Exchange and Add con prefisso \vvv{LOCK}.\\
 L'atomicità dell'implementazione è provata dalla presenza di questo prefisso,
 che come la documentazione intel riporta, 
 %LOCK prefix intel man 2
-consente al processore corrente di avere uso esclusivo di ogni memoria condivisa \cite{intelDevMan2}.\\
+consente al processore corrente di avere uso esclusivo di ogni memoria condivisa \citebf{intelDevMan2}.\\
 
 
 \section{Partizionamento bidimensionale di una matrice CSR}	\label{chSpMMAux:CSR2DPARTI}
@@ -491,7 +493,7 @@ Una rappresentazione grafica dell'operazione è raffigurata nell'immagine seguen
 \begin{figure}[H]
   \centering \includegraphics[width=.7\linewidth,keepaspectratio]{csrTilingCSR_only.svg.pdf} 
   \caption[partizionamento 2D CSR]
-  {Rappresentazione grafica di un partizionamento 2D di una matrice CSR, \cite{adaptiveTilingSpMM}}
+  {Rappresentazione grafica di un partizionamento 2D di una matrice CSR, \citebf{adaptiveTilingSpMM}}
   \decoRule \label{fig:csrTilingCSR_only}
 \end{figure}
 
@@ -583,11 +585,11 @@ e se i valori floating point delle matrici sono uguali a meno di una soglia di t
 %dato che le rappresentazioni floating-point per i numeri reali sono soggetti ad errori di approssimazione, 
 dato che le operazioni tra rappresentazioni floating-point sono soggette ad errori di approssimazione che possono portare 
 a risultati diversi in base al sequenziamento delle operazioni effettuate (non prevedibile in una implementazione parallela)
-\cite{goldmanFP}
+\citebf{goldmanFP}
 
 \subsection{implementazione seriale di riferiemento}	\label{implSerialeRiferimento}
 L'implementazione seriale di riferimento è stata realizzata con una coppia di operazioni di SpMM
-realizzate con un approccio \rowbyrow, in modo molto simile alle implementazioni monodimensionali descritte in \ref{chSpMMNum:part1DGroup}.
+realizzate con un approccio \rowbyrow, in modo molto simile alle implementazioni monodimensionali descritte in \refbf{chSpMMNum:part1DGroup}.
 A differenza della controparte parallela, l'implementazione seriale gode della grande facilitazione 
 di poter scrivere le righe della matrice risultante direttamente nell'output dell'operazione senza una fase simbolica precedente,
 data la possibilità di accumulare le lunghezze delle righe calcolate precedentemente alla corrente.\\

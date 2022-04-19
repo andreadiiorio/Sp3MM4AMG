@@ -22,14 +22,14 @@
 
 %----------------------------------------------------------------------------------------
 
-Prendendo spunto dalle caratteristiche principali degli algoritmi descritti precedentemente in \ref{ChExistingTecqs}, 
+Prendendo spunto dalle caratteristiche principali degli algoritmi descritti precedentemente in \refbf{ChExistingTecqs}, 
 in questa sezione vengono descritte implementazioni parallele derivate da gustavson \cite{gustavson} 
-con formulazione row-by-row \ref{ChExistingTecqs:formulazioni} per il prodotto numerico tra matrici sparse con OpenMP, 
+con formulazione row-by-row \refbf{ChExistingTecqs:formulazioni} per il prodotto numerico tra matrici sparse con OpenMP, 
 utilizzando diverse metodologie.
 Estendendo l'approccio row-by-row, ho realizzato anche una versione per computare un triplo prodotto numerico direttamente.\\
 %summing, organizzazione capitolo
 In questo capitolo ho organizzato i contenuti per trattare prima dei componenti di supporto e configurazioni del prodotto numerico,
-tra cui la differente gestione della memoria in base a quale tipo di prodotto simbolico si sta usando \ref{chSpMMSymb:UpperBound}.\\
+tra cui la differente gestione della memoria in base a quale tipo di prodotto simbolico si sta usando \refbf{chSpMMSymb:UpperBound}.\\
 
 
 \section{Accumulatore denso per le moltiplicazioni scalari intermedie} \label{chSpMMNum:scSparseVectMulPart}
@@ -37,7 +37,7 @@ tra cui la differente gestione della memoria in base a quale tipo di prodotto si
 Come precedentemente visto, una formulazione \rowbyrow di SpMM prevede di computare una riga di $C$ 
 mediante la somma di moltiplicazioni scalari intermedie.\\
 Analizzando gli ottimi risultati ottenuti da \cite{intelSpMMDenseAccumulator} precedentemente in 
-\ref{ssec:intelSpMMDenseAccumulator}, ho deciso di sfruttare l'idea di utilizzare un accumulatore denso per 
+\refbf{ssec:intelSpMMDenseAccumulator}, ho deciso di sfruttare l'idea di utilizzare un accumulatore denso per 
 mantenere e sommare le moltiplicazioni scalari intermedie.\\
 %double insert by intel paper...
 Riguardo la determinazione degli indici di colonna degli elementi \nnz calcolati mediante l'accumulatore denso,
@@ -53,11 +53,11 @@ comporterà di dover reinserire il corrispondente indice.\\
 Per quanto questo scenario è discretamente improbabile, %dato che lo zero numerico si ...
 nel gestirlo si richiede di dover eliminare gli indici duplicati.\\
 Al fine di evitare questa necessità, che potenzialmente richiede una ulteriore passata su tutti gli indici inseriti,
-ho deciso di riutilizzare l'idea del set di flag usata per il prodotto simbolico in \ref{chSpMMSymb:structFlagSet}.\\
+ho deciso di riutilizzare l'idea del set di flag usata per il prodotto simbolico in \refbf{chSpMMSymb:structFlagSet}.\\
 Ogni indice di colonna di elemento \nnz considerato durante la moltiplicazione scalare richiesta dalla formulazione row-by-row, 
 verrà inserito in maniera del tutto analoga al caso del prodotto simbolico, incrementando un contatore se l'indice 
 non era gia nella struttura ausiliaria di ricerca.\\
-Le implementazioni delle bitmap per gestire set di flag saranno descritte in \ref{chSpMMAux:bitmapInsert}.\\
+Le implementazioni delle bitmap per gestire set di flag saranno descritte in \refbf{chSpMMAux:bitmapInsert}.\\
 %TODO deconfusiona: reamrk o + ref a fatto che scSparseMul = moltiplicazione scalare è il 1° base step di \rowbyrow 
 \begin{lstlisting}
 typedef struct{
@@ -94,7 +94,7 @@ static inline void _sparsifyUB(ACC_DENSE* accV,SPACC* accSparse,idx_t startColAc
 Nel frammento di codice precedente è possibile notare anche come sia gestita 
 la possibilità di convertire un accumulatore denso relativo ad una partizione di riga della matrice risultante, 
 gestendo un shifting degli indici di colonna \nnz relativi mediante la variabile \vvv{startColAcc} a riga 6
-(necessario per partizionamenti bidimensionali del lavoro come verrà approfondito in \ref{chSpMMNum:parti2D} ).\\
+(necessario per partizionamenti bidimensionali del lavoro come verrà approfondito in \refbf{chSpMMNum:parti2D} ).\\
 %sort need
 Ordinando \vvv{nnzIdx} prima della sua copia nella struttura di destinazione, 
 serve a produrre una matrice sparsa in output con indici degli elementi \nnz ordinati.
@@ -112,22 +112,23 @@ presente nella \vvv{glibc} mediante la funzione \vvv{qsort}.\\
 
 
 \section{Gestione della memoria in base al tipo di Prodotto Simbolico usato}
-Come precedentemente detto in \ref{ChExistingTecqs:openMP_for_philosophy},
+Come precedentemente detto in \refbf{ChExistingTecqs:openMP_for_philosophy},
 è sempre preferibile utilizzare pre allocazioni in luogo di allocazioni dinamiche 
 in implementazioni parallele.\\
 In base al tipo di fase simbolica effettuata, possono esserci diverse possibilità per 
 pre-allocare la memoria per l'operazione di SpMM e successivamente assegnarne 
 porzioni ai vari threads.\\
-\subsection{Possibilità offerte al Prodotto Numerico, in base al livello di output del Prodotto Simbolico}
+\subsection[Possibilità offerte al Prodotto Numerico,\\in base al livello di output del Prodotto Simbolico]
+{Possibilità offerte al Prodotto Numerico, in base al livello di output del Prodotto Simbolico}
 \label{chSpMMNum:funcsMultiImplePurpose}
-I livelli di output del prodotto simbolico definiti in \ref{chSpMMSymb:outputDetailLevel}, 
+I livelli di output del prodotto simbolico definiti in \refbf{chSpMMSymb:outputDetailLevel}, 
 permettono di effettuare il prodotto numerico con vari livello di 
 partizionamento del lavoro e di uso della memoria:
 \begin{itemize}
 	\item un prodotto simbolico con output di livello 1 è sufficente a realizzare 
 		  il prodotto numerico unicamente salvando i risultati intermedi in una struttura temporanea preallocata,
 		  di cui porzioni vengono assegnate ai thread dinamicamente.
-		  Dettagli di questo approccio saranno trattati a breve in \ref{chSpMMNum:mallocReplaceAssigns}
+		  Dettagli di questo approccio saranno trattati a breve in \refbf{chSpMMNum:mallocReplaceAssigns}
 	\item un prodotto simbolico con output di livello 2 consente di effettuare il prodotto numerico
 		  con partizionamento monodimensionale del lavoro, dove le righe della matrice risultante 
 		  possono essere salvate in una struttura temporanea preallocata
@@ -140,7 +141,7 @@ partizionamento del lavoro e di uso della memoria:
 
 \subsection{Uso di una fase simbolica di tipo UpperBound}
 Nel caso di utilizzare una fase simbolica rapida basata su UpperBound in una implementazione parallela di SpMM
-, come già menzionato in \ref{chSpMMSymb:UB_VS_SYMBACC},
+, come già menzionato in \refbf{chSpMMSymb:UB_VS_SYMBACC},
 è necessario utilizzare durante la fase numerica una struttura temporanea per salvare i risultati dei prodotti.\\
 \label{chSpMMNum:UB_necessitaCopyBack}
 Questa necessità è dovuta al fatto che ogni thread non ha informazione sulla esatta dimensione della porzione di
@@ -156,7 +157,7 @@ Le partizioni di righe della matrice risultante calcolate verranno scritte da og
 in aree contigue di questa struttura intermedia, salvandone gli indirizzi iniziali 
 nella seguente struttura di supporto
 usata per l'operazione conclusiva di copia dei risultati intermedi nella matrice output
-(descritta in \ref{chSpMMNum:mergeRows})
+(descritta in \refbf{chSpMMNum:mergeRows})
 \begin{lstlisting}
 //Sparse vector accumulator
 typedef struct{                                               
@@ -180,7 +181,7 @@ definendo la macro \verb|SPARSIFY_PRE_PARTITIONING| con valore {TRUE}.\\
 \subsubsection[Assegnamento dinamico \\di spazio intermedio ai thread]
 {Assegnamento dinamico di spazio per non zeri intermedi ai thread} \label{chSpMMNum:mallocReplaceAssigns}
 Un approccio di assegnazione di porzioni di \emph{AS\_tmp JA\_tmp}, simile ad effettuare allocazioni 
-dinamiche, ma senza le criticità di performance citate in \ref{ChExistingTecqs:openMP_for_philosophy}
+dinamiche, ma senza le criticità di performance citate in \refbf{ChExistingTecqs:openMP_for_philosophy}
 è il seguente.\\
 \label{chSpMMNum:sparsifyMallocReplace}
 Ogni thread che necessita di \emph{sparsificare} l'accumulatore denso determinato durante 
@@ -189,7 +190,7 @@ indice relativo alla fine dell'ultima area di memoria assegnata ad un qualsiasi 
 catturandone il valore precedente.\\
 \label{chSpMMNum:sparsifyMallocReplace_EASY_INTEGRATION_IN_EVERY_UB_PARTITIONING}
 Questa soluzione di gestione dello spazio intermedio ha il vantaggio di richiedere quasi
-nessuna informazione dal prodotto simbolico (è sufficiente un output di livello 1 secondo la numerazione descritta in \ref{chSpMMSymb:outputDetailLevel})
+nessuna informazione dal prodotto simbolico (è sufficiente un output di livello 1 secondo la numerazione descritta in \refbf{chSpMMSymb:outputDetailLevel})
 indipendentemente dal particolare tipo di partizionamento del lavoro che si sta utilizzando.\\
 %code 
 Segue la funzione per trasformare l'accumulatore denso in formato sparso con questo approccio.\\
@@ -211,30 +212,30 @@ per riservare al thread corrente una porzione di memoria di \emph{AS\_tmp JA\_tm
 a riga 7 e 8, per scrivere i risultati intermedi computati.\\
 La primitiva \verb|__atomic_fetch_add| permette di incrementare una locazione 
 di memoria, ritornandone il valore non incrementato.
-Ulteriori dettagli su questo approccio e su alcune varianti saranno analizzati in \ref{chSpMMAux:atomicSegAssign}
+Ulteriori dettagli su questo approccio e su alcune varianti saranno analizzati in \refbf{chSpMMAux:atomicSegAssign}
 
 \subsubsection[Assegnamento statico\\di spazio intermedio ai thread]
 {Assegnamento statico  di spazio per non zeri intermedi ai thread} \label{chSpMMNum:preSplitAS_JA_tmp}
-Un'alternativa semplice all'approccio precedente (\ref{chSpMMNum:mallocReplaceAssigns}),
+Un'alternativa semplice all'approccio precedente (\refbf{chSpMMNum:mallocReplaceAssigns}),
 è quello di effettuare una suddivisione per ogni (partizione di) riga della matrice risultante
 dello spazio allocato in \emph{AS\_tmp JA\_tmp}, così da consentire ad ogni thread 
 di poter scrivere i propri risultati intermedi in una spazio non soggetto a race-conditions.\\
 Per realizzare questo è necessario avere conoscenza di un UpperBound per ogni (partizione di)
 riga della matrice risultante, e conseguentemente è necessario utilizzare un prodotto simbolico
 con un livello di dettaglio dell'output di livello 2 (3), 
-seguendo la nomenclatura introdotta nel capitolo precedente \ref{chSpMMSymb:outputDetailLevel}.\\
+seguendo la nomenclatura introdotta nel capitolo precedente \refbf{chSpMMSymb:outputDetailLevel}.\\
 
 \subsubsection{Consolidamento risultati intermedi nel risultato finale} \label{chSpMMNum:mergeRows}
 In conclusione all'operazione di SpMM con fase simbolica basata su UpperBound, 
 è necessario raccogliere tutti i valori \nnz e i relativi indici calcolati 
 dalla struttura temporanea ( \emph{AS\_tmp JA\_tmp} ) alla matrice risultante di output.\\
 Per fare questo è sufficiente copiare solo gli elementi \nnz scritti nella struttura temporanea
-mediante le strutture ausiliare \vvv{SPACC}, descritte in \ref{chSpMMNum:SPACC}.\\
+mediante le strutture ausiliare \vvv{SPACC}, descritte in \refbf{chSpMMNum:SPACC}.\\
 Segue la funzione per radunare tutti i risultati intermedi relativi a partizioni di righe della matrice 
 risultante nell'output finale dell'operazione di SpMM.\\
 \begin{lstlisting}
 inline int mergeRowsPartitions(SPACC* rowsParts,spmat* mat,CONFIG* conf){
-	//offsets for preparing copy 
+    //offsets for preparing copy 
     idx_t nzNum=0,j,rLen,idx,partsNum = mat->M * conf->gridCols;
     idx_t* rowsPartsOffsets; //partsNum offsets for each row's partitiong of mat
     for (idx_t r=0; r<mat->M; r++){	///count nnz entries offsets per row's part.
@@ -245,13 +246,10 @@ inline int mergeRowsPartitions(SPACC* rowsParts,spmat* mat,CONFIG* conf){
         }
         nzNum += rLen;
         mat->IRP[r+1] = nzNum;
-		#ifdef ROWLENS
-        mat->RL[r] = rLen;
-		#endif
     }
     mat->NZ = nzNum;
-	...
-	//copy
+    ...
+    //copy
     idx_t pLen; //omp for aux vars
     #pragma omp parallel for schedule(static) private(pLen)
     for (idx_t i=0;  i<partsNum; i++){
@@ -277,7 +275,7 @@ riga dalla struttura temporanea, copiandoli nella posizione appropriata della ma
 
 \subsection{Uso di una fase simbolica accurata}
 Nel caso di utilizzare un Prodotto Simbolico accurato, è possibile \emph{sparsificare}
-gli accumulatori densi (descritti in \ref{chSpMMNum:scSparseVectMulPart}) ottenuti sommando le moltiplicazioni scalari
+gli accumulatori densi (descritti in \refbf{chSpMMNum:scSparseVectMulPart}) ottenuti sommando le moltiplicazioni scalari
 direttamente nella matrice risultante.\\
 Per fare questo è necessaria una piccola operazione di inizializzazione della matrice di output
 andando a popolare il vettore \vvv{IRP}, con la cumulazione del \nnnz delle 
@@ -293,7 +291,7 @@ o meno di dover utilizzare una struttura intermedia durante il prodotto numerico
 Oltre questo dettaglio non ci sono particolari differenze nelle due implementazioni della fase numerica
 e per questo si analizzeranno nel seguito le implementazioni che sono supportate da un prodotto simbolico basato su UpperBound.\\
 %rewind \rowbyrow + extra description + adattamento per partizionamento 2D
-La formulazione row-by-row, come indicato in \ref{ChExistingTecqs:formulazioni}, 
+La formulazione row-by-row, come indicato in \refbf{ChExistingTecqs:formulazioni}, 
 calcola la riga $c_{i*}$ della matrice risultante sommando i vettori ottenuti dalle moltiplicazioni scalari tra:
 gli elementi $a_{ik} \in a_{i*}$ della corrispondente riga della matrice $A$ e  
 le righe $b_{k*} \in B$ relative agli indici di colonna $k$ degli elementi $a_{ik}$.
@@ -301,28 +299,28 @@ Questa operazione è esprimibile in maniera compatta come:
 $c_{i*} = \sum\limits_{k \in I_i(A)}  a_{ik} \ast  b_{k*}$.\\
 È possibile derivare il calcolo della partizione di colonne $c_z - c_w$ della riga $c_{i*}$
 limitando le moltiplicazioni scalari $a_{ik} \ast  b_{k*}$ alle relative partizioni di colonne della matrice $B$. 
-L'operazione appena descritta è esprimibile in maniera compatta seguendo la notazione introdotta \ref{notazione} come:\\
+L'operazione appena descritta è esprimibile in maniera compatta seguendo la notazione introdotta \refbf{notazione} come:\\
 $c_{i~c_z-c_w} = \sum\limits_{k \in I_i(A)}  a_{ik} \ast  b_{k~c_z-c_w}$.\\
 
 \subsection{Partizionamento monodimensionale}
 Un semplice partizionamento delle matrici per parallelizzare SpMM, è quello di 
 assegnare righe intere o blocchi di esse della matrice da calcolare $C$ ai thread.\\
 %partitioning terminology
-Nella terminologia introdotta precedentemente in \ref{ChExistingTecqs:workCube}, equivale ad
+Nella terminologia introdotta precedentemente in \refbf{ChExistingTecqs:workCube}, equivale ad
 assegnare gruppi di Layers del cubo di lavoro ai vari threads.\\
 Segue una parte del codice per effettuare l'operazione di SpMM con 
 un partizionamento dei dati di blocchi di righe della matrice A e C:    \label{chSpMMNum:part1DGroup}
 \begin{lstlisting}
 #pragma omp parallel for schedule(runtime) private(acc,startRow,block)
 for (b=0;   b < cfg->gridRows; b++){
-    block		= UNIF_REMINDER_DISTRI(b,rowBlock,rowBlockRem);
-    startRow	= UNIF_REMINDER_DISTRI_STARTIDX(b,rowBlock,rowBlockRem);
-    acc			= accVects + omp_get_thread_num();
+    block       = UNIF_REMINDER_DISTRI(b,rowBlock,rowBlockRem);
+    startRow    = UNIF_REMINDER_DISTRI_STARTIDX(b,rowBlock,rowBlockRem);
+    acc         = accVects + omp_get_thread_num();
     for (ulong r=startRow;  r<startRow+block;  r++){
         for (ulong c=A->IRP[r]-OFF_F; c<A->IRP[r+1]-OFF_F; c++) 
             CAT(scSparseRowMul_,OFF_F)(A->AS[c], B, A->JA[c]-OFF_F, acc);
         //trasform accumulated dense vector to a CSR row, in a tmp storage struct
-    	#if SPARSIFY_PRE_PARTITIONING == T
+        #if SPARSIFY_PRE_PARTITIONING == T
         _sparsifyUB(acc,outAccumul->accs+r,0);
         #else
         sparsifyUBNoPartsBounds(outAccumul,acc,outAccumul->accs + r,0);
@@ -339,24 +337,24 @@ che consente di determinare blocchi di dimensione il più uniforme possibile
 effettuando una suddivisione del resto della divisione intera tra il numero di righe e \vvv{cfg->gridRows},
 ovvero il grado di partizionamento monodimensionale della matrice.
 Maggiori dettagli e considerazioni a riguardo di quest'approccio di distribuzione saranno
-descritti in \ref{chSpMMAux:UNIF_REMINDER_DISTRI}.\\
+descritti in \refbf{chSpMMAux:UNIF_REMINDER_DISTRI}.\\
 Nel ciclo a riga 6, il thread accumulerà le moltiplicazioni scalari nel suo accumulatore denso
 determinato a riga 5, per poi \emph{sparsificarne} la riga risultante con
 una politica di assegnamento dinamica o statica dello spazio temporaneo pre allocato,
 rispettivamente a riga 11 o 13 (come affrontato rispettivamente in 
-\ref{chSpMMNum:mallocReplaceAssigns} e \ref{chSpMMNum:preSplitAS_JA_tmp} ).\\
+\refbf{chSpMMNum:mallocReplaceAssigns} e \refbf{chSpMMNum:preSplitAS_JA_tmp} ).\\
 Dopo aver calcolato e \emph{sparsificato}, una riga della matrice risultante, è 
 necessario resettare l'accumulatore denso relativo usato (riga 15).\\
 Al termine del calcolo di tutte le righe, è necessario raccoglierle dallo spazio temporaneo usato
-alla matrice risultante a riga 19 (come visto in \ref{chSpMMNum:mergeRows}).\\
+alla matrice risultante a riga 19 (come visto in \refbf{chSpMMNum:mergeRows}).\\
 
 \subsection{Partizionamento bidimensionale} \label{chSpMMNum:parti2D}
 Un partizionamento 2D dell'operazione di SpMM è quello di assegnare ai threads 
 blocchi bidimensionali della matrice C ottenuti dalla moltiplicazione di
 blocchi di righe della matrice A e blocchi di colonne della matrice B.
-Questa tecnica è stata rappresentata graficamente in \ref{fig:gustavsonRigheBlocksGraphicalIntel}.\\
+Questa tecnica è stata rappresentata graficamente in \refbf{fig:gustavsonRigheBlocksGraphicalIntel}.\\
 %partitioning terminology
-Nella terminologia introdotta precedentemente in \ref{ChExistingTecqs:workCube}, equivale ad
+Nella terminologia introdotta precedentemente in \refbf{ChExistingTecqs:workCube}, equivale ad
 assegnare gruppi di fibers del cubo di lavoro ai vari threads.\\
 \voidLine
 %details now
@@ -372,15 +370,15 @@ Al fine di effettuare un partizionamento della matrice CSR B per blocchi di colo
 ho realizzato due approcci, uno basato su una struttura ausiliaria di offset per accedere le partizioni della matrice originale
 ed uno basato sul copiare la matrice in sotto matrici corrispondenti alle partizioni da accedere.
 Dettagli sulle tecniche di partizionamento per colonne di una matrice CSR saranno analizzate
-rispettivamente in \ref{chSpMMAux:csrColPartitioning} e \ref{chSpMMAux:csrColPartitioningAllocatd}.\\
+rispettivamente in \refbf{chSpMMAux:csrColPartitioning} e \refbf{chSpMMAux:csrColPartitioningAllocatd}.\\
 Dal momento che il codice relativo all'uso di questi due approcci nel Prodotto Numerico è molto simile
 segue una descrizione del caso più semplice basato sulla copia delle partizioni di B in sotto matrici.\\
 
 \clearpage
 %\subsubsection{Partizionamento delle colonne di B in matrici separate}
 Segue l'implementazione del Prodotto Numerico con partizionamento bidimensionale del lavoro,
-sfruttando il partizionamento delle righe di A descritto in \ref{chSpMMNum:part1DGroup}
-e il partizionamento per colonne di B che verrà descritto in \ref{chSpMMAux:csrColPartitioningAllocatd}
+sfruttando il partizionamento delle righe di A descritto in \refbf{chSpMMNum:part1DGroup}
+e il partizionamento per colonne di B che verrà descritto in \refbf{chSpMMAux:csrColPartitioningAllocatd}
 \begin{lstlisting}
 #pragma omp parallel for schedule(runtime) private(accV,accRowPart,...)
 for (tileID = 0; tileID < gridSize; tileID++){
@@ -403,11 +401,7 @@ for (tileID = 0; tileID < gridSize; tileID++){
             //get start of B[A->JA[j]][:colBlock:]
             c = A->JA[j]-OFF_F; // column of nnz entry in A[r][:] <-> target B row
             bRowStart = colPart->IRP[c];
-            #ifdef ROWLENS
-            bRowLen   = colPart->RL[c];
-            #else
             bRowLen   = colPart->IRP[c+1] - bRowStart;
-            #endif
             CAT(scSparseVectMulPart_,OFF_F)(A->AS[j],colPart->AS+bRowStart,colPart->JA+bRowStart,
                 bRowLen,startCol,accV);
         }
@@ -447,11 +441,11 @@ la fase numerica della moltiplicazione diretta tra 3 matrici sparse, con un este
 L'approccio che ho seguito è derivato dal lavoro di \cite{Sp3MM4AMG} 
 ed è basato sul riuso diretto delle righe computate con la formulazione row-by-row,
 per determinare le righe della matrice finale, senza l'ausilio di una matrice contente un'operazione di SpMM intermedia.\\ 
-Nel seguito si seguirà la notazione introdota inizialmente riguardo il triplo prodotto tra matrici sparse (\ref{notazioneSp3MM}).\\
+Nel seguito si seguirà la notazione introdota inizialmente riguardo il triplo prodotto tra matrici sparse (\refbf{notazioneSp3MM}).\\
 %Core summarizing steps for Sp3MM
 Il primo passo per l'operazione di Sp3MM è calcolare la riga $\left( R \cdot AC_i \right)_{r*}$ 
 sottoforma di accumulatore denso \vvv{accRAC}, sommando i risultati delle moltiplicazioni scalari relative alla formulazione \rowbyrow.\\
-Successivamente, indicizzando \vvv{accRAC} esattamente come fatto nella \emph{sparsificazione} di SpMM (\ref{chSpMMNum:sparsify}),
+Successivamente, indicizzando \vvv{accRAC} esattamente come fatto nella \emph{sparsificazione} di SpMM (\refbf{chSpMMNum:sparsify}),
 è possibile ottenere la riga della matrice target ${AC_{i+1}}_{r*} = \left(R\cdot AC_i\cdot P\right)_{r*}$ 
 reiterando l'operazione di SpMM tra la riga ottenuta sottoforma di accumulatore denso e la matrice $P$.\\
 %code

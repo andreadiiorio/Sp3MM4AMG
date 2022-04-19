@@ -2,14 +2,14 @@
 {Implementazioni OpenMp:\\Prodotto Simbolico}
 \label{ChSymbProduct}\label{chSpMMSymb}
 In questa sezione si descrivono alcune implementazioni che ho realizzato per 
-il calcolo del \nnnz del prodotto tra matrici sparse, introdotto precedentemente in \ref{ChExistingTecqs:symbMul}.\\
+il calcolo del \nnnz del prodotto tra matrici sparse, introdotto precedentemente in \refbf{ChExistingTecqs:symbMul}.\\
 In letteratura è consueto utilizzare la terminologia di prodotto simbolico 
 per indicare il calcolo esatto della dimensione della matrice risultante all'operazione di SpMM.\\
 %naming agree
 Nel seguito si indicherà con prodotto simbolico, la generale operazione di determinare, 
 con un bound o con precisione, la dimensione del Prodotto tra matrici sparse.\\
 %TODO ANCHE IN MAIN O INTRODUZIONE O BREVE DESCRIZIONE DI OGNI CAPITOLO?
-Come verrà descritto nel dettaglio in \ref{chSpMMAux:multiImpl}, 
+Come verrà descritto nel dettaglio in \refbf{chSpMMAux:multiImpl}, 
 al fine di avere la massima efficienza nella generazioni
 di multiple implementazioni dello stesso codice a compile-time, 
 per supportare l'integrazione di tutte le implementazioni descritte in un progetto fortran come AMG4PSBLAS  \amgforpsblas,
@@ -29,15 +29,15 @@ In base al tipo di implementazione del prodotto numerico e di partizionamento de
 Il livello di output prodotto da ogni livello può essere inclusivo di quello prodotto dal livello inferiore.\\
 La necessità di avere una predizione della dimensione del risultato con un dettaglio differente 
 è dovuta al tipo di implementazione usata per il Prodotto Numerico e 
-sarà descritta successivamente in \ref{chSpMMNum:funcsMultiImplePurpose}.\\
+sarà descritta successivamente in \refbf{chSpMMNum:funcsMultiImplePurpose}.\\
 La numerazione appena introdotta per il livello di dettaglio dell'output del prodotto simbolico 
 sarà riferita nel seguito.\\
 
 \section{UpperBound} \label{chSpMMSymb:UpperBound}
-Come descritto in \ref{ChExistingTecqs:symbUpperBound}, la determinazione di un limite superiore al \nnnz 
+Come descritto in \refbf{ChExistingTecqs:symbUpperBound}, la determinazione di un limite superiore al \nnnz 
 del risultato di SpMM è computabile rapidamente e semplicemente.
 \voidLine
-Nel caso di dover determinare un prodotto simbolico a livello 1 o 2 %(secondo la numerazione appena introddota\ref{chSpMMSymb:outputDetailLevel} )
+Nel caso di dover determinare un prodotto simbolico a livello 1 o 2 %(secondo la numerazione appena introddota\refbf{chSpMMSymb:outputDetailLevel} )
 si ha un costo computazionale proporzionale al \nnnz di $A$.\\
 \voidLine
 Nel caso di dover calcolare un bound per ogni partizione di colonne di ogni riga di $C$ e $\hat{C}$,
@@ -82,7 +82,7 @@ Nella funzione precedente viene sfruttato un partizionamento 2D di B mediante un
 dove l'elemento $i,j$ è l'indice dell'elemento \nnz iniziale della 
 j-esima partizione di colonne della i-esima riga.
 Questa struttura di supporto è descritta nel dettaglio insieme ad altre metodologie di partizionamento 
-per matrici sparse in \ref{chSpMMAux:CSR2DPARTI}.\\
+per matrici sparse in \refbf{chSpMMAux:CSR2DPARTI}.\\
 Il bound sulla \vvv{gc}-esima partizione della \vvv{r}-esima riga di $C$ 
 è calcolato a riga 21, come precedentemente descritto.\\ 
 \label{chSpMMSymb:OMPSetupCosts}
@@ -97,22 +97,22 @@ l'overhead di inizializzazione di OpenMp, dando un beneficio di performance.\\
 
 \section{Calcolo Accurato}
 Per il prodotto simbolico accurato, focalizzandomi su algoritmi derivati 
-da quello di Gustavson \cite{gustavson} con formulazione row-by-row,
-ho realizzato implementazioni per tutti i livelli di dettaglio descritti precedentemente in \ref{chSpMMSymb:outputDetailLevel}.\\
+da quello di Gustavson \citebf{gustavson} con formulazione row-by-row,
+ho realizzato implementazioni per tutti i livelli di dettaglio descritti precedentemente in \refbf{chSpMMSymb:outputDetailLevel}.\\
 %symb phase generic description via idx keeper ... row by row based\\
 Il Prodotto Simbolico accurato tra 2 matrici $C=A*B$ è realizzato seguendo l'approccio row-by-row: 
 mantenendo il conto, senza ripetizioni, degli indici di colonna degli elementi \nnz delle righe di B relativi agli indici di colonna di una riga di A.\\
 Per la gestione degli indici, mi sono basato principalmente su due strutture ausiliarie per mantenere 
 gli indici degli elementi \nnz risultanti dall'operazione di SpMM:\\
 \begin{itemize}
-	\item RedBlack trees, con un nodo per elemento risultante \nnz, descritti in \ref{chSpMMSymb:usoRBTree}
+	\item RedBlack trees, con un nodo per elemento risultante \nnz, descritti in \refbf{chSpMMSymb:usoRBTree}
 	\item dei set indicizzati di flag, con un elemento \vvv{true} per elemento risultante \nnz, 
 	sottoforma di
 	\begin{itemize}
 		\item un insieme di bitmap 
 		\item un array di byte
 	\end{itemize}
-	descritti in \ref{chSpMMSymb:structFlagSet}
+	descritti in \refbf{chSpMMSymb:structFlagSet}
 \end{itemize}
 Per ogni funzione esportata dal modulo del Prodotto Simbolico accurato è presente una variabile 
 per scegliere la versione dell'implementazione con la struttura ausiliaria di ricerca desiderata.\\
@@ -121,7 +121,7 @@ per scegliere la versione dell'implementazione con la struttura ausiliaria di ri
 {Strutturazione delle funzioni per supportare diverse implementazioni di Prodotto Numerico}
 Computare il Prodotto Simbolico in parallelo necessita in primis di effettuare una 
 allocazione iniziale delle varie strutture di supporto al fine di evitare allocazioni dinamiche
-come precedentemente descritto in \ref{ChExistingTecqs:openMP_for_philosophy}.\\
+come precedentemente descritto in \refbf{ChExistingTecqs:openMP_for_philosophy}.\\
 In seguito, è possibile determinare concorrentemente dei sotto insiemi del Prodotto Simbolico, con un
 livello di dettaglio di output adeguato alle esigenze dell'implementazione del Prodotto Numerico scelta.\\
 \voidLine
@@ -145,15 +145,15 @@ dove una freccia direzionata tra 2 funzioni $a \rightarrow b$ indica che $a$ chi
 È possibile notare come la funzione per determinare una riga del prodotto simbolico tra 2 matrici,
 \verb|SpMM_Row_Symb_|, sia alla base di tutte le altre.\\ %TODO TRIVIAL?
 
-\subsubsection{Generazione efficiente di versioni differenti di ogni funzione}
+\subsubsection{Generazione versioni differenti di funzione}
 %per Massimizzazione del riuso del codice e dell'efficienza} %TODO better title end?
 %Il prodotto numerico necessità dei diversi livelli di informazione sulla matrice risultante 
-%introdotti precedentemente (\ref{chSpMMSymb:outputDetailLevel}
-%per poter essere implementato con determinati approcci, come verrà descritto nel dettaglio in \ref{chSpMMNum:funcsMultiImplePurpose}.\\
+%introdotti precedentemente (\refbf{chSpMMSymb:outputDetailLevel}
+%per poter essere implementato con determinati approcci, come verrà descritto nel dettaglio in \refbf{chSpMMNum:funcsMultiImplePurpose}.\\
 %
 Al fine di massimizzare l'efficienza delle implementazioni e il riuso del codice scritto 
-per generare i vari livelli di output del prodotto simbolico (descritti in \ref{chSpMMSymb:outputDetailLevel})
-ho associato alle funzione descritte in figura \ref{fig:symbProductFunctionDiagram} 
+per generare i vari livelli di output del prodotto simbolico (descritti in \refbf{chSpMMSymb:outputDetailLevel})
+ho associato alle funzione descritte in figura \refbf{fig:symbProductFunctionDiagram} 
 versioni differenti, associate a delle funzionalità aggiuntive.\\
 \label{chSpMMSymb:outputDetailLevel_coreFuncsVersions}
 Di seguito le versioni alternative delle funzioni per eseguire la fase simbolica di SpMM e Sp3MM con specifici livelli di output,
@@ -163,7 +163,7 @@ Di seguito le versioni alternative delle funzioni per eseguire la fase simbolica
 	anche i relativi indici degli elementi non zero. %della matrice risultante
 	\\ \\
 	Queste versioni sono necessarie per calcolare il triplo prodotto simbolico,
-	come verrà descritto in \ref{chSpMMSymb:Sp3MMSymb}.\\
+	come verrà descritto in \refbf{chSpMMSymb:Sp3MMSymb}.\\
 	Inoltre, sono utili anche ad ottenere direttamente gli indici 
 	degli elementi \nnz della matrice risultante (di cui i valori effettivi corrispondenti verranno computati nella fase numerica).\\
 
@@ -172,20 +172,20 @@ Di seguito le versioni alternative delle funzioni per eseguire la fase simbolica
 	anche la loro distribuzione per ogni partizione di colonne di ogni riga. %della matrice risultante,
 	\\ \\ 
 	Queste versioni sono necessarie per eseguire SpMM con un partizionamento bidimensionale dei dati
-	come verrà descritto in \ref{chSpMMNum:parti2D}.\\
+	come verrà descritto in \refbf{chSpMMNum:parti2D}.\\
 
 \end{itemize}
 
 Le implementazioni aggiuntive appena descritte sono ottenute automaticamente 
-a tempo di preprocessamento dalle funzioni base elencate in figura \ref{fig:symbProductFunctionDiagram}
-mediante l'uso delle direttive del pre-processore C \verb|#if| e molteplici \verb|#include| dei file sorgenti \cite{cpp11.2}.
-I dettagli a riguardo di questa tecnica saranno analizzati in \ref{chSpMMAux:multiImplMany}.\\
+a tempo di preprocessamento dalle funzioni base elencate in figura \refbf{fig:symbProductFunctionDiagram}
+mediante l'uso delle direttive del pre-processore C \verb|#if| e molteplici \verb|#include| dei file sorgenti \citebf{cpp11.2}.
+I dettagli a riguardo di questa tecnica saranno analizzati in \refbf{chSpMMAux:multiImplMany}.\\
 % TODO TODO branch predictors (su path perfettamente predicibile \forall thread) + OutOfOrder exe possono rendere overhead di implementazione 
 % TODO TODO con flag per livello dettaglio output e serie di if espliciti sostanzialmente con stesse performance di versione con multiple implementazioni
 % TODO TODO tuttavia l'assenza di quei branch nei sorgenti può portare a maggiori ottimizzazioni in compilazione. uncomment ready ;)
 %%\subsubsection{Confronto con un semplice approccio funzionale}
 \label{chSpMMSymb:funcsMultiImpleVSmanualMultiFunc}
-%%Nel caso di implementare la funzione \verb|SpMM_Row_Symb_|, alla base del Prodotto Simbolico accurato \ref{chSpMMSymb:accurateBaseBlock},
+%%Nel caso di implementare la funzione \verb|SpMM_Row_Symb_|, alla base del Prodotto Simbolico accurato \refbf{chSpMMSymb:accurateBaseBlock},
 %%è possibile paragonare questa metodologia implementativa ad un approccio funzionale in cui le varie versioni 
 %%necessarie sono implementate in una funzione singola, componendo sotto funzioni ausiliarie e blocchi di codice su necessità con l'ausilio di \vvv{if}.
 %%La speculatività dei processori moderni mediante branch predictor e esecuzione OutOfOrder può portare questa soluzione alternativa ad avere
@@ -212,12 +212,12 @@ Quest approccio implementativo può portare a diversi benefici, come:
 \end{itemize}
 \label{chSpMMSymb:SpMM_Row_Symb_targetBaseFunc}
 Di seguito la realizzazione specifica delle varie versioni della calcolo di una riga del prodotto simbolico,
-ovvero la funzione \verb|SpMM_Row_Symb_| vista precedentemnte nello schema \ref{SpMM_Row_Symb_},
+ovvero la funzione \verb|SpMM_Row_Symb_| vista precedentemnte nello schema \refbf{SpMM_Row_Symb_},
 in base alla struttura di supporto usata per mantenere gli indici degli elementi non zero. 
-%la determinazione degli indici degli elementi \nnz di una riga di C (funzione alla base della realizzazione parallela del Prodotto Simbolico, \ref{chSpMMSymb:accurateBaseBlock})
+%la determinazione degli indici degli elementi \nnz di una riga di C (funzione alla base della realizzazione parallela del Prodotto Simbolico, \refbf{chSpMMSymb:accurateBaseBlock})
 \subsection{Uso di RedBlack tree} \label{chSpMMSymb:usoRBTree}
 Usare in parallelo una implementazione di PriorityQueue è un approccio comune
-per gestire il mantenimento degli indici \nnz per il Prodotto Simbolico, come fatto da \cite{SpMM_KNL_Multicore_symbsSols}.\\
+per gestire il mantenimento degli indici \nnz per il Prodotto Simbolico, come fatto da \citebf{SpMM_KNL_Multicore_symbsSols}.\\
 %Dato il pattern di accesso write-mostly %TODO better CHECKKKK ANd explain
 %della fase simbolica dell'operazione di SpMM ho deciso di utilizzare dei RedBlack tree piuttosto che degl'alberi AVL.\\
 Tra le varie possibilità disponibili, ho scelto di usare una implementazione di RedBlack tree,
@@ -225,7 +225,7 @@ che ho ricavato personalmente dalla implementazione disponibile nel kernel Linux
 mediante un processo di porting in user-space.
 Il porting in userspace che ho realizzato dei RedBlack tree di linux è disponibile 
 nella mia pagina: \url{https://github.com/andreadiiorio/redblackTree_linux_userspace} per altri usi.\\
-Dettagli specifici dell'implementazione dei RedBlack tree e del loro processo di adattamento saranno trattati successivamente in \ref{chSpMMAux:linuxRBTree}.\\
+Dettagli specifici dell'implementazione dei RedBlack tree e del loro processo di adattamento saranno trattati successivamente in \refbf{chSpMMAux:linuxRBTree}.\\
 %Implementazioni con RBtree 
 \voidLine
 %operativamente uso:
@@ -233,8 +233,8 @@ Per realizzare la funzione target \verb|SpMM_Row_Symb_| con i RedBlack tree in p
 1 riga di A (corrispondente alla riga target di C) ed 
 un RedBlack tree allocato con un numero di nodi sufficiente per la riga più lunga di C,
 %La riga più lunga della matrice risultante, necessaria per l'implementazione parallela target è 
-determinata con una riduzione sul risultato di un UpperBound  del prodotto simbolico (visto in \ref{chSpMMSymb:UpperBound}),
-con livello informativo dell'output 1 (rispetto alla numerazione introdotta in \ref{chSpMMSymb:outputDetailLevel}).\\
+determinata con una riduzione sul risultato di un UpperBound  del prodotto simbolico (visto in \refbf{chSpMMSymb:UpperBound}),
+con livello informativo dell'output 1 (rispetto alla numerazione introdotta in \refbf{chSpMMSymb:outputDetailLevel}).\\
 Durante la scansione degli indici $i$ degli elementi \nnz di B, corrispondenti agli elementi \nnz di una riga di A, 
 viene effettuato un inserimento di un nuovo nodo con chiave $i$ nel RedBlack tree, se tale chiave non è stata già inserita.
 Ogni inserimento avvenuto incrementa il contatore degli elementi \nnz della riga target di C.\\
@@ -243,7 +243,7 @@ gli indici \nnz effettivi della riga di C (\verb|OutIdxs_|) e la loro distribuzi
 una singola scansione ordinata delle chiavi $k$ inserite nel RedBlack tree prodotto, andando rispettivamente 
 a salvare $k$ e/o incrementare un contatore relativo alla partizione di colonne contente $k$.\\
 %altro remark di vantaggio = singola passata di rbtree dato l'approccio multi implementazione con cpp
-Come già detto la scansione è singola e senza branch relativi a quale versione di \verb|SpMM_Row_Symb_| si sta eseguendo grazie all'approccio
+Come già detto la scansione è singola e senza branch relativi a quale versione di \\ \verb|SpMM_Row_Symb_| si sta eseguendo grazie all'approccio
 di generazione automatica di diverse implementazioni mediante pre processore.\\
 \label{OUT_IDXS_RBTREE_NODES}
 Nel caso di eseguire una versione della funzione in oggetto
@@ -275,7 +275,7 @@ nodi RedBlack tree \vvv{nodes}, contente gli indici target come chiavi.\\
 \subsection{Uso di bitmap di indici o array di flag} \label{chSpMMSymb:structFlagSet}
 Usare una struttura contente un insieme di flag indicanti
 la presenza di indici è un approccio alternativo ai RedBlack
-per realizzare la funzione target \verb|SpMM_Row_Symb_| descritta in \ref{chSpMMSymb:SpMM_Row_Symb_targetBaseFunc}, 
+per realizzare la funzione target \verb|SpMM_Row_Symb_| descritta in \refbf{chSpMMSymb:SpMM_Row_Symb_targetBaseFunc}, 
 potenzialmente con dei benefici prestazionali per alcune versioni.\\
 Analogamente al caso dei RedBlack tree, viene assegnato al thread in esecuzione 
 1 riga di A, corrispondente alla riga target di C e 
@@ -297,8 +297,8 @@ Nel caso peggiore il set di indici da inserire varia in $(0,N)$, dove $N$ può e
 Usando varibili di dimensione $b$ bits è necessario allocarne al più $\left\lceil \frac{N}{b}  \right\rceil$
 per essere in grado di poter mappare l'intero set di indici.\\
 Questo approccio è usato sia nel Prodotto Simbolico che Numerico e dettagli ulteriori sull'inserimento e controllo 
-di indici nelle bitmaps saranno analizzati in \ref{chSpMMAux:bitmapInsert}.\\
-Nel caso di dover realizzare efficientemente la versione \verb|OutIdxs_| della funzione target(descritta in \ref{chSpMMSymb:outputDetailLevel_coreFuncsVersions}), 
+di indici nelle bitmaps saranno analizzati in \refbf{chSpMMAux:bitmapInsert}.\\
+Nel caso di dover realizzare efficientemente la versione \verb|OutIdxs_| della funzione target(descritta in \refbf{chSpMMSymb:outputDetailLevel_coreFuncsVersions}), 
 è necessario utilizzare una struttura di supporto per salvare tutti gli indici degli elementi \nnz
  che sono stati effettivamente inseriti in una bitmap.
 Per per ottemperare a questa necessità ho implementato 2 soluzioni, selezionabili a tempo di compilazione con
@@ -321,20 +321,20 @@ La gestione della versione \verb|OutIdxs_| della funzione target è analoga al c
 
 \subsection{Sp3MM: Calcolo simbolico diretto del triplo prodotto} \label{chSpMMSymb:Sp3MMSymb}
 Dato che il problema orinario da risolvere è il triplo prodotto tra matrici sparse per applicazioni come 
-amg4psblas \cite{AMG4PSBLAS}, ho deciso di cercare di supportare anche la moltiplicazione diretta 
+amg4psblas \citebf{AMG4PSBLAS}, ho deciso di cercare di supportare anche la moltiplicazione diretta 
 tra 3 matrici sparse, con un'estensione della formulazione row-by-row.\\
-Seguendo la notazione introdotta inizialmente in \ref{notazione}, l'approccio seguito è derivato da quello seguito da \cite{Sp3MM4AMG}.\\
+Seguendo la notazione introdotta inizialmente in \refbf{notazione}, l'approccio seguito è derivato da quello seguito da \citebf{Sp3MM4AMG}.\\
 Una volta computata la riga $\left(R\cdot AC_i\right)_{r*}$ con la versione \verb|OutIdxs_| di \verb|SpMM_Row_Symb_|, 
 questa viene riutilizzata direttamente nel prodotto con la matrice $P$, analogamente al caso di SpMM,
 per ottenere la dimensione della riga relativa della matrice risultante ${AC_{i+1}}_{r*}$ ed eventualmente anche altre informazioni.\\ 
-Le versioni \verb|OutIdxs_| sono necessarie per ottenere  gli indici di colonne della riga $\left(R\cdot AC_i\right)_{r*}$,
+Le versioni \verb|OutIdxs_| sono necessarie per ottenere \\gli indici di colonne della riga $\left(R\cdot AC_i\right)_{r*}$,
 indispensabili per reiterare la formulazione \rowbyrow sulla matrice $P$.\\
 L'operazione appena descritta è eseguita in parallelo per ogni riga di $AC_{i+1}$.\\
 %Determinare la quantità di elementi \nnz è possibile incontrare durante i primi prodotti tra le righe di $R$ e $AC_i$ è necessario 
 
 \subsection{Pro e contro UpperBound vs Prodotto Simbolico Accurato} \label{chSpMMSymb:UB_VS_SYMBACC}
 L'analisi delle differenze prestazionali delle implementazioni di SpMM con fase Simbolica Accurata o UpperBound
-sarà analizzata in seguito nel capitolo \ref{ChPerf}.\\
+sarà analizzata in seguito nel capitolo \refbf{ChPerf}.\\
 Di seguto qualche considerazione di carattere generale che è possibile trarre dall'analisi di questi approcci differenti
 al problema di Sp[3]MM.\\
 \begin{enumerate}
@@ -348,17 +348,17 @@ al problema di Sp[3]MM.\\
 			  ottenuti durante la fase Numerica, direttamente nella matrice risultante.
 	\end{enumerate}
 	\item Il Prodotto Simbolico  accurato di $A \cdot B$, 
-		  basato su una formul azione derivata da gustavson \cite{gustavson}, ad esempio row-by-ro,
+		  basato su una formul azione derivata da gustavson \citebf{gustavson}, ad esempio row-by-ro,
 		  soffre di un ulteriore svantaggio dovuto a dover accedere le righe $B$ in un ordine casuale, derivato 
 		  dagli indici degli elementi \nnz della riga corrispondente di A.\\
 		  Questo causa potenzialmente un cattivo uso della memoria, come analizzato da 
-		  \cite{Sp3MM4AMG} ed indirettamente da \cite{ESC}.
+		  \citebf{Sp3MM4AMG} ed indirettamente da \citebf{ESC}.
 		\begin{enumerate}
 			\label{chSpMMSymb:UB_VS_SYMBACC_rowbyrowContiguousCopyBack}
 			\item Viceversa, il costo addizionale legato allo svantaggio dell'uso di UpperBound menzionato al punto 2, 
 				  comporta la copia di risultati intermedi 
-				  nella matrice risultante in maniera contigua, come osservato da \cite{Sp3MM4AMG}
+				  nella matrice risultante in maniera contigua, come osservato da \citebf{Sp3MM4AMG}
 		\end{enumerate}
 	\item In generale, l'overhead di memoria causato dall'UpperBound, potrebbe essere tale da rendere impossibile 
-		  sfruttare su GPU una fase simbolica basata su UpperBound. %come osservato da \cite{TODO ritrovalo}
+		  sfruttare su GPU una fase simbolica basata su UpperBound. %come osservato da \citebf{TODO ritrovalo}
 \end{enumerate}

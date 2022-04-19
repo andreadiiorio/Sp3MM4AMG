@@ -34,7 +34,7 @@ Con moltiplicazione scalare si intenderà il prodotto tra uno scalare $a \in \ma
 \section{Formulazioni SpMM}	\label{ChExistingTecqs:formulazioni}
 Gli algoritmi per la risoluzione del prodotto tra due matrici sparse possono
 essere classificati in base alle formulazioni e partizionamento dei dati del problema SpMM 
-\cite{sysReviewChi}.\\ Le principali formulazioni di SpMM sono:
+\citebf{sysReviewChi}.\\ Le principali formulazioni di SpMM sono:
 \voidLine
 %\begin{itemize}
 %  \item Inner-product \qquad $c_{ij} = \sum\limits_{k \in I(i,j)}  a_{ik} \ast  b_{kj}$
@@ -52,7 +52,7 @@ $
 $
 \subsection{Rappresenzione mediante grafi}
 Le formulazioni per SpMM possono essere rappresentate graficamente mediante
-grafi a 3 strati U, W, V \cite{2dNewIdeas,cohen3LayeredGraphs} dove:
+grafi a 3 strati U, W, V {\bf \citebf{2dNewIdeas,cohen3LayeredGraphs}} dove:
 \begin{itemize}
   \item i nodi in $U \ni u_i$:   rappresentano le righe di A
   \item i nodi in $V \ni v_j$:   rappresentano le colonne di B
@@ -75,7 +75,7 @@ evidenziandone il tipo di accesso agli elementi delle matrici di input.\\
   {Rappresentazione grafica del calcolo di $c_{i,j}$ mediante Inner-product}
   \decoRule \label{fig:layeredGraphInnerProduct}
 \end{figure}
-Per la formulazione Inner-product %\ref{fig:layeredGraphInnerProduct} 
+Per la formulazione Inner-product %\refbf{fig:layeredGraphInnerProduct} 
 è necessario esaminare ogni coppia di vertici  in U e V per trovare 
 il sottoinsieme di nodi $\tilde{W_{ij}} \subseteq W$ che connettono coppie di nodi,
 per poi accumulare i prodotti $a_{il} \cdot b_{lj}$ relativi ai nodi $w\in \tilde{W_{ij}}$ in $c_{ij}$.\\
@@ -88,7 +88,7 @@ dato che è necessario analizzare tutte le coppie di nodi $(u_i,v_j)$\\
   {Rappresentazione grafica della componente $a_{*i} \cdot b_{i*}$ del calcolo di C mediante Outer-product}
   \decoRule \label{fig:layeredGraphOuterProduct}
 \end{figure}
-Per la formulazione Outer-product %\ref{fig:layeredGraphOuterProduct}
+Per la formulazione Outer-product %\refbf{fig:layeredGraphOuterProduct}
 è possibile identificare coppie di vertici connesse a partire dai nodi di W che, per matrici sufficientemente sparse,
 può essere un'operazione più veloce rispetto all'Inner-product.\\
 %TODO si complica l'accumulazione dei risultati intermedi
@@ -100,7 +100,7 @@ può essere un'operazione più veloce rispetto all'Inner-product.\\
      calcolo di C mediante formulazione row-by-row}
   \decoRule \label{fig:layeredGraphRowByRow}
 \end{figure}
-Per la formulazione Row-by-row %\ref{fig:layeredGraphRowByRow}
+Per la formulazione Row-by-row %\refbf{fig:layeredGraphRowByRow}
 le coppie di vertici d'interesse per il risultato di C sono identificabili 
 a partire da attraversamenti del grafo indipendenti a partire dai vertici di U verso V.\\
 %%col-by-col
@@ -119,7 +119,7 @@ parallelizzazione di cicli, noto precedentemente il numero di iterazioni da sudd
 In questo contesto, delle allocazioni dinamiche richiedono la possibilità di poter uscire precedentemente dal ciclo parallelizzato
 data la possibilità di fallimento di una (ri)allocazione, il che è contrario alla filosofia di parallelizzazione OpenMP
 (per quanto siano disponibili costrutti per una uscita anticipata, che però richiedono una speciale configurazione, disabilitata di default per 
- motivi di performance \cite{openmp5.1} )\\
+ motivi di performance \citebf{openmp5.1} )\\
 %TODO REMOVE...
 Si considereranno quindi solo implementazioni per SpMM che calcolino il numero di \nnz di $C$ e $\hat{C}$ (o un loro bound)
 per effettuarne una pre-allocazione.\\
@@ -133,7 +133,7 @@ Il calcolo (di un bound superiore) del numero di numero di non zeri di $C$ e $\h
 denominato Prodotto Simbolico o fase simbolica, e il calcolo effettivo degli elementi \nnz Prodotto Numerico o fase numerica.\\
 
 \subsection{UpperBound}	\label{ChExistingTecqs:symbUpperBound}
-Un UpperBound sulla lunghezza di una riga risultante a SpMM è computabile come riportato nell'algoritmo 4 di \cite{sysReviewChi}.\\
+Un UpperBound sulla lunghezza di una riga risultante a SpMM è computabile come riportato nell'algoritmo 4 di \citebf{sysReviewChi}.\\
 In questa soluzione, ispirandosi a una formulazione row-by-row di SpMM, 
 si determina la dimensione massima di ogni riga della matrice risultante come:\\
 $ | I_i(C) |~\leq~\sum\limits_{ j \in I_i(A) }  | I_j(B) | $.\\
@@ -150,13 +150,13 @@ Un approccio tipico per determinare la dimensione di una riga risultante al oper
 è quella di mantenere in una struttura di ricerca gli indici corrispondenti 
 ai non zeri risultanti alle operazioni di prodotto, senza effettuare le costose 
 operazioni di moltiplicazione floating point.\\
-%TODO ad esempio come riportato in \ref{RITROVA ARTICOLO CHE DESCRIVE IL PRODOTTO SIMBOLICO}
+%TODO ad esempio come riportato in \refbf{RITROVA ARTICOLO CHE DESCRIVE IL PRODOTTO SIMBOLICO}
 
 \section{Algoritmi}
 %%SRC STUDIES = Gustavson
-Molte delle ricerche riguardo SpMM sono basate sull'algoritmo di Gustavson \cite{gustavson},
+Molte delle ricerche riguardo SpMM sono basate sull'algoritmo di Gustavson \citebf{gustavson},
 un algoritmo sequenziale basato sulla formulazione Row-by-row, riportate in forma di pseudo-codice 
-in \ref{figCode:gustavsonRigheSysSurvey} e graficamente in \ref{fig:gustavsonRigheGraphicalIntel}.\\
+in \refbf{figCode:gustavsonRigheSysSurvey} e graficamente in \refbf{fig:gustavsonRigheGraphicalIntel}.\\
 
 \begin{figure}[H]
   \caption[pseudocodice Gustavson]{pseudo-codice dell'algoritmo di Gustavson}
@@ -170,7 +170,7 @@ in \ref{figCode:gustavsonRigheSysSurvey} e graficamente in \ref{fig:gustavsonRig
 \end{figure}
 È possibile notare come nell'algoritmo vi sia l'esigenza di accumulare le righe
 risultanti della matrice C. Meccanismi efficienti per realizzare questa
-funzionalità sono analizzati successivamente in \ref{ssec:gustavsonDerivate} %TODO FIX REF
+funzionalità sono analizzati successivamente in \refbf{ssec:gustavsonDerivate} %TODO FIX REF
 \\
 
 
@@ -185,9 +185,9 @@ classificati in base al partizionamento del carico di lavoro sui processi.\\
 \end{figure}
 %%WORKCUBE INTRO
 Una visualizzazione grafica delle operazioni di SpMM, partizionabili tra delle unità di esecuzione
-è data dal cubo di lavoro W (in figura \ref{fig:pMM_cube})
+è data dal cubo di lavoro W (in figura \refbf{fig:pMM_cube})
 in cui ogni moltiplicazione di elementi \nnz $a_{i,k}*b_{k,j}$ (minima operazione assegnabile) 
-è rappresentabile con voxel $W(i,j,k)$ \cite{cartesianPartitioningModels}.
+è rappresentabile con voxel $W(i,j,k)$ \citebf{cartesianPartitioningModels}.
 %Le proiezioni $W(i,j,k)$  sulle facce del cubo relative alle matrici A e B 
 %hanno elementi \nnz e determinano il pattern degli elementi \nnz sulla matrice C.
 \voidLine
@@ -205,7 +205,7 @@ mediante gli elementi appena citati.\\
 
 \subsection{Matrici ipersparse e rappresentazione DCSC}
 È possibile definire una matrice sparsa A, come {\bf ipersparsa }se $nnz(A)$ è
-inferiore alla sua dimensione più grande N \cite{2dNewIdeas} \\ %TODO newIdeas 14.2.2 x matrici quadrate
+inferiore alla sua dimensione più grande N \citebf{2dNewIdeas} \\ %TODO newIdeas 14.2.2 x matrici quadrate
 Tipicamente questa tipologia di matrici è rara nell'algebra lineare numerica.
 Infatti, nella soluzione di sistemi lineari, le matrici sono quadrate, ed avere un numero di nonzeri inferiore alla dimensione 
 vorrebbe dire che alcune equazioni non hanno coefficienti, 
@@ -225,7 +225,7 @@ Allo scalare del numero di processi p, il termine $n\sqrt{p}$ domina $nnz$.\\
 %Even without any communication at all, such an algorithm cannot scale for $n\sqrt{p} > \max{flops,nnz}$
 \voidLine
 Per queste ragioni è possibile utilizzare la rappresentazione \\
-{\bf D}ouble{\bf C}ompressed{\bf S}parse{\bf C}olumns (visualizzata in figura \ref{fig:DCSCvsCSC})
+{\small {\bf D}ouble{\bf C}ompressed{\bf S}parse{\bf C}olumns} (visualizzata in figura \refbf{fig:DCSCvsCSC})
 per partizionamenti spinti di matrici sparse,
 dato che ha un'occupazione di memoria pari ad $O(nnz)$
 eliminando eventuali ripetizioni nell'array di puntatori delle colonne (JC) nel formato CSC.\\
@@ -241,9 +241,9 @@ array ausiliario di indici delle colonne non zero.
 \subsection{Moltiplicazione tra matrici ipersparse DCSC}
 \label{ssec:hypersparseMM}
 Segue la descrizione di un algoritmo risolutivo per la moltiplicazione tra matrici
-ipersparse \cite{2dNewIdeas}, basato su una formulazione outer-product ed
+ipersparse \citebf{2dNewIdeas}, basato su una formulazione outer-product ed
 utilizzato in alcuni algoritmi SpMM.\\
-lo pseudo-codice dell'algoritmo è riportato in \ref{figCode:hypersparseMM} 
+lo pseudo-codice dell'algoritmo è riportato in \refbf{figCode:hypersparseMM} 
 \begin{figure}[H]
   \centering \includegraphics[width=.7\linewidth,keepaspectratio]{hypersparseMM.svg.pdf}
   \caption[pseudocodice hypersparseMM]{pseudocodice dell'algoritmo sequenziale hypersparseMM,per SpMM tra matrici ipersparse} 
@@ -259,7 +259,7 @@ Viene effettuata l'intersezione tra gli indici delle colonne non zero di A e
 delle righe non zero di B, identificando così il set $Isect = A.JC \cap B^T.JC$ degli
 indici che partecipano all'outer-product.\\
 \\
-Successivamente vengono effettuati $|Isect|$ prodotti cartesiani \ref{fig:hypersparseMMGraphical} 
+Successivamente vengono effettuati $|Isect|$ prodotti cartesiani \refbf{fig:hypersparseMMGraphical} 
 generanti matrici $a_{*i} \cdot b_{i*}$, i cui elementi è possibile mettere in biiezione 
 con la lista di indici $(r_{id},c_{id})$ derivante dal prodotto cartesiano tra gli indici
 di riga non zero della colonna i-esima di $B^T$ e gli indici di riga non zero 
@@ -295,10 +295,10 @@ operazioni aritmetiche necessarie per il prodotto di A e B.\\
 
 \subsubsection{Derivati di Gustavson} \label{ssec:gustavsonDerivate}
 Una parallelizzazione della formulazione per righe dell'algoritmo di Gustavson è
-descritta in \cite{intelSpMMDenseAccumulator}, sfruttando la
+descritta in \citebf{intelSpMMDenseAccumulator}, sfruttando la
 rappresentazione di matrici sparse in formato CSR.  \label{ssec:intelSpMMDenseAccumulator}
 Lo pseudocodice dell'algoritmo è riportato assieme ad una sua rappresentazione grafica 
-in figura \ref{fig:gustavsonRigheBlocksGraphicalIntel}\\
+in figura \refbf{fig:gustavsonRigheBlocksGraphicalIntel}\\
 %Partizionamento = Gustavson a blocchi
 Viene effettuato un partizionamento delle righe di A e delle colonne di B e 
 coppie di partizioni corrispondenti vengono utilizzate per calcolare un
@@ -346,7 +346,7 @@ risultanti di C, l'occupazione dei non zeri, corrispondenti agli aggiornamenti
 dell'accumulatore X, è maggiore della dimensione della cache L2.\\
 Per quantificare il numero di \nnz nelle righe risultanti di C viene utilizzata
 una metrica basata sulla stima di \nnz in $c_{i*}=e\_nnz(i)$ di
-\cite{intelSpMMDenseAccumulator} %TODO SOURCE ARTICLE OF ESTIMATE
+\citebf{intelSpMMDenseAccumulator} %TODO SOURCE ARTICLE OF ESTIMATE
 dove si partiziona B se
 $e\_nnz = \frac{\sum\limits_{i:e\_nnz(i) > L2\_FP\_WORDS} e\_nnz(i)}
 {\sum\limits_{i=1}^m e\_nnz(i)} ~>~0.3$\\
@@ -361,12 +361,12 @@ $e\_nnz = \frac{\sum\limits_{i:e\_nnz(i) > L2\_FP\_WORDS} e\_nnz(i)}
 \end{figure}
 
 L'uso di un vettore denso per operazioni tra matrici sparse è stato 
-affrontato originariamente da \cite{SPA_mathlab}.\\
+affrontato originariamente da \citebf{SPA_mathlab}.\\
 
 \subsubsection{Dense SUMMA} %versione base C=AB
 Un partizionamento bidimensionale della risoluzione del prodotto tra matrici
-dense è realizzato dell'algoritmo parallelo SUMMA \cite{denseSumma} che è alla
-base di una sua controparte per matrici sparse \cite{sparseSUMMA}.\\
+dense è realizzato dell'algoritmo parallelo SUMMA \citebf{denseSumma} che è alla
+base di una sua controparte per matrici sparse \citebf{sparseSUMMA}.\\
 Segue una descrizione del algoritmo dense SUMMA.
 \voidLine
 Il calcolo di $C=AB$ è suddiviso in sottomatrici assegnate a processi organizzati 
@@ -387,7 +387,7 @@ Applicando la formulazione outer-product su $\tilde{A}^{i*}$ e $\tilde{B}^{*j}$
 si ha che $C_{ij}=\sum\limits_{l=1}^{k}\tilde{a}_{*l}^{i*} \cdot \tilde{b}_{l*}^{*j}$\\
 Considerando un partizionamento delle matrici in sottomatrici all'interno della
 griglia di processi %assegnate in maniera tale che  ... 
-si può eseguire l'operazione di SpMM in parallelo come riportato dallo pseudocodice \ref{figCode:denseSUMMA}.\\
+si può eseguire l'operazione di SpMM in parallelo come riportato dallo pseudocodice \refbf{figCode:denseSUMMA}.\\
 \begin{figure}[H]
   \centering \includegraphics[width=.333\linewidth,keepaspectratio]{denseSUMMA.svg.pdf}
   \caption[pseudocodice dense SUMMA]{pseudocodice dell'algoritmo SUMMA relativalmente al processo $P_{ij}$} \decoRule \label{figCode:denseSUMMA}
@@ -400,18 +400,18 @@ colonne di $\tilde{A}^{i*}$ e righe di $\tilde{B}^{*j}$.\\
 
 \subsubsection{Sparse SUMMA}
 Un partizionamento bidimensionale del problema SpMM è realizzato
-dall'algoritmo Sparse SUMMA \cite{sparseSUMMA}, derivato dalla sua
+dall'algoritmo Sparse SUMMA \citebf{sparseSUMMA}, derivato dalla sua
 controparte per matrici dense.\\
 %SPARSE SUMMA
 È riportato lo pseudo-codice dell'algoritmo sparseSUMMA 
-in \ref{figCode:sparseSUMMA} e una sua iterazione graficamente in
-\ref{fig:sparseSUMMAIteration}.\\
+in \refbf{figCode:sparseSUMMA} e una sua iterazione graficamente in
+\refbf{fig:sparseSUMMAIteration}.\\
 Le matrici sono divise in blocchi e rappresentante in formato DCSC,
 trasponendo la matrice B per avere un indicizzamento rapido delle sue righe.\\
 Procedendo in blocchi di colonne di una sottomatrice di A e della corrispettiva
 sottomatrice di $B^T$, lungo la dimensione comune di A e B,
 vengono calcolati in parallelo le sottomatrici $C_{ij}$, 
-utilizzando l'algoritmo hypersparseMM \ref{figCode:hypersparseMM}.\\
+utilizzando l'algoritmo hypersparseMM \refbf{figCode:hypersparseMM}.\\
 Il costo computazionale dell'algoritmo è 
 $O(\frac{dn}{\sqrt{p}}+\frac{d^2n}{p}lg(\frac{d^2n}{p}))$
 %TODO CONSIDERAZIONE SU EFFICIENZA ALLO SCALARE DI p ... cmq no speedup bounds!
@@ -428,13 +428,13 @@ $O(\frac{dn}{\sqrt{p}}+\frac{d^2n}{p}lg(\frac{d^2n}{p}))$
 
 \subsection{Algoritmi con un partizionamento 3D}
 Un partizionamento tridimensionale del problema SpMM è realizzato dall'
-algoritmo Split-3D-SpMM \cite{Split3DSpMM}, dove al partizionamento
+algoritmo Split-3D-SpMM \citebf{Split3DSpMM}, dove al partizionamento
 bidimensionale descritto precedentemente, viene aggiunto una ulteriore
 suddivisione delle sottomatrici in blocchi nella terza dimensione della griglia di processi.
 %TODO CONSIDERAZIONI su overhead mem per C -> sparsity-structure dependent ->
 %sfruttabile bene la sparsità del risultato in meno occupazione di memoria
 Il partizionamento delle matrici è rappresentabile sul cubo di lavoro W come
-riportato in figura \ref{fig:workCube3D}, dove il processo P(i,j,k) possiede la
+riportato in figura \refbf{fig:workCube3D}, dove il processo P(i,j,k) possiede la
 porzione della matrice di A:\\ 
 $A(im/p_r:(i+1)m/p_r - 1, jn/p_c + kn/(p_c p_l ) : jn/p_c + (k + 1)n/(p_c p_l) - 1)$  \\
 \begin{figure}[H]
@@ -443,10 +443,10 @@ $A(im/p_r:(i+1)m/p_r - 1, jn/p_c + kn/(p_c p_l ) : jn/p_c + (k + 1)n/(p_c p_l) -
   {rappresentazione 3D della suddivisione delle operazioni per la computazione di SpMM}
   \decoRule \label{fig:workCube3D}
 \end{figure}
-L'algoritmo è riportato nello pseudo-codice \ref{figCode:Split3DSpMM} e una
-sua iterazione è raffigurata graficamente in \ref{fig:Split3DSpMMIteration}.\\
+L'algoritmo è riportato nello pseudo-codice \refbf{figCode:Split3DSpMM} e una
+sua iterazione è raffigurata graficamente in \refbf{fig:Split3DSpMMIteration}.\\
 
-In maniera simile al caso di sparseSUMMA %TODO \ref{sparseSummaDescriptionStart}
+In maniera simile al caso di sparseSUMMA %TODO \refbf{sparseSummaDescriptionStart}
 si procede in parallelo calcolando il prodotto di sotto blocchi corrispondenti
 alle sottomatrici di A e B, accumulando risultati intermedi la cui collocazione
 è relativa all'intera fiber W(i,j,:).\\
@@ -470,7 +470,7 @@ W(i,j,:), sommando i contributi relativi agli stessi indici.
 %\item Outer-product \qquad $C = \sum\limits_{i=1}^k  a_{*i} \otimes  b_{i*}$		
 Implementazioni di SpMM basate su formulazioni di Outer-Product, godono di una
 potenziale migliore località spaziale dei \nnz acceduti durante il prodotto,
-come spiegato in \cite{ESC}.\\
+come spiegato in \citebf{ESC}.\\
 \label{ChExistingTecqs:gustavsonDerivateBadAccessLocalityNNDominantMatrix}
 Considerando rispettivamente formulazioni row-by-row e col-by-col per SpMM e denominando 
 la matrice dominante nei prodotti rispettivamente A e B,
@@ -491,7 +491,7 @@ il che è particolarmente critico per un problema memory bound come SpMM.\\
 \end{figure}
 
 \subsection{ESC - PropagationBlocking}
-Una soluzione per l'operazione di SpMM mediante Outer-Product è riportata in \cite{ESC},
+Una soluzione per l'operazione di SpMM mediante Outer-Product è riportata in \citebf{ESC},
 dove viene usato un algoritmo basato sul generale approccio risolutivo Expand-Sort-Compress, %TODO cerca di piu ESC in generale
 applicato ad una formulazione Outer-Product per SpMM.\\
 
@@ -511,7 +511,7 @@ Le principali fasi dell'algoritmo sono:
 \end{figure}
 
 \subsubsection{Symbolic -- UB estimate}
-Analogamente a quanto descritto precedentemente in \ref{ChExistingTecqs:openMP_for_philosophy}, 
+Analogamente a quanto descritto precedentemente in \refbf{ChExistingTecqs:openMP_for_philosophy}, 
 preferendo una preallocazione delle strutture intermedie necessarie rispetto ad effettuare (ri)allocazioni dinamiche, 
 viene calcolata la dimensione dei risultati intermedi che corrisponde ad un UpperBound della dimensione finale del risultato.\\
 Seguendo un approccio Outer-Product per SpMM, il numero di \nnz al termine della fase Expand è pari ad:	$ \sum\limits_{i = 1}^k  | I^i(A) | *| I_i(B) | $ \\ % flops + = nnz(B(i, :)) × nnz(A(:, i))

@@ -34,7 +34,6 @@ toctotoc,      %  add the main table of contents to the table of contents
 ]{MastersDoctoralThesis} % The class file specifying the document structure
 
 %\usepackage[backend=bibtex,style=authoryear,natbib=true]{biblatex} % Use the bibtex backend with the authoryear citation style (which resembles APA)
-
 \usepackage[
 	backend=bibtex,
 	style=alphabetic,
@@ -157,6 +156,7 @@ toctotoc,      %  add the main table of contents to the table of contents
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%% CODE EMBEDD %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \usepackage{listings,color,tcolorbox} 
+\definecolor{myDarkBlue}{rgb}{0,0.0,.78}      
 %CONFIG CODE LISTINGS
 \definecolor{mygreen}{rgb}{0,0.6,0}      
 \definecolor{mygray}{rgb}{0.5,0.5,0.5}   
@@ -250,11 +250,11 @@ toctotoc,      %  add the main table of contents to the table of contents
 
 \geometry{
 	paper=a4paper, % Change to letterpaper for US letter
-	inner=2.3cm, % Inner margin
-	outer=2.9cm, % Outer margin
+	inner=2.4cm, % Inner margin
+	outer=2.1cm, % Outer margin
 	bindingoffset=.5cm, % Binding offset
-	top=2.5cm, % Top margin
-	bottom=2.5cm, % Bottom margin
+	top=1.0cm, % Top margin
+	bottom=1.0cm, % Bottom margin
 	%showframe, %  show how the type block is set on the page
 }
 
@@ -271,20 +271,29 @@ toctotoc,      %  add the main table of contents to the table of contents
 
 \subject{HPC} % Your subject area, this is not currently used anywhere in the template, print it elsewhere with \subjectname
 \keywords{HPC,OpenMP,SpMM,AMG} % Keywords for your thesis, this is not currently used anywhere in the template, print it elsewhere with \keywordnames
-\university{\href{http://ing.uniroma2.it/}{Università degli studi di\\Roma Tor Vergata}} % Your university's name and URL, this is used in the title page and abstract, print it elsewhere with \univname
+\university{\href{http://ing.uniroma2.it/}{Università degli studi di Roma Tor Vergata}} % Your university's name and URL, this is used in the title page and abstract, print it elsewhere with \univname
 \department{}{} %\department{\href{http://dicii.uniroma2.it/}{Dipartimento di Ingegneria Civile e Ingegneria Informatica}} % Your department's name and URL, this is used in the title page and abstract, print it elsewhere with \deptname
 %\group{\href{http://researchgroup.university.com}{Research Group Name}} % Your research group's name and URL, this is used in the title page, print it elsewhere with \groupname
 \faculty{\href{http://inginformatica.uniroma2.it}{Ingegneria Informatica}} % Your faculty's name and URL, this is used in the title page and abstract, print it elsewhere with \facname
 
+%\usepackage{hyperref}
+%\usepackage[capitalise]{cleveref} % load after hyperref package
+%%boldify 
+%%bold ref
 \AtBeginDocument{
-\hypersetup{pdftitle=\ttitle} % Set the PDF's title to your title
-\hypersetup{pdfauthor=\authorname} % Set the PDF's author to your name
-\hypersetup{pdfkeywords=\keywordnames} % Set the PDF's keywords to your keywords
+	\hypersetup{pdftitle=\ttitle} % Set the PDF's title to your title
+	\hypersetup{pdfauthor=\authorname} % Set the PDF's author to your name
+	\hypersetup{pdfkeywords=\keywordnames} % Set the PDF's keywords to your keywords
+	\hypersetup{colorlinks,%
+		citecolor=black,%
+		filecolor=black,%
+		linkcolor=myDarkBlue%,
+		%urlcolor=blue
+	}
+	%\crefdefaultlabelformat{\textbf{#2#1#3}} % boldface only the number
 }
-
-
-
-
+\newcommand{\citebf}[1]{\textbf{\cite{#1}}}
+\newcommand{\refbf}[1]{\textbf{\ref{#1}}}
 \pagestyle{plain} % Default to the plain heading style until the thesis style is called for the body content
 
 % Define some commands to keep the formatting separated from the content 
@@ -314,38 +323,37 @@ toctotoc,      %  add the main table of contents to the table of contents
 %%%%%%%%%%%%	TITLE PAGE	%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \begin{titlepage}
 	\begin{center}
-	\vspace*{.06\textheight}
-	{\scshape\LARGE \univname\par}\vspace{1.5cm} % University name
-	\textsc{\Large Laurea Magistrale in \\ \degreename}\\[0.5cm] % Thesis type
+	%\vspace*{.06\textheight}
+	{\scshape\Large \univname\par} % University name
+	\HRule \\
+	\textsc{Laurea Magistrale in \degreename}% Thesis type
 	
-	\HRule \\[0.4cm] % Horizontal line
-	{\huge \bfseries \ttitle\par}\vspace{0.4cm} % Thesis title
-	\HRule \\[1.5cm] % Horizontal line
+	\vfill \vspace{4.5cm}
+	\HRule 
+	\vspace{.7cm}
+	{\huge \bfseries \ttitle\par}% Thesis title
+	\vspace{.7cm}
+	\HRule % Horizontal line
 	 
-	\begin{minipage}[t]{0.4\textwidth}
+	 
+	\vfill \vspace{5.5cm}
+	%\includegraphics[width=0.13\linewidth,keepaspectratio]{utvLogo.png}
+	\begin{figure}[H]
+		\centering
+	  	\includegraphics[width=.16\linewidth,keepaspectratio]{utvLogo.png}
+	\end{figure}
+	\vfill \vspace{0.5cm}
+	\begin{minipage}[t]{0.5\textwidth}
 	\begin{flushleft} \large
 	\emph{Studente:  \authorname\\Matricola: 0277550}\\
-	%\href{http://www.johnsmith.com}{\authorname} % Author name - remove the \href bracket to remove the link
 	\end{flushleft}
 	
 	\end{minipage}
 	\begin{minipage}[t]{0.4\textwidth}
 	\begin{flushright} \large
 	\emph{Relatore: \supname}\\
-	%\href{http://www.jamessmith.com}{\supname} % Supervisor name - remove the \href bracket to remove the link  
 	\end{flushright}
 	\end{minipage}\\[3cm]
-	 
-	\vfill
-	
-	%\large \textit{A thesis submitted in fulfillment of the requirements\\ for the degree of \degreename}\\[0.3cm] % University requirement text
-	%\textit{in the}\\[0.4cm]
-	%\groupname\\\deptname\\[2cm] % Research group name and department name
-	\vfill
-	
-	%{\large \today}\\[4cm] % Date
-	\includegraphics[width=0.2\linewidth,keepaspectratio]{utvLogo.png}
-	\vfill
 	\end{center}
 \end{titlepage}
 %----------------------------------------------------------------------------------------
@@ -449,13 +457,19 @@ che mi è stata vicino in questo periodo difficile
   \hyphenchar\font=-1 % disable hyphen
   \hypersetup{linkcolor=black}
   \tableofcontents
+  \hyphenchar\font=`\- % reset hyphen
 }
 %\hyphenchar\font=-1 % disable hyphen
 %\tableofcontents
-%\hyphenchar\font=`\- % reset hyphen
 %\addcontentsline{toc}{chapter}{Bibliografia}
 
-%
+%%boldify -- quick hack
+%bold ref
+%\let\origref\ref
+%\def\ref#1{\textbf{\origref{#1}}}
+%%bold cite
+%\let\origref\cite
+%\def\cite#1{\textbf{\origref{#1}}}
 %
 %\listoftables % Prints the list of tables
 %
@@ -538,7 +552,10 @@ che mi è stata vicino in questo periodo difficile
 %\cleardoublepage
 %% \phantomsection
 %\addcontentsline{toc}{chapter}{\listfigurename}
-\listoffigures % Prints the list of figures
+{
+  	\hypersetup{linkcolor=black}
+	\listoffigures % Prints the list of figures
+}
 %%-----------------------------BIBLIOGRAPHY----------------------------------------------
 \printbibliography[heading=bibintoc]
 %----------------------------------------------------------------------------------------

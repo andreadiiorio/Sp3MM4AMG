@@ -1,0 +1,110 @@
+% Copyright 2003--2007 by Till Tantau
+% Copyright 2010 by Vedran Mileti\'c
+%
+% This file may be distributed and/or modified
+%
+% 1. under the LaTeX Project Public License and/or
+% 2. under the GNU Free Documentation License.
+%
+% See the file doc/licenses/LICENSE for more details.
+
+% $Header: /Users/joseph/Documents/LaTeX/beamer/doc/themeexamples/beamerthemeexample.tex,v 5a25f58600c3 2010/04/27 12:17:50 rivanvx $
+
+
+\documentclass[aspectratio=169]{beamer}
+
+\usetheme{RomaTorVergata}
+
+\beamertemplatetransparentcovered	%multi step visibili ma in non evidenziati
+
+\usepackage{times}
+\usepackage[T1]{fontenc}
+\usepackage[export]{adjustbox}	%figure align extra keys
+
+\title{Sp3MM for AMG}
+\subtitle{Sparse Triple Matrix Matrix Multiplication\\for\\AlgebraicMultiGrid}
+
+\author{Andrea Di Iorio}
+\institute{Università di Roma Tor Vergata}
+\date{22/04/2022}
+
+\begin{document}
+
+\begin{frame}
+	\titlepage
+\end{frame}
+
+\begin{frame}	{Outline}
+	\tableofcontents
+\end{frame}
+
+\section{Results}
+\subsection{Proof of the Main Theorem}
+
+\begin{frame}<1-3>
+	\frametitle{Proof That There Is No Largest Prime Number}
+	\framesubtitle{A proof using \textit{reductio ad absurdum}.}
+
+	\begin{theorem}
+		There is no largest prime number.
+	\end{theorem}
+	\begin{proof}
+		\begin{enumerate}
+		\item<1-> Suppose $p$ were the largest prime number.
+		\item<2-> Let $q := 1 + \prod_{i=1}^p i = 1+p!$.
+		\item<3-> Then $q$ is not divisible by any $p' \in \{1,\dots,p\}$.
+		\item<1-> Thus $q>p$ is also prime.\qedhere
+		\end{enumerate}
+	\end{proof}
+\end{frame}
+
+%%% my tests
+\section{MyTests}
+\subsection{columns}
+\subsubsection{figures}
+\begin{frame}
+	\frametitle{Proof That There Is No Largest Prime Number-pauses}
+	\framesubtitle{A proof using \textit{reductio ad absurdum}.}
+
+	\begin{theorem}
+		There is no largest prime number.
+	\end{theorem}
+	\begin{proof}
+		\begin{enumerate}
+		\item Suppose $p$ were the largest prime number.
+		\pause
+		\item Let $q := 1 + \prod_{i=1}^p i = 1+p!$.
+		\item Then $q$ is not divisible by any $p' \in \{1,\dots,p\}$.
+		\pause
+		\item Thus $q>p$ is also prime.\qedhere
+		\end{enumerate}
+	\end{proof}
+\end{frame}
+
+\begin{frame} {columns figures}	
+\begin{columns}
+	\column{0.65\textwidth}
+		\begin{itemize}
+			\item	item 0
+			\item	
+				item1, newline tabbed
+			\item	
+			item2, newline
+			\item item3, space only
+			\item item4, space only
+			and newline
+			\item item5, space only
+				and newline tabbed
+		\end{itemize}
+	\column{0.45\textwidth}
+  		\includegraphics[width=.88\linewidth]{svgImg.svg.pdf}
+  		\includegraphics[width=.88\linewidth]{svgImg.svg.pdf}
+		%\begin{figure}[h!]  
+    	%    %\includegraphics[scale=]{svgImg.pdf}
+  		%	\includegraphics[width=.96\columnwidth,keepaspectratio,left]{svgImg.svg.pdf}
+    	%    \caption{svg scaled at XXX\% of avail column (.45 slide)}
+    	%\end{figure}
+\end{columns}
+\end{frame}
+
+\end{document}

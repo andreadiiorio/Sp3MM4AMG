@@ -58,21 +58,21 @@ un analisi di tutte le implementazioni realizzate variando:
 \newcounter{queriesCounter}
 \begin{enumerate}
 	\item	il tipo di assegnamento ai thread dello spazio intermedio in implementazioni basate su UpperBound 
-	\item	la dimensione delle bitmap utilizzate in alcune implementazioni del prodotto simbolico %(descritte in \ref{chSpMMSymb:structFlagSet})
+	\item	la dimensione delle bitmap utilizzate in alcune implementazioni del prodotto simbolico %(descritte in \refbf{chSpMMSymb:structFlagSet})
 	\item	il numero di thread da utilizzare 
-	\item	il tipo di scheduling openMP: static o dynamic adattato (descritto in \ref{chSpMMAux:dynChunkFairAdapting})
+	\item	il tipo di scheduling openMP: static o dynamic adattato (descritto in \refbf{chSpMMAux:dynChunkFairAdapting})
 	\setcounter{queriesCounter}{\value{enumi}}
 \end{enumerate}
 Inoltre, sono state determinate le performance:
 \begin{enumerate}
 	\setcounter{queriesCounter}{\value{enumi}}
-	\item	di ogni implementazione, con configurazione ottimale, per ogni categoria di input (descritte in \ref{inputClasses})
+	\item	di ogni implementazione, con configurazione ottimale, per ogni categoria di input (descritte in \refbf{inputClasses})
 	\item	della migliore implementazione per ogni input, confrontadole con le performance ottenute con un implementazione seriale di riferimento
 \end{enumerate}
 Altri parametri, come la griglia di partizionamento utilizzata, sono determinati automaticamente in base al numero di thread configurato,
-come descritto in \ref{chSpMMAux:ompGrid}.
+come descritto in \refbf{chSpMMAux:ompGrid}.
 In particolare per implementazioni bidimensionali, la griglia di partizionamento impiegata è stata determinata con l'approccio
-basato sulla funzione \verb|MPI_Dims_create|, descritto in \ref{ompiDimsCreate}.\\
+basato sulla funzione \verb|MPI_Dims_create|, descritto in \refbf{ompiDimsCreate}.\\
 \begin{figure}[H]
   \centering \includegraphics[width=\linewidth,keepaspectratio]{Sp3MM_treeMinimal.dot.txt.svg.pdf}
   \caption[implementazioni Sp3MM realizzate]
@@ -80,7 +80,7 @@ basato sulla funzione \verb|MPI_Dims_create|, descritto in \ref{ompiDimsCreate}.
   \decoRule \label{fig:q1}
 \end{figure}
 \voidLine
-Tutti i test nel seguito ad eccezione di quelli menzionati nella sezione \ref{chPerf:multiThread}, sono stati effettuati 
+Tutti i test nel seguito ad eccezione di quelli menzionati nella sezione \refbf{chPerf:multiThread}, sono stati effettuati 
 con il numero massimo di thread possibili, ovvero 40 sull'ambiente di esecuzione utilizzato.\\
 
 
@@ -90,11 +90,11 @@ su tutti gli input disponibili e tutti i tipi di scheduling openMP
 
 \subsection[Migliore assegnamento di spazio intermedio per\\implementazioni UpperBound]
 {Migliore assegnamento di spazio intermedio per implementazioni UpperBound}
-Come analizzato in \ref{chSpMMSymb:UB_VS_SYMBACC}, implementazioni parallele di SpMM basate su una fase simbolica di tipo UpperBound,
+Come analizzato in \refbf{chSpMMSymb:UB_VS_SYMBACC}, implementazioni parallele di SpMM basate su una fase simbolica di tipo UpperBound,
 necessitano inevitabilmente di uno spazio temporaneo per i risultati intermedi, 
 che ho pre-allocato al blocco di esecuzione parallelo 
 ed assegnato ai thread in modo statico o dinamico, 
-come descritto in \ref{chSpMMNum:preSplitAS_JA_tmp} ed approfondito in \ref{chSpMMAux:atomicSegAssign}.\\
+come descritto in \refbf{chSpMMNum:preSplitAS_JA_tmp} ed approfondito in \refbf{chSpMMAux:atomicSegAssign}.\\
 
 \begin{figure}[H]
   \centering \includegraphics[width=\linewidth,keepaspectratio]{graphs/q1.svg.pdf}
@@ -105,12 +105,13 @@ come descritto in \ref{chSpMMNum:preSplitAS_JA_tmp} ed approfondito in \ref{chSp
   \decoRule \label{fig:q1}
 \end{figure}
 
-Come è possibile vedere nella figura \ref{fig:q1}, un assegnamento dinamico dello spazio intermedio ai thread da dei vantaggi
+Come è possibile vedere nella figura \refbf{fig:q1}, un assegnamento dinamico dello spazio intermedio ai thread da dei vantaggi
 per implementazioni monodimensionali, mentre ha performance pressochè simili nel caso di implementazioni bidimensionali.\\
 
-\subsection{Migliore dimensione delle bitmap per implementazioni con prodotto simbolico accurato}
-La versione del prodotto simbolico accurato basata su bitmap di indici, descritta in \ref{chSpMMSymb:structFlagSet} 
-ed approfondita in \ref{chSpMMAux:bitmapInsert}, prevede l'uso di un vettore di variabili di tipo \verb|limb_t|
+\subsection[Migliore dimensione bitmap nel prodotto simbolico accurato]
+{Migliore dimensione delle bitmap per implementazioni con prodotto simbolico accurato}
+La versione del prodotto simbolico accurato basata su bitmap di indici, descritta in \refbf{chSpMMSymb:structFlagSet} 
+ed approfondita in \refbf{chSpMMAux:bitmapInsert}, prevede l'uso di un vettore di variabili di tipo \verb|limb_t|
 di dimensione configurabile a tempo di compilazione con la macro \verb|LIMB_T|.\\
 
 \begin{figure}[H]
@@ -120,12 +121,12 @@ di dimensione configurabile a tempo di compilazione con la macro \verb|LIMB_T|.\
 		   su tutti gli input considerati, variando la dimensione delle singole bitmap tra 64 e 128 bit}
   \decoRule \label{fig:q2}
 \end{figure}
-Dalla figura \ref{fig:q2} è possibile notare come usare bitmap di 64 bit può può fornire un vantaggio prestazionale
+Dalla figura \refbf{fig:q2} è possibile notare come usare bitmap di 64 bit può può fornire un vantaggio prestazionale
 rispetto all'uso di bitmap a 128 bit.
 
 \section{Migliore implementazione per classe di input} \label{chPerf:q3}
-Considerando la miglior configurazione determinata in \ref{bestConf}, ho effettuato un confronto delle prestazioni medie
-delle varie implementazioni di Sp3MM per ogni classe di input disponibile ( descritte precedentemnte in \ref{inputClasses} )
+Considerando la miglior configurazione determinata in \refbf{bestConf}, ho effettuato un confronto delle prestazioni medie
+delle varie implementazioni di Sp3MM per ogni classe di input disponibile ( descritte precedentemnte in \refbf{inputClasses} )
 %\centering \includegraphics[width=\linewidth,keepaspectratio][[width=\linewidth,keepaspectratio]{q3.svg.png}
 \begin{figure}[H]	
   \centering \includegraphics[width=\linewidth,keepaspectratio]{graphs/q3.svg.pdf}
@@ -133,7 +134,7 @@ delle varie implementazioni di Sp3MM per ogni classe di input disponibile ( desc
   {Confronto tra le perfomance medie della miglior configurazione per le implementazioni di Sp3MM per ogni classe di input}
   \label{fig:q3}
 \end{figure}
-Come è possibile notare dalla figura \ref{fig:q3}, si hanno performance molto diverse in base alla classe di input considerata.
+Come è possibile notare dalla figura \refbf{fig:q3}, si hanno performance molto diverse in base alla classe di input considerata.
 In particolare, le implementazioni su matrici di tipo \emph{Unsmoothed} soffrono di prestazione nettamente inferiori di quelle 
 su matrici \emph{Smoothed}.\\
 Le implemenetazioni con performance migliori variano tra le classi di input considerate, tuttavia è possibile osservare che:
@@ -149,7 +150,7 @@ Le implemenetazioni con performance migliori variano tra le classi di input cons
 Come precedentemente analizzato le prestazioni di Sp3MM sono molto variabili in base al tipo di input, 
 l'implementazione utilizzata e la configurazione applicata.\\
 Per questo motivo ho deciso di misurare il vantaggio prestazionale ottenuto dalla migliore implementazione parallela 
-rispetto ad una implementazione seriale di riferimento ( descritta in \ref{implSerialeRiferimento} ).\\
+rispetto ad una implementazione seriale di riferimento ( descritta in \refbf{implSerialeRiferimento} ).\\
 \begin{figure}[H]
   \centering \includegraphics[width=\linewidth,keepaspectratio]{graphs/q4-b.svg.pdf}
   %\captionlistentry	FOR NO CAPTION LABEL REFERING
@@ -162,7 +163,7 @@ rispetto ad una implementazione seriale di riferimento ( descritta in \ref{implS
   \caption[Migliore implementazione parallela VS seriale - 2]
   \decoRule \label{fig:q4small}
 \end{figure}
-Come è possibile notare dai grafici \ref{fig:q4big}, \ref{fig:q4small}, le implementazioni 
+Come è possibile notare dai grafici \refbf{fig:q4big}, \refbf{fig:q4small}, le implementazioni 
 parallele di Sp3MM performano meglio dell'implementazione seriale per la stragrande maggioranza dei casi,
 in misura variabile in base all'input considerato.\\
 
@@ -177,7 +178,7 @@ al variare del numero di thread.\\
   {performance misurate su alcune esecuzioni di Sp3MM, variando il numero di thread impiegati}
   \decoRule \label{fig:q5}
 \end{figure}
-Come è possibile notare dai grafici \ref{fig:q5}, è possibile avere un guadagno di performance 
+Come è possibile notare dai grafici \refbf{fig:q5}, è possibile avere un guadagno di performance 
 abbassando il grado di parallelismo, in misura differente in base all'implementazione e alla matrice considerata.\\
 
 \section{Conclusioni}
@@ -191,15 +192,15 @@ nelle porzioni di lavoro assegnate ai thread in misura differente in base:
 	\item	al tipo di scheduling openMP usato così come altre configurazioni
 \end{itemize}
 Uno sbilanciamento del carico di lavoro comporta un cattivo uso delle risorse computazionali, causando un peggioramento delle performance 
-come come è possibile notare nell'analisi effettuate in \ref{chPerf:q3}.\\
+come come è possibile notare nell'analisi effettuate in \refbf{chPerf:q3}.\\
 \voidLine
-Il livello di parallelismo usato può influire molto sulle performance, come visibile nell'analisi effettuata in \ref{chPerf:multiThread},
+Il livello di parallelismo usato può influire molto sulle performance, come visibile nell'analisi effettuata in \refbf{chPerf:multiThread},
 sia per le ragioni appena citate che per motivi legati all'overhead di schedulare un alto numero di thread
 per input piccoli.
 \voidLine
 L'overhead complessivamente introdotto da openMP può in generale comportare un costo superiore al beneficio
-ottenuto dall'esecuzione parallela per alcuni input, come visibile in pochi casi in \ref{fig:q4small}.
-Inoltre, in \ref{fig:q5} è possibile notare uno svantaggio prestazionale in alcune esecuzioni parallele con un solo thread
+ottenuto dall'esecuzione parallela per alcuni input, come visibile in pochi casi in \refbf{fig:q4small}.
+Inoltre, in \refbf{fig:q5} è possibile notare uno svantaggio prestazionale in alcune esecuzioni parallele con un solo thread
 rispetto all'esecuzione dell'implementazione seriale di riferimento, 
 probabilmente dovuto all'overhead di inizializzazione e scheduling di openMP.\\
 

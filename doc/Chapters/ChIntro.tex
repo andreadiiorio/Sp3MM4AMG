@@ -23,7 +23,7 @@ ma non realizzabili a causa del surriscaldamento che verrebbe generato durante i
 %intel slide compare power densisty
 Per avere un'idea del problema del surriscaldamento nei processori,
 è possibile analizzarne la densità di potenza $\left[\frac{W}{cm^2}\right]$
-comparandola con le densità raggiunte da altre entità come in figura \ref{fig:powerDensityVSCriticalDim}.
+comparandola con le densità raggiunte da altre entità come in figura \refbf{fig:powerDensityVSCriticalDim}.
 \begin{figure}[H]
   \centering \includegraphics[width=.5\linewidth,keepaspectratio]{powerDensityVSCriticalDim.svg.png}
   \caption[densità di potenza CPU vs dimensione critica]{Comparazione tra la densistà di potenza di alcuni dispositivi tecnologici con dei processori intel rispetto alla loro dimensione critica,
@@ -33,7 +33,7 @@ comparandola con le densità raggiunte da altre entità come in figura \ref{fig:
 %%
 \voidLine
 %https://en.wikipedia.org/wiki/Processor_power_dissipation
-Una buona approssimazione della potenza dissipata da un processore è data da:
+Una buona approssimazione della potenza dissipata da un processore è data da:\\
 $P_{cpu} =  P_{dyn} + P_{sc} + P_{leak}$ dove 
 \begin{enumerate}
 	\item $P_{dyn}\quad$ modella la dissipazione di energia dovuta all'attività interna dei gate logici della CPU,
@@ -67,11 +67,11 @@ Le PDE sono usate per descrivere moltissimi fenomeni fisici relativi alla
 dinamica dei fluidi, alla meccanica quantistica e chimica computazionale % e molti altri derivanti da applicazioni ingegneristiche, %TODO MORE
 così come vari problemi nell'area dell'ingegneria, biologia e economia.\\
 Dato che molto spesso non esistono soluzioni esplicite in forma chiusa a queste equazioni,
-vengono calcolate soluzioni approssimante ottenute da tecniche numeriche.\
+vengono calcolate soluzioni approssimante ottenute da tecniche numeriche.\\
 Molte tecniche numeriche per risolvere delle PDE trasformano le equazioni differenziali
 in equazioni algebrice, mediante un processo di discretizzazione delle equazioni nel dominio del problema da risolvere.\\
 Conseguentemente un problema ricorrente in varie applicazioni algebriche e nel calcolo scientifico in generale, 
-%come gia menzianto %in \ref{chIntro:},
+%come gia menzianto %in \refbf{chIntro:},
 è risolvere sistemi sparsi di dimensioni grandi derivanti da metodi di risoluzione numerici di PDE.\\
 \voidLine
 Il sistema lineare sparso di riferimento che verrà usato nel seguito è 
@@ -82,26 +82,27 @@ dove $A$ è una matrice sparsa di grandi dimensioni,
 simmetrica e definita positiva \emph{s.p.d.}\\
 \subsection{Importanza della sparsità delle matrici}
 %sparsity defs
-La proprietà di sparsità della matrice $A$  nel sistema \ref{eq:1}, ovvero la proprietà di avere per la maggioranza degli elementi il valore zero,
+La proprietà di sparsità della matrice $A$  nel sistema \refbf{eq:1}, ovvero la proprietà di avere per la maggioranza degli elementi il valore zero,
 %Since differential surface properties are defined locally, the discretization of PDEs typically leads to sparse linear systems, in which the ith row contains non- zeros only in those entries corresponding to the geodesic or topological neighbor- hood of vertex xi . We are therefore interested in solvers that exploit this sparsity in order to minimize both memory consumption and computation times. 
 deriva dalla discretizzazione delle PDE nel problema originario in una mesh di punti \cite{sparseLinearSolverTR}.
 Una caratteristica comune nei metodi di discretizzazione utilizzabili come differenze finite, elementi finiti e volumi finiti 
 è che il numero di elementi in ogni equazione discretizzata dipende da proprietà topologiche locali alla discretizzazione
-e non dalla dimensione globale del dominio del problema da risolvere \cite{spMVfanf,pdeSparsfd1,pdeSparsfd2,pdeSparsfd3}.
+e non dalla dimensione globale del dominio del problema da risolvere { \bf \cite{spMVfanf,pdeSparsfd1,pdeSparsfd2,pdeSparsfd3}}.
 Conseguentemente la matrice generata da questi metodi è comunemente sparsa.\voidLine
 La proprietà di sparsità di $A$ consente l'utilizzo di rappresentazioni idonee in memoria durante il calcolo, 
 dove vengono salvati solamente gli elementi non zero.\\
 Formati tipici di memorizzazione per matrici sparse sono: \emph{CompressedSparseColumn, CompressedSparseRow, Ellpack, DIA}.%\\DD
 \voidLine	%sparsity advantage
-Sfruttare la sparsità delle matrici nella risoluzione di un problema come \ref{eq:1}, consente di ottenere svariati vantaggi
+Sfruttare la sparsità delle matrici nella risoluzione di un problema come \refbf{eq:1}, consente di ottenere svariati vantaggi
 rispetto ad usare le tecniche convenzionali dell'algebra lineare densa, come un utilizzo molto più efficiente della memoria.\\
 Spingendo al limite le potenzialità dei super calcolatori attuali e cercando soluzioni sempre più accurate ai problemi moderni di calcolo scientifico,
 si rende indispensabile sfruttare questa proprietà quando presente,
 dato che tecniche classiche per matrici dense necessiterebbero di una quantità di memoria 
 quadratica nella dimensione della matrice, contro una quantità lineare nel numero dei non zeri con tecniche di algebra sparsa.
 \voidLine	%prefer of iterative solver to keep sparsity
+%\clearpage
 \subsection{Tecniche risolutive efficienti di sistemi sparsi} \label{directVsIndirectSpLinSysSolvers}
-Solutori di sistemi come \ref{eq:1}, possono essere di tipo diretto o iterativo.\\
+Solutori di sistemi come \refbf{eq:1}, possono essere di tipo diretto o iterativo.\\
 I solutori di tipo diretto tipicamente impiegano una fattorizzazione della matrice $A$ 
 in matrici di struttura semplice (triangolare, diagonale, ortogonale),
 per poi applicare operazioni che portano alla soluzione del sistema $x^{\ast}$.\\
@@ -113,13 +114,13 @@ Una differenza significativa tra le due classi di soluzioni
 nei passaggi intermedi.
 Infatti, in misura differente in base al metodo di risoluzione diretto utilizzato,
 la fattorizzazione della matrice può portarne alla perdita della proprietà di sparsità %e divenire densa
-come mostrato dalla figura \ref{fig:Efficient_Linear_System_Solvers_for_Mesh_Processing_densificationByDirectSolver}.\\
+come mostrato dalla figura \refbf{fig:Efficient_Linear_System_Solvers_for_Mesh_Processing_densificationByDirectSolver}.\\
 \begin{figure}[H]
-  \centering \includegraphics[height=.77\linewidth,keepaspectratio]{Efficient_Linear_System_Solvers_for_Mesh_Processing_densificationByDirectSolverSimplied.svg.png}
+  \centering \includegraphics[height=.33\textheight,keepaspectratio]{Efficient_Linear_System_Solvers_for_Mesh_Processing_densificationByDirectSolverSimplied.svg.png}
   \captionsetup{singlelinecheck=off}
   \caption[perdità di sparsità nelle matrici fattorizzate da solutori diretti]
 	{Varie fattorizzazioni di una matrice altamente sparsa A 500x500 con soli 3502 elementi \nnz (in alto)
-				in  matrici con un numero di \nnz incrementato a vari livelli  \cite{sparseLinearSolverTR}:
+				in  matrici con un numero di \nnz incrementato a vari livelli  \citebf{sparseLinearSolverTR}:
 				\begin{itemize}
 					\item	36000 \nnz con il metodo di \emph{Cholesky} 				in alto a sinistra 
 					\item	14000 \nnz con il metodo di \emph{Cuthill-McKee}			in alto a destra
@@ -131,17 +132,17 @@ come mostrato dalla figura \ref{fig:Efficient_Linear_System_Solvers_for_Mesh_Pro
 \end{figure}
 %Fig. 2. The top row shows the non-zero pattern of a typical 500 × 500 matrix A and its Cholesky factor L, corresponding to a Laplacian system on a triangle mesh. Although A is highly sparse (3502 non-zeros), the factor L is dense (36k non-zeros). The reverse Cuthill-McKee algorithm minimizes the envelope of the matrix, resulting in 14k non-zeros of L (2nd row ). The minimum degree ordering avoids fill-in during the factorization, which decreases the number of non-zeros to 6203 (3rd row ). The last row shows the result of a nested dissection method (7142 non-zeros), that allows for parallelization due to its block structure. 
 Di contro a questa penalità dei solutori diretti, c'è il vantaggio che la fattorizzazione della matrice $A$, 
-può essere riutilizzata per sistemi in cui viene cambiato il lato destro di \ref{eq:1},
+può essere riutilizzata per sistemi in cui viene cambiato il lato destro di \refbf{eq:1},
 %o anche in caso in cui la matrice $A$ cambia i valori \nnz ma non il loro pattern di sparsità... 50% del tempo
-come analizzato in \cite{sparseLinearSolverTR}.\\
+come analizzato in \citebf{sparseLinearSolverTR}.\\
 \voidLine
 \subsection{Solutori MultiGrid} \label{multiGrid}
 Tra i solutori iterativi più efficienti ci sono quelli basati su metodi \emph{MultiGrid}, 
 che godono di ottime caratteristiche di scalabilità come avere un numero di iterazioni e 
-un costo per iterazione approssimatamente costante all'incrementare della dimensione del problema \cite{AMGgeneralANY,Sp3MM4AMG}.\\
+un costo per iterazione approssimatamente costante all'incrementare della dimensione del problema { \bf \citebf{AMGgeneralANY,Sp3MM4AMG}}.\\
 %MultiGrid in generale-wikipedia
 L'idea principale dei metodi MultiGrid è quella di 
-risolvere il sistema \ref{eq:1} iterativamente, applicando una serie di correzioni 
+risolvere il sistema \refbf{eq:1} iterativamente, applicando una serie di correzioni 
 alle soluzioni approssimate ottenute con un metodo iterativo basico.\\
 Le correzioni sono applicate ai residui associati agli errori delle soluzioni intermedie approssimate,
 risolvendo un sotto problema dell'originale contente un sottoinsieme delle incognite.\\ %, a grana meno fine
@@ -153,7 +154,7 @@ rispetto a generarne un altro.\\
 %tipi di shape per iterazioni
 Le iterazioni di questi metodi possono essere strutturati con cicli di varia natura.
 Tra le metodologie principalmente utilizzati ci sono cicli a forma V, F e W.\\
-%In figura \ref{fig:Multigrid_Visualization_wikipedia} è disponibile una rappresentazione schemativa di un algoritmo MultiGrid iterativo con un ciclo-V.
+%In figura \refbf{fig:Multigrid_Visualization_wikipedia} è disponibile una rappresentazione schemativa di un algoritmo MultiGrid iterativo con un ciclo-V.
 \begin{figure}[H]
   \centering \includegraphics[width=.84\linewidth,keepaspectratio]{Multigrid_Visualization_wikipedia.png}
   \caption[ciclo V di un Multigrid] {Rappresentazione grafica di un ciclo V di un solutore MultiGrid}
@@ -167,19 +168,19 @@ Nei metodi Geometrici, si usa una gerarchia di griglie iterativamente più spars
 derivate da informazioni sulla struttura della griglia di discretizzazione originaria.\\
 %One main component of this type of multilevel algorithm is a hierarchy of geomet- ric grids, typically a sequence of nested grids obtained by successive refinement. The resulting algorithms are known as geometric multigrid (GMG) methods. 
 %AMG finally!
-I metodi Algebrici riescono ad utilizzare unicamente informazioni derivanti dalla matrice associata al sistema da risolvere \ref{eq:1},
+I metodi Algebrici riescono ad utilizzare unicamente informazioni derivanti dalla matrice associata al sistema da risolvere \refbf{eq:1},
 pur mantenendo la stessa complessità asintotica dei \emph{GMG}.\\
 %Qualunque problema discretizzato con delle griglie non strutturate, p.es. agli elementi finiti
 Questa proprietà degl'\emph{AMG}, rende possibile applicarli 
 alla risoluzione di problemi discretizzati con griglie non strutturate,
 ad esempio mediante il metodo degli elementi finiti.\\
-\cite{AMGgeneralANY}.\\
+\citebf{AMGgeneralANY}.\\
 \par\null\par	%GMG vs AMG
 La gerarchia di sotto-problemi intermedi da risolvere ad ogni iterazione con i metodi AMG è derivata dal triplo prodotto di Galerkin:\\
 \begin{equation} \label{eq:galerkin}
 A_{l+i} = (P_l)^T \cdot A_l \cdot P_l~l=0,\dots,nl-1
 \end{equation}
-dove $A_0 = A$ \cite{AMG4PSBLAS} e $P_l$ è una sequenza di matrici di prolungamento $n_l \times n_{l+1}$ con $n_0=n$ e $n_{l+1}<n_l$.\\
+dove $A_0 = A$ \citebf{AMG4PSBLAS} e $P_l$ è una sequenza di matrici di prolungamento $n_l \times n_{l+1}$ con $n_0=n$ e $n_{l+1}<n_l$.\\
 %TODO more?
 \par\null\par
 %actual time costs :((( , previous prof notes 
@@ -196,7 +197,7 @@ mentre $T_{setup}$ comprende il calcolo di tutto il necessario all'esecuzioni de
 tra cui la costruzione della gerarchia di sotto problemi mediante il triplo prodotto.\\ %TODO setup of preconditioner https://en.wikipedia.org/wiki/Preconditioner#Description ?? 
 \par\null\par
 Realizzare il triplo prodotto tra matrici sparse, denominato \\{\bf{Sp}}arse{\bf{3}}{\bf{M}}atrixMatrix{\bf{M}}ultiplication (\emph{Sp3MM})
-in parallelo è l'obbiettivo di questa tesi, al fine di potenziare progetti come \cite{AMG4PSBLAS} che sfruttano solutori basati su AMG.\\
+in parallelo è l'obbiettivo di questa tesi, al fine di potenziare progetti come \citebf{AMG4PSBLAS} che sfruttano solutori basati su AMG.\\
 %organizzazione seguito
 %Il seguito della tesi è strutturato come segue
 \section{Algebraic MultiGrid for Parallel Sparse BLAS} \label{amg4psblas}
@@ -204,8 +205,8 @@ PSBLAS è una libreria software che punta a consentire la realizzazione di varie
 mediante implementazioni di risolutori iterativi per sistemi lineari sparsi 
 usando il padarigma di programmazione per sistemi a memoria distribuita.\\
 L'ambito di questa libreria è relativo alle PDE discretizzate mediante differenze finite o elementi finiti,
-ma anche a problemi di ottimizzazione non lineare come problemi di controllo ottimo \cite{PSBLAS3man}.\\
-AMG4PSBLAS \cite{AMG4PSBLASman} fornisce i metodi MultiGrid di tipo algebrico precedentemente descritti,
+ma anche a problemi di ottimizzazione non lineare come problemi di controllo ottimo \citebf{PSBLAS3man}.\\
+AMG4PSBLAS \citebf{AMG4PSBLASman} fornisce i metodi MultiGrid di tipo algebrico precedentemente descritti,
 utilizzando come layer sottostante PSBLAS.\\
 Il progetto Software è scritto in Fortran 2003, sfruttandone le possibilità di 
 usare un design object-oriented degli algoritmi, mediante varie funzionalità disponibili nello standard del linguaggio,

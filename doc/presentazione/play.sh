@@ -1,0 +1,1 @@
+python3 impressive.py  --verbose --nologo --tracking -c persistent --cachefile /tmp/impressChache -t ( cat transitions.list.target.cmd )  ~/tesi/doc/presentazione/presentazione.pdf
