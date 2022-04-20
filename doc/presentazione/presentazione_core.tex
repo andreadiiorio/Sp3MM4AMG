@@ -290,14 +290,14 @@ Percorrendo le operazioni effettuate nella formulazione row-by-row
 %\begin{lstlisting}[basicstyle=\tiny,numbers=none]
 %spmat* CAT( spmmRowByRow_SymbNum_ , OFF_F )  ( spmat * A , spmat * B , CONFIG * cfg ){...} 
 %\end{lstlisting}
-%%%%%%%%%%%%%%%%%%%%%%%%%%
-
-%Caso integrazione Fortran (processo di integrazione avviato) molto utile per evitare shifting iniziale complessivo, usato largamente nel codice 
-%Multi versioning in generale ( 8 VERSIONI DELLE FUNZIONI BASE):
-%Evito uso massiccio di condizioni nel codice (cmq gestiti benissimo da predittori) 
-%Esclusione blocchi di codice non necessari 
-%  --> maggiore ottimizzabilità in compilazione 
-%Segnature diverse da CAT: operatore pre-processore ## wrappato (concat preprocessor token ESPANSI) 
+%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%
+%%Caso integrazione Fortran (processo di integrazione avviato) molto utile per evitare shifting iniziale complessivo, usato largamente nel codice 
+%%Multi versioning in generale ( 8 VERSIONI DELLE FUNZIONI BASE):
+%%Evito uso massiccio di condizioni nel codice (cmq gestiti benissimo da predittori) 
+%%Esclusione blocchi di codice non necessari 
+%%  --> maggiore ottimizzabilità in compilazione 
+%%Segnature diverse da CAT: operatore pre-processore ## wrappato (concat preprocessor token ESPANSI) 
 %\end{frame}
 
 \section{Fase numerica: calcolo del prodotto tra matrici}
@@ -583,16 +583,16 @@ if (mergeRows(outAccumul->accs,out))  goto _err;
 	\pause
 \end{itemize}
 \voidLine
-Sviluppi futuri
-\pause
-\begin{itemize}
-	\item	Analisi dettagliata sul livello di parallelismo ottimale per classe di input
-	\pause
-	\item	Estensione implementazioni
-	\pause
-	\item	Implementazione formulazioni ESC Outer-Product
-	\pause
-\end{itemize}
+%Sviluppi futuri
+%\pause
+%\begin{itemize}
+%	\item	Analisi dettagliata sul livello di parallelismo ottimale per classe di input
+%	\pause
+%	\item	Estensione implementazioni
+%	\pause
+%	\item	Implementazione formulazioni ESC Outer-Product
+%	\pause
+%\end{itemize}
 \end{frame}
 
 %%%%%%%%%%%%%%%%%%%%%%  RISERVE  %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
