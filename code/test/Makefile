@@ -78,7 +78,8 @@ endif
 CBLAS_SLIB=CBLAS_LAPACK/$(STATIC_LIBS_DIR)/libcblas.a
 BLAS_SLIB=CBLAS_LAPACK/$(STATIC_LIBS_DIR)/librefblas.a
 
-objs := $(shell  grep -Eo '.*\.o:\s' Makefile | grep -v -e '@' -e PHONY -e '##' | awk -F: '{print $1}' | tr '\n:' ' ' )
+#objs := $(shell  grep -Eo '.*\.o:\s' Makefile | grep -v -e '@' -e PHONY -e '##' | awk -F: '{print $1}' | tr '\n:' ' ' )
+objs := Sp3MM_getFlops.o Sp3MM_getFlops_DBG.o test_Sp3MM.o test_Sp3MM_Stats.o test_Sp3MM_Stats_UB_DYN_ASSIGN.o test_Sp3MM_Stats_IDXFLAG_ARRAY.o test_Sp3MM_Stats_IDXBITMAP_U64.o test_Sp3MM_Stats_IDXBITMAP_INT.o test_Sp3MM_Stats_SYMB_RB_NOCACHED.o test_Sp3MM_DBG_UB_NN_TID_RESERVED.o test_Sp3MM_DBG.o
 
 
 all: $(objs)
