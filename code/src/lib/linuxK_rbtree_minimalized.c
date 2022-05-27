@@ -7,42 +7,36 @@
 
 
   linux/lib/rbtree.c
-
-  userspace GNUC porting and multiImplementation:       Andrea Di Iorio                                                                                                      
-                                                                                                                                                                             
-  generic implementations with every indexing based on an OFFSET variable                                                                                                    
-        -> buildable to get a pair of 0 || 1-based indexing for C-fortran integration                                                                                        
-		TODO sia qui che in header -> generic
-			 STEP0: isola le parti per insert (unico target),
-				rb_link_node(&node->rb, parent, new);
-				rb_insert_color(&node->rb, &root->rb_root);
-				[rb_insert_color_cached(&node->rb, root, leftmost); ]
-
-			TODO	PURTROPPO UNSUSED FUNCTION WARNING NON AIUTA CON TEST CUSTOM PER ADDONLY...
-						-> PROVA A METTERE UN MAIN MINIMALE QUI ;)
-						GOOGLA LA COSA
-
-
-			 STEP1: eventualmente gestisci con macro offset dove necessario...
 */
-/* Copyright Andrea Di Iorio 2021
- * This file is part of RedBlackTree_linux_userspace
- * RedBlackTree_linux_userspace is free software: you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation, either version 3 of the License, or
- * (at your option) any later version.
+/*
+ *              RedBlackTree_linux_userspace
+ *    (C) Copyright 2021-2022
+ *        Andrea Di Iorio      
  * 
- * RedBlackTree_linux_userspace is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
+ *  Redistribution and use in source and binary forms, with or without
+ *  modification, are permitted provided that the following conditions
+ *  are met:
+ *    1. Redistributions of source code must retain the above copyright
+ *       notice, this list of conditions and the following disclaimer.
+ *    2. Redistributions in binary form must reproduce the above copyright
+ *       notice, this list of conditions, and the following disclaimer in the
+ *       documentation and/or other materials provided with the distribution.
+ *    3. The name of the RedBlackTree_linux_userspace or the names of its contributors may
+ *       not be used to endorse or promote products derived from this
+ *       software without specific written permission.
  * 
- * You should have received a copy of the GNU General Public License
- * along with RedBlackTree_linux_userspace.  If not, see <http://www.gnu.org/licenses/>.
- *
- * https://bitbucket.org/andysnake96/redblacktree_linux_userspace
+ *  THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
+ *  ``AS IS'' AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED
+ *  TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR
+ *  PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE RedBlackTree_linux_userspace GROUP OR ITS CONTRIBUTORS
+ *  BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR
+ *  CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF
+ *  SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS
+ *  INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN
+ *  CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
+ *  ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
+ *  POSSIBILITY OF SUCH DAMAGE.
  */ 
-
 
 ///#include <linux/rbtree_augmented.h>	//TODO LESS_DEPENDENCIES
 #include "linuxK_rbtree_minimalized.h"	///fulfill embedded deps needed //TODO LESS_DEPENDENCIES
