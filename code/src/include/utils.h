@@ -33,7 +33,7 @@
 //#include <stddef.h> 
 #include "macros.h"
 
-#include "linuxK_rbtree_minimalized.h"
+#include "rbTreeInterface.h" //TODO BSD-3CLAUSE ONLY
 extern int urndFd;	//file pointer to DRNG_DEVFILE O_RDONLY opened
 int init_urndfd(); // wrap init urndFd
 
