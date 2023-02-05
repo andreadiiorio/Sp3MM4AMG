@@ -42,13 +42,14 @@
 #include "macros.h"
 #include "utils.h"
 #include "parser.h"
+
 ////inline exports
 spmat *allocSpMatrix(ulong rows, ulong cols);
 int allocSpMatrixInternal(ulong rows, ulong cols, spmat * mat);
 spmat *initSpMatrixSpMM(spmat * A, spmat * B);
 void freeSpmatInternal(spmat * mat);
 void freeSpmat(spmat * mat);
-inline int spVect_idx_in(idx_t idx, SPVECT_IDX_DENSE_MAP * idxsMapAcc);
+int spVect_idx_in(idx_t idx, SPVECT_IDX_DENSE_MAP * idxsMapAcc);
 void C_FortranShiftIdxs(spmat * outMat);
 void Fortran_C_ShiftIdxs(spmat * m);
 

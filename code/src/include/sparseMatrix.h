@@ -82,7 +82,7 @@ int allocAccDense(ACC_DENSE* v, ulong size);
  *	sp_vect_idx_set(idx,SPVECT_IDX_DENSE_MAP)
  *		-> return 0 if idx isn't already setted and in case set it
  */
-static inline int spVect_idx_in(idx_t idx, SPVECT_IDX_DENSE_MAP* idxsMapAcc){
+inline int spVect_idx_in(idx_t idx, SPVECT_IDX_DENSE_MAP* idxsMapAcc){
 	#if SPVECT_IDX_BITWISE == TRUE
 	uint limbID 	= idx / LIMB_SIZE_BIT; //idx's limb id
 	uint limbIdxID	= idx % LIMB_SIZE_BIT; //idx's pos in limb

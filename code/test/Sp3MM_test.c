@@ -50,6 +50,7 @@ int	 allocSpMatrixInternal(ulong rows, ulong cols, spmat* mat);
 spmat*  initSpMatrixSpMM(spmat* A, spmat* B);
 void	freeSpmatInternal(spmat* mat);
 void	freeSpmat(spmat* mat);
+int spVect_idx_in(idx_t idx, SPVECT_IDX_DENSE_MAP* idxsMapAcc);
 ////inline exports
 ///multi implmentation functions
 //void CAT(scSparseVectMul_,OFF_F)(double scalar,double* vectVals,ulong* vectIdxs,ulong vectLen, ACC_DENSE* aux);

@@ -132,4 +132,6 @@ void printSparseMatrix(spmat* sparseMat,char justNZMarkers);
 /*convert @sparseMat sparse matrix in dense matrix returned*/
 double* CSRToDense(spmat* sparseMat);
 
+void freeAccsDense(ACC_DENSE* vectors,ulong num);
+
 #endif //SPARSEUTILS_H_COMMON_IDX_IMPLS 

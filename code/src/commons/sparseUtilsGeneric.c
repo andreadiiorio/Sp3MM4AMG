@@ -324,7 +324,7 @@ idx_t* CAT(colsOffsetsPartitioningUnifRanges_,OFF_F)(spmat* A,uint gridCols){
 spmat* CAT(colsPartitioningUnifRangesOffsetsAux_,OFF_F)(spmat* A,uint gridCols,
 	   idx_t** colPartsOffsets)
 {
-	spmat *colParts, *colPart;
+	spmat *colParts = NULL, *colPart;
 	ulong _colBlock = A->N/gridCols, _colBlockRem = A->N%gridCols;
 	ulong *colPartsLens=NULL, *tmpJA;
 	double* tmpAS;
