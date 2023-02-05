@@ -55,7 +55,7 @@ CFLAGSDBG = -ggdb -O0 #-Og 	#TODO -O0 cause REDUCTION MISWRITE...FAULTY RESOULT 
 DBG=$(CFLAGSDBG) $(UNDEF) -UAVG_TIMES_ITERATION -DAVG_TIMES_ITERATION=1 $(MACROSDBG)  
 CONSTS = -DTMPDIR='"$(TMPDIR)"'  -DAVG_TIMES_ITERATION=40  -DDOUBLE_VECT_DIFF_EARLY_EXIT $(RUNTIME) #RUNTIME HAS TO BE AS LAST FOR CORRECT OVERRIDING
 
-objs := $(shell  grep -Eo '^.*\.o:\s' Makefile | grep -v -e '@' -e PHONY -e '##' | awk -F: '{print $1}' | tr '\n:' ' ' )
+objs := $(shell  grep -Eo '^.*\.o:\s' Makefile | grep -v -e '@' -e PHONY -e '\#\#' | awk -F: '{print $1}' | tr '\n:' ' ' )
 #objs := Sp3MM_getFlops.o Sp3MM_getFlops_DBG.o test_Sp3MM.o test_Sp3MM_Stats.o test_Sp3MM_Stats_UB_DYN_ASSIGN.o test_Sp3MM_Stats_IDXFLAG_ARRAY.o test_Sp3MM_Stats_IDXBITMAP_U64.o test_Sp3MM_Stats_IDXBITMAP_INT.o test_Sp3MM_Stats_SYMB_RB_NOCACHED.o test_Sp3MM_DBG_UB_NN_TID_RESERVED.o test_Sp3MM_DBG.o
 
 all: $(objs)
@@ -101,7 +101,7 @@ ompGetICV.o:	$(srcDir)/commons/ompGetICV.c $(srcInclDir)/ompGetICV.h
 	$(CC) -o $@ $(CFLAGS) $(filter-out %.h %Generic.c,$^) -ggdb -D OMP_GET_ICV_MAIN  $(LDFLAGS)
 
 testAll:
-	$(shell bash ../scripts/testAllMatrixGroups.sh | tee - > log/testAll$GRID_ROWSXGRID_COLS )
+	bash testAllMatrixGroups.sh | tee test.log
 
 clean:
 	rm -i *.elf
