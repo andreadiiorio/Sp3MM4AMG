@@ -30,7 +30,7 @@
 #include "macros.h"
 
 #ifndef OFF_F
-    #error generic implementation requires OFF_F defined
+	#error generic implementation requires OFF_F defined
 #endif
 
 ////inline exports

@@ -265,10 +265,10 @@ static inline int rbInsertStdNewKey(rbRoot *root,rbNode *node, idx_t key)
 	while (*new) {
 		parent = *new;
 		parentK = rb_entry(parent, rbNode, rb)->key;
-		if 			(key < parentK)			new = &parent->rb_left;
-		else if		(key > parentK)			new = &parent->rb_right;
-		else								return 0; //already in 
-		DEBUGCHECKS	assert( *new != parent );
+		if	(key < parentK)		new = &parent->rb_left;
+		else if	(key > parentK)		new = &parent->rb_right;
+		else				return 0; //already in 
+		DEBUGCHECKS			assert( *new != parent );
 	}
 	//insert the node in the correct position, assigning the key
 	/*DEBUGCHECKS{	//check for double insertion
@@ -299,7 +299,7 @@ static inline int rbInsertCachedNewKey(rbRoot *root,rbNode *node, idx_t key)
 			new = &parent->rb_right;
 			leftmost = false;
 		}
-		else						return 0;
+		else					return 0;
 	}
 
 	//insert the node in the correct position, assigning the key

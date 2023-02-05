@@ -84,12 +84,12 @@ SPMM CAT(spmmRowByRow2DBlocksAllocated_,OFF_F);
 ///implementation wrappers as static array of function pointers
 //sp3mm as pair of spmm
 static SPMM_INTERF  CAT(Spmm_UB_Funcs_,OFF_F)[] = {
-    & CAT(spmmRowByRow_,OFF_F),
-    & CAT(spmmRowByRow1DBlocks_,OFF_F),
-    & CAT(spmmRowByRow2DBlocks_,OFF_F),
-    & CAT(spmmRowByRow2DBlocksAllocated_,OFF_F)
+	& CAT(spmmRowByRow_,OFF_F),
+	& CAT(spmmRowByRow1DBlocks_,OFF_F),
+	& CAT(spmmRowByRow2DBlocks_,OFF_F),
+	& CAT(spmmRowByRow2DBlocksAllocated_,OFF_F)
 };
 //sp3mm as direct product
 static SP3MM_INTERF CAT(Sp3mm_UB_Funcs_,OFF_F)[] = {
-    & CAT(sp3mmRowByRowMerged_,OFF_F)
+	& CAT(sp3mmRowByRowMerged_,OFF_F)
 };

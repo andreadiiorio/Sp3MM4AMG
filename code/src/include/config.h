@@ -40,12 +40,12 @@ typedef enum{
 
 //
 typedef struct{
-    ushort gridRows;
-    ushort gridCols;
-    //TODO FULL CONFIG DOCCED HERE
-    ROW_MMSYM_IMPL_MODE symbMMRowImplID; //how to compute symb mul (if required)
-    uint threadNum;  //thread num to use in an OMP parallel region ...
-    void* chunkDistrbFunc;  //CHUNKS_DISTR_INTERF func pntr
+	ushort gridRows;
+	ushort gridCols;
+	//TODO FULL CONFIG DOCCED HERE
+	ROW_MMSYM_IMPL_MODE symbMMRowImplID; //how to compute symb mul (if required)
+	uint threadNum;  //thread num to use in an OMP parallel region ...
+	void* chunkDistrbFunc;  //CHUNKS_DISTR_INTERF func pntr
 } CONFIG;  
 ///Smart controls
 typedef unsigned long 		idx_t;	//spmat indexes

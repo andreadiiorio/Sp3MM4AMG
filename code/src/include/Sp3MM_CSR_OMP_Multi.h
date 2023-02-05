@@ -38,18 +38,18 @@
 ///aux structures
 //hold SPMM result over a unpartitionated space among threads-row[s' blocks]
 typedef struct{
-    //space to hold SPMM output
-    ulong*  JA;
-    double* AS;
-    ulong   size;			//num of entries allocated -> only dbg checks
-    ulong   lastAssigned;	//last JA&AS assigned index to an accumulator(atom)
-    SPACC*  accs;			//SPARSIFIED ACC POINTERS
+	//space to hold SPMM output
+	ulong*  JA;
+	double* AS;
+	ulong   size;			//num of entries allocated -> only dbg checks
+	ulong   lastAssigned;	//last JA&AS assigned index to an accumulator(atom)
+	SPACC*  accs;			//SPARSIFIED ACC POINTERS
 	uint	accsNum;	
 } SPMM_ACC; //accumulator for SPMM
 ///compute function interface and its pointer definitions
-typedef spmat* ( SPMM        )  (spmat*,spmat*,CONFIG*);
-typedef spmat* (*SPMM_INTERF )  (spmat*,spmat*,CONFIG*);
-typedef spmat* ( SP3MM       )  (spmat*,spmat*,spmat*,CONFIG*,SPMM_INTERF);
+typedef spmat* ( SPMM)		(spmat*,spmat*,CONFIG*);
+typedef spmat* (*SPMM_INTERF)	(spmat*,spmat*,CONFIG*);
+typedef spmat* ( SP3MM)		(spmat*,spmat*,spmat*,CONFIG*,SPMM_INTERF);
 typedef spmat* (*SP3MM_INTERF)  (spmat*,spmat*,spmat*,CONFIG*,SPMM_INTERF);
 
 typedef enum {

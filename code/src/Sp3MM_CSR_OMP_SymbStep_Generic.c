@@ -417,11 +417,11 @@ idx_t* CAT4(SpMM_Symb_,OUT_IDXS,COL_PARTS,OFF_F)
 #if _OUT_IDXS == TRUE && _COL_PARTS == FALSE
 idx_t CAT3(Sp3MM_Row_Symb_,OUT_IDXS,OFF_F) 
   (
-    ROW_MMSYM_IMPL_MODE symbMMRowImplID,idx_t* aRowJA,idx_t aRowLen,spmat* b,spmat* c, 
-    rbRoot* root,rbNode* nodes, SPVECT_IDX_DENSE_MAP* idxsMapAcc,idx_t* abRowJATmp
-    #if _OUT_IDXS  == TRUE && !defined  OUT_IDXS_RBTREE_NODES 
-    ,idx_t* outIdxs
-    #endif
+	ROW_MMSYM_IMPL_MODE symbMMRowImplID,idx_t* aRowJA,idx_t aRowLen,spmat* b,spmat* c, 
+	rbRoot* root,rbNode* nodes, SPVECT_IDX_DENSE_MAP* idxsMapAcc,idx_t* abRowJATmp
+	#if _OUT_IDXS  == TRUE && !defined  OUT_IDXS_RBTREE_NODES 
+	,idx_t* outIdxs
+	#endif
   )
 {
 	struct rb_node* n;
@@ -450,10 +450,10 @@ idx_t CAT3(Sp3MM_Row_Symb_,OUT_IDXS,OFF_F)
 
 idx_t* CAT3(Sp3MM_Symb_,OUT_IDXS,OFF_F) 
   (
-    ROW_MMSYM_IMPL_MODE symbMMRowImplID, spmat* a, spmat* b, spmat* c
-    #if _OUT_IDXS  == TRUE
-    ,idx_t*** outIdxs
-    #endif
+	ROW_MMSYM_IMPL_MODE symbMMRowImplID, spmat* a, spmat* b, spmat* c
+	#if _OUT_IDXS  == TRUE
+	,idx_t*** outIdxs
+	#endif
   )
 {
 	//idxs keeping aux buffs
@@ -477,8 +477,8 @@ idx_t* CAT3(Sp3MM_Symb_,OUT_IDXS,OFF_F)
 	if (!(abUpperBoundedRowsLens = CAT(spMMSizeUpperbound_,OFF_F)(a,b)))	
 		goto _err;
   	/*TODO TODO instead of doing one sym product first to have a correct UB
-     *	use an heuristics here to get output matrix size
-     */
+	 *	use an heuristics here to get output matrix size
+	 */
 	idx_t abcUBSize = abUpperBoundedRowsLens[a->M] * SP3MM_UB_HEURISTIC;
 	if (!(upperBoundedSymMat=malloc(sizeof(*upperBoundedSymMat)*abcUBSize))){
 		ERRPRINT("SpMM_Symb_ upperBoundedSymMat malloc errd\n");

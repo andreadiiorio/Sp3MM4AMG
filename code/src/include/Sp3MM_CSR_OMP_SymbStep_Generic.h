@@ -55,7 +55,7 @@
 #endif
 ///
 #if !defined OFF_F 
-    #error generic implementations requires OFF_F 
+	#error generic implementations requires OFF_F 
 #endif
 
 
@@ -79,14 +79,14 @@
 
 idx_t CAT4(SpMM_Row_Symb_Rbtree,OUT_IDXS,COL_PARTS,OFF_F) (idx_t* aRowJA,idx_t aRowLen,
   spmat* b,rbRoot* root,rbNode* nodes
-    #if _OUT_IDXS  == TRUE
-    #ifndef OUT_IDXS_RBTREE_NODES 
-    ,idx_t* outIdxs
-    #endif
-    #endif
-    #if _COL_PARTS == TRUE
-    ,ushort gridCols,idx_t* rowColPartsOffsets
-    #endif
+	#if _OUT_IDXS  == TRUE
+	#ifndef OUT_IDXS_RBTREE_NODES 
+	,idx_t* outIdxs
+	#endif
+	#endif
+	#if _COL_PARTS == TRUE
+	,ushort gridCols,idx_t* rowColPartsOffsets
+	#endif
   );
  */
 
@@ -103,9 +103,9 @@ idx_t CAT4(SpMM_Row_Symb_IdxMap,OUT_IDXS,COL_PARTS,OFF_F)
    idx_t* aRowJA, idx_t aRowLen, spmat* b, SPVECT_IDX_DENSE_MAP* idxsMapAcc
    #if _OUT_IDXS  == TRUE 
    ,idx_t* outIdxs
-    #if IDX_RMUL_SYMB_RBTREE == TRUE
-    ,rbRoot* root, rbNode* nodes
-    #endif
+	#if IDX_RMUL_SYMB_RBTREE == TRUE
+	,rbRoot* root, rbNode* nodes
+	#endif
    #endif	// _OUT_IDXS == TRUE
    #if _COL_PARTS == TRUE
    ,ushort gridCols,idx_t* rowColPartsLens
@@ -157,13 +157,13 @@ idx_t* CAT4(SpMM_Symb_,OUT_IDXS,COL_PARTS,OFF_F)
  */
 idx_t CAT3(Sp3MM_Row_Symb_,OUT_IDXS,OFF_F) 
   (
-    ROW_MMSYM_IMPL_MODE symbMMRowImplID, idx_t* aRowJA,idx_t aRowLen,
-    spmat* b,spmat* c, rbRoot* root,rbNode* nodes, idx_t* abRowJATmp
-    #if _OUT_IDXS  == TRUE
-    #ifndef OUT_IDXS_RBTREE_NODES 
-    ,idx_t* outIdxs
-    #endif
-    #endif
+	ROW_MMSYM_IMPL_MODE symbMMRowImplID, idx_t* aRowJA,idx_t aRowLen,
+	spmat* b,spmat* c, rbRoot* root,rbNode* nodes, idx_t* abRowJATmp
+	#if _OUT_IDXS  == TRUE
+	#ifndef OUT_IDXS_RBTREE_NODES 
+	,idx_t* outIdxs
+	#endif
+	#endif
   );
 
 /*
@@ -181,10 +181,10 @@ idx_t CAT3(Sp3MM_Row_Symb_,OUT_IDXS,OFF_F)
 //		see HEURISTICS_UB
 idx_t* CAT3(Sp3MM_Symb_,OUT_IDXS,OFF_F) 
   (
-    ROW_MMSYM_IMPL_MODE symbMMRowImplID, spmat* a, spmat* b, spmat* c
-    #if _OUT_IDXS  == TRUE
-    ,idx_t*** outIdxs
-    #endif
+	ROW_MMSYM_IMPL_MODE symbMMRowImplID, spmat* a, spmat* b, spmat* c
+	#if _OUT_IDXS  == TRUE
+	,idx_t*** outIdxs
+	#endif
   );
 
 #endif

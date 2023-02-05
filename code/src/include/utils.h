@@ -81,9 +81,9 @@ int getConfig(CONFIG* conf);
 
 //append only list implemented with a reallocated array
 typedef struct{
-    ulong* a;
-    ulong  size;
-    ulong  lastIdx;
+	ulong* a;
+	ulong  size;
+	ulong  lastIdx;
 } APPENDARRAY;
 //append @val to @list, reallocating if reached end
 //TODO inline int appendArr(ulong val,APPENDARRAY* list);

@@ -78,51 +78,51 @@ void checkOverallocPercent(ulong* forecastedSizes,spmat* AB);
 void checkOverallocRowPartsPercent(ulong* forecastedSizes,spmat* AB,
   idx_t gridCols,idx_t* bColOffsets);
 /*  
-    check if sparse matrixes A<->B differ up to 
-    DOUBLE_DIFF_THREASH per element
+	check if sparse matrixes A<->B differ up to 
+	DOUBLE_DIFF_THREASH per element
 */
 int spmatDiff(spmat* A, spmat* B);
 ////dyn alloc of spMM output matrix
 /*
 ///size prediction of AB = @A * @B
 inline ulong SpMMPreAlloc(spmat* A,spmat* B){
-    //TODO BETTER PREALLOC HEURISTICS HERE 
-    return MAX(A->NZ,B->NZ);
+	//TODO BETTER PREALLOC HEURISTICS HERE 
+	return MAX(A->NZ,B->NZ);
 }
 //init a sparse matrix AB=@A * @B with a initial allocated space by an euristic
 inline spmat* initSpMatrixSpMM(spmat* A, spmat* B){
-    spmat* out;
-    if (!(out = allocSpMatrix(A->M,B->N)))  return NULL;
-    out -> NZ = SpMMPreAlloc(A,B);
-    if (!(out->AS = malloc(out->NZ*sizeof(*(out->AS))))){
-        ERRPRINT("initSpMatrix: out->AS malloc errd\n");
-        free(out);
-        return NULL;
-    }
-    if (!(out->JA = malloc(out->NZ*sizeof(*(out->JA))))){
-        ERRPRINT("initSpMatrix: out->JA malloc errd\n");
-        freeSpmat(out);
-        return NULL;
-    }
-    return out;
+	spmat* out;
+	if (!(out = allocSpMatrix(A->M,B->N)))  return NULL;
+	out -> NZ = SpMMPreAlloc(A,B);
+	if (!(out->AS = malloc(out->NZ*sizeof(*(out->AS))))){
+		ERRPRINT("initSpMatrix: out->AS malloc errd\n");
+		free(out);
+		return NULL;
+	}
+	if (!(out->JA = malloc(out->NZ*sizeof(*(out->JA))))){
+		ERRPRINT("initSpMatrix: out->JA malloc errd\n");
+		freeSpmat(out);
+		return NULL;
+	}
+	return out;
 }
 
 #define REALLOC_FACTOR  1.5
 //realloc sparse matrix NZ arrays
 inline int reallocSpMatrix(spmat* mat,ulong newSize){
-    mat->NZ *= newSize;
-    void* tmp;
-    if (!(tmp = realloc(mat->AS,mat->NZ * sizeof(*(mat->AS))))){
-        ERRPRINT("reallocSpMatrix:  realloc AS errd\n");
-        return EXIT_FAILURE;
-    }
-    mat->AS = tmp;
-    if (!(tmp = realloc(mat->JA,mat->NZ * sizeof(*(mat->JA))))){
-        ERRPRINT("reallocSpMatrix:  realloc JA errd\n");
-        return EXIT_FAILURE;
-    }
-    mat->JA = tmp;
-    return EXIT_SUCCESS;
+	mat->NZ *= newSize;
+	void* tmp;
+	if (!(tmp = realloc(mat->AS,mat->NZ * sizeof(*(mat->AS))))){
+		ERRPRINT("reallocSpMatrix:  realloc AS errd\n");
+		return EXIT_FAILURE;
+	}
+	mat->AS = tmp;
+	if (!(tmp = realloc(mat->JA,mat->NZ * sizeof(*(mat->JA))))){
+		ERRPRINT("reallocSpMatrix:  realloc JA errd\n");
+		return EXIT_FAILURE;
+	}
+	mat->JA = tmp;
+	return EXIT_SUCCESS;
 }
 */
 ////MISC

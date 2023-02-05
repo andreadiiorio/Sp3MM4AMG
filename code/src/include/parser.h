@@ -35,16 +35,16 @@
 #include "sparseMatrix.h" 
 
 typedef struct{
-    ulong row;
-    ulong col;
-    double val;
-} entry;     //MatrixMarket COO entry
+	ulong row;
+	ulong col;
+	double val;
+} entry;	 //MatrixMarket COO entry
 
 typedef struct{
-    MM_typecode mcode;
-    entry* entries;
-    ulong* rowLens;
-    ulong M,N,NZ;   //spmat sizes
+	MM_typecode mcode;
+	entry* entries;
+	ulong* rowLens;
+	ulong M,N,NZ;   //spmat sizes
 } MatrixMarket;
 
 ////COO PARSE
@@ -57,7 +57,7 @@ int MMCheck(MM_typecode typecode);
  * parse MatrixMarket matrix entries in @fp, of type @mcode
  * into COOrdinate list of entries
  *  -> expand simmetric matrixes into a normal matrix with both parts
- *      so NZ will be inplace doubled
+ *	  so NZ will be inplace doubled
  * return allocated and filled COO entries with the NNZ number into
  * NO SORT CHECKING HERE
  */

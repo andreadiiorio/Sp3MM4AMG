@@ -84,12 +84,12 @@ SPMM CAT(spmmRowByRow2DBlocksAllocated_SymbNum_,OFF_F);
 ///implementation wrappers as static array of function pointers 
 //sp3mm as pair of spmm
 static SPMM_INTERF  CAT(Spmm_SymbNum_Funcs_,OFF_F)[] = {
-    & CAT(spmmRowByRow_SymbNum_,OFF_F),
-    & CAT(spmmRowByRow1DBlocks_SymbNum_,OFF_F),
-    //& CAT(spmmRowByRow2DBlocks_SymbNum_,OFF_F),
-    //& CAT(spmmRowByRow2DBlocksAllocated_SymbNum_,OFF_F)
+	& CAT(spmmRowByRow_SymbNum_,OFF_F),
+	& CAT(spmmRowByRow1DBlocks_SymbNum_,OFF_F),
+	//& CAT(spmmRowByRow2DBlocks_SymbNum_,OFF_F),
+	//& CAT(spmmRowByRow2DBlocksAllocated_SymbNum_,OFF_F)
 };
 //sp3mm as pair of spmm
 static SP3MM_INTERF CAT(Sp3mm_SymbNum_Funcs_,OFF_F)[] = {
-    //& CAT(sp3mmRowByRowMerged_SymbNum_,OFF_F)
+	//& CAT(sp3mmRowByRowMerged_SymbNum_,OFF_F)
 };
