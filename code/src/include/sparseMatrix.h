@@ -159,15 +159,17 @@ inline void freeSpmatInternal(spmat* mat){
     if(mat->RL)    free(mat->RL);
 #endif 
 }
+
 inline void freeSpmat(spmat* mat){
-    freeSpmatInternal(mat);
-    free(mat);
+	if (!mat)	return;
+	freeSpmatInternal(mat);
+	free(mat);
 }
 
 //free max aux structs not NULL pointed
 inline void freeSpAcc(SPACC* r){ 
-    if(r->AS)   free(r->AS);
-    if(r->JA)   free(r->JA);
+	if(r->AS)   free(r->AS);
+	if(r->JA)   free(r->JA);
 }
 ////alloc&init functions
 //alloc&init internal structures only dependent of dimensions @rows,@cols
