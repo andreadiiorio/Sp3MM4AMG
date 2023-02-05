@@ -28,7 +28,7 @@
  *  POSSIBILITY OF SUCH DAMAGE.
  */ 
 
-#pragma message( "compiling SpMM_CSR_OMP_Generic.c with OFF_F as:" STR(OFF_F) )
+/*#pragma message( "compiling SpMM_CSR_OMP_Generic.c with OFF_F as:" STR(OFF_F) )*/
 #ifndef OFF_F
     #error generic implementation requires OFF_F defined
 #endif

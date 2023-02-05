@@ -408,7 +408,7 @@ int doubleVectorsDiff(double* a, double* b, ulong n,double* diffMax){
 				  "|%13lg| = %lf %% of @a[%lu]\n",
 			  	  DOUBLE_DIFF_THREASH,diff,100*diffAbs/ABS(a[i]),i);
 			#ifdef DOUBLE_VECT_DIFF_EARLY_EXIT
-			#pragma message("DOUBLE_VECT_DIFF_EARLY_EXIT: only first diff double reported")
+			/*#pragma message("DOUBLE_VECT_DIFF_EARLY_EXIT: only first diff double reported")*/
 			return EXIT_FAILURE;
 			#endif
 		}

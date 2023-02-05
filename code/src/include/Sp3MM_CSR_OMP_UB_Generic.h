@@ -29,7 +29,7 @@
  */ 
 
 #ifndef OFF_F
-    //#pragma message("generic implementation requires OFF_F defined")
+    /*#pragma message("generic implementation requires OFF_F defined")*/
     #error generic implementation requires OFF_F defined
 #endif
 

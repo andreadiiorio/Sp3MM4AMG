@@ -206,7 +206,7 @@ int COOtoCSR(entry* entries, spmat* mat,ulong* rowLens){
 	for (ulong i=0; i<mat->NZ; i++) {
 		e = entries+i;
 		CONSISTENCY_CHECKS{ //TODO CHECK IF COO ENTRIES ARE SORTED
-			#pragma message("COO sorting check enabled")
+			/*#pragma message("COO sorting check enabled")*/
 			if (_rowsLastCol[e->row] >= (long) e->col){
 				ERRPRINTS("not sorted entry:%ld,%ld,%lf",e->row,e->col,e->val);
 				goto _end;
@@ -276,7 +276,7 @@ int COOtoELL(entry* entries, spmat* mat, ulong* rowLens){
 	for (ulong i=0; i<mat->NZ; i++){
 		e = entries + i;
 		CONSISTENCY_CHECKS{ //TODO CHECK IF COO ENTRIES ARE COLS SORTED for righe successive
-			#pragma message("COO sorting check enabled")
+			/*#pragma message("COO sorting check enabled")*/
 			if (_rowsLastCol[e->row] >= (long) e->col){
 				ERRPRINTS("not sorted entry:%ld,%ld,%lf",
 					  e->row,e->col,e->val);

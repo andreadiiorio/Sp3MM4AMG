@@ -36,8 +36,8 @@
  */
 
 
-#pragma message( "compiling Sp3MM_CSR_OMP_Symb_Generic.c with config as:" \
-	STR(OFF_F) " - " STR(OUT_IDXS) " - " STR(COL_PARTS) )
+/*#pragma message( "compiling Sp3MM_CSR_OMP_Symb_Generic.c with config as:" \
+	STR(OFF_F) " - " STR(OUT_IDXS) " - " STR(COL_PARTS) )*/
 #ifndef OFF_F
     #error generic implementation requires OFF_F defined
 #endif

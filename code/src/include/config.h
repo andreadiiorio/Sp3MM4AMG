@@ -97,7 +97,7 @@ typedef unsigned __int128	uint128;
 ///AUDIT extra configuration
 //#define ROWLENS
 #ifdef ROWLENS
-#pragma message("ROW_LENS ARRAY ENABLED")
+/*#pragma message("ROW_LENS ARRAY ENABLED")*/
 #endif
 
 /*
