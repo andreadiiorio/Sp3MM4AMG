@@ -192,7 +192,7 @@ double* readDoubleVector(char* fpath,ulong* size){
 	}
 	if (!(out = malloc(vectorSize * sizeof(*out)))){ 
 		ERRPRINT("vector read malloc fail for file\n");
-		return NULL;
+		goto _err;
 	}
 	while (1){
 		if (i >= vectorSize ){ //realloc the array
@@ -250,7 +250,7 @@ double* readDoubleVectorStr(char* fpath,ulong* size){
 	}
 	if (!(out = malloc(vectorSize * sizeof(*out)))){ 
 		ERRPRINT("vector read malloc fail for file\n");
-		return NULL;
+		goto _err;
 	}
 	while (1){
 		if (i >= vectorSize ){ //realloc the array

@@ -55,8 +55,8 @@ int MMCheck(MM_typecode mcode) {
 entry* MMtoCOO(ulong* NZ, FILE *fp, MM_typecode mcode,ulong* rowLens){
 	int scanndRet=0;
 	ulong nzTrgt=*NZ,nzIdx=0;	//expanded num of nz (in case of sym matrix)
-	ulong diagEntries=0,row,col;//current entry's row,col from MM -> 1 based
-	double val;
+	ulong diagEntries=0, row = 0, col = 0;//current entry's row,col from MM -> 1 based
+	double val = 0;
 	entry* entries = NULL;		//COO parsed entries
 	///init
 	if (mm_is_symmetric(mcode)){
@@ -72,7 +72,7 @@ entry* MMtoCOO(ulong* NZ, FILE *fp, MM_typecode mcode,ulong* rowLens){
 		if (mm_is_pattern(mcode)){
 			scanndRet = fscanf(fp, "%lu %lu\n", &row, &col);
 			val = 1.0;
-		} else if   (mm_is_real(mcode) || (mm_is_integer(mcode))){
+		} else if (mm_is_real(mcode) || (mm_is_integer(mcode))){
 			scanndRet = fscanf(fp, "%lu %lu %lf\n", &row, &col, &val);
 		}
 		
@@ -118,8 +118,9 @@ entry* MMtoCOO(ulong* NZ, FILE *fp, MM_typecode mcode,ulong* rowLens){
 } 
 
 void freeMatrixMarket(MatrixMarket* mm){
-	if(mm->entries) free(mm->entries);
-	if(mm->rowLens) free(mm->rowLens);
+	if (!mm)	return;
+	free(mm->entries);
+	free(mm->rowLens);
 	free(mm);
 }
 MatrixMarket* MMRead(char* matPath){
@@ -131,7 +132,7 @@ MatrixMarket* MMRead(char* matPath){
 	MatrixMarket* out = calloc(1,sizeof(*out));
 	if (!out){
 		ERRPRINT("MMRead out malloc errd\n");
-		return NULL;
+		goto err;
 	}
 	//banner -> parse  matrix specs
 	if (mm_read_banner(fp, &out->mcode) != 0) {

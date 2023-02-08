@@ -331,22 +331,24 @@ spmat* CAT(spmmRowByRow2DBlocksAllocated_,OFF_F)(spmat* A,spmat* B, CONFIG* cfg)
 	SPMM_ACC* outAccumul=NULL;
 	ACC_DENSE *accVectors=NULL,*accV;
 	SPACC* accRowPart;
-	if (!(AB = allocSpMatrix(A->M,B->N)))		   goto _err;
-
+	ulong startRow,startCol,rowBlock,colBlock; //data division aux variables
 	//2D indexing aux vars
 	idx_t gridSize=cfg->gridRows*cfg->gridCols, aSubRowsN=A->M*cfg->gridCols;
 	idx_t* bColOffsets = NULL;
+	
+	if (!(AB = allocSpMatrix(A->M,B->N)))		   goto _err;
 	ulong _rowBlock = AB->M/cfg->gridRows, _rowBlockRem = AB->M%cfg->gridRows;
 	ulong _colBlock = AB->N/cfg->gridCols, _colBlockRem = AB->N%cfg->gridCols;
-	ulong startRow,startCol,rowBlock,colBlock; //data division aux variables
+	
 	////B cols  partition in CSRs
 	//if (!(colPartsB = CAT(colsPartitioningUnifRanges_,OFF_F)(B,cfg->gridCols)))  goto _err;
 	if (!(colPartsB = CAT(colsPartitioningUnifRangesOffsetsAux_,OFF_F)
-				(B,cfg->gridCols,&bColOffsets)))  goto _err;
+					(B, cfg->gridCols, &bColOffsets)))  
+		goto _err;
 	#if SPARSIFY_PRE_PARTITIONING == T
 	uint rowsPartsSizesN = aSubRowsN;
 	if (!(rowsPartsSizes = CAT(spMMSizeUpperboundColParts_,OFF_F)
-	  (A,B,cfg->gridCols,bColOffsets)))   
+				 (A, B, cfg->gridCols, bColOffsets)))   
 	#else
 	uint rowsPartsSizesN = AB->M;
 	if (!(rowsPartsSizes = CAT(spMMSizeUpperbound_,OFF_F)(A,B)))

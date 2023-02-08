@@ -65,12 +65,13 @@ static inline idx_t _setCSR_IRP_2DPartitioing(spmat* m,idx_t* rowSizes,ushort gr
  */
 static inline int allocCSRSpMatSymbStep(spmat* m,idx_t* rowSizes,ushort gridCols){
 	//setup IRP and get cumul, whole size of @m
-	DEBUGCHECKS		assert(gridCols >= 1);
+	if (!gridCols)	   return EXIT_FAILURE;
 	idx_t cumulSize;
-	if (gridCols == 1)	cumulSize = _setCSR_IRP_1DPartitioing(m,rowSizes);
-	if (gridCols > 1)	cumulSize = _setCSR_IRP_2DPartitioing(m,rowSizes,gridCols);
-	m->IRP[m->M] 	= cumulSize;
-	m->NZ			= cumulSize;
+	if (gridCols == 1) cumulSize = _setCSR_IRP_1DPartitioing(m,rowSizes);
+	/*if (gridCols > 1} -- static analizer miss unsignedness...*/
+	else		   cumulSize = _setCSR_IRP_2DPartitioing(m,rowSizes,gridCols);
+	m->IRP[m->M] 	=  cumulSize;
+	m->NZ		=  cumulSize;
 
 	if (!(m->AS = malloc(rowSizes[m->M] * sizeof(*m->AS))) ){
 		ERRPRINT("allocCSRSpMatSymbStep m->AS malloc errd\n");

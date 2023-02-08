@@ -88,7 +88,7 @@ inline int spVect_idx_in(idx_t idx, SPVECT_IDX_DENSE_MAP* idxsMapAcc){
 	uint limbIdxID	= idx % LIMB_SIZE_BIT; //idx's pos in limb
 	DEBUGCHECKS		assert( limbID < idxsMapAcc->idxsMapN );
 	limb_t idxPos   = ((limb_t) 1) << limbIdxID;
-	if (!( idxsMapAcc->idxsMap[limbID] & idxPos) ){
+	if (!(idxsMapAcc->idxsMap[limbID] & idxPos) ){
 		idxsMapAcc->idxsMap[limbID] |= idxPos;
 		idxsMapAcc->len++;
 		return 0;
@@ -152,11 +152,12 @@ inline int IS_NNZ_linear(spmat* smat,idx_t i,idx_t j){	//linear -> O(ROWLENGHT)
 ////aux functions
 //free sparse matrix
 inline void freeSpmatInternal(spmat* mat){
-	if(mat->AS)	free(mat->AS);  
-	if(mat->JA)	free(mat->JA);  
-	if(mat->IRP)	free(mat->IRP);  
+	if(!mat)	return;
+	free(mat->AS);  
+	free(mat->JA);  
+	free(mat->IRP);  
 #ifdef ROWLENS
-	if(mat->RL)	free(mat->RL);
+	free(mat->RL);
 #endif 
 }
 
@@ -168,8 +169,8 @@ inline void freeSpmat(spmat* mat){
 
 //free max aux structs not NULL pointed
 inline void freeSpAcc(SPACC* r){ 
-	if(r->AS)   free(r->AS);
-	if(r->JA)   free(r->JA);
+	free(r->AS);
+	free(r->JA);
 }
 ////alloc&init functions
 //alloc&init internal structures only dependent of dimensions @rows,@cols

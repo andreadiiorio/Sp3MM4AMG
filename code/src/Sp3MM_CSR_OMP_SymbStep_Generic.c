@@ -291,9 +291,13 @@ idx_t* CAT4(SpMM_Symb_,OUT_IDXS,COL_PARTS,OFF_F)
 {
 
 	///initial allocations
-	rbRoot* rbRoots = NULL;	rbNode* rbNodes	= NULL; SPVECT_IDX_DENSE_MAP* idxsMapAccs = NULL;
-	idx_t *rowLens=NULL,*upperBoundedRowsLens=NULL,*upperBoundedSymMat=NULL,maxRowLen=0;
-	int rbTreeUsed = (symbRowImplID == RBTREE || (IDX_RMUL_SYMB_RBTREE && (_COL_PARTS || _OUT_IDXS)) );
+	rbRoot* rbRoots = NULL;	
+	rbNode* rbNodes	= NULL; 
+	SPVECT_IDX_DENSE_MAP* idxsMapAccs = NULL;
+	idx_t  *rowLens=NULL,*upperBoundedRowsLens=NULL,*upperBoundedSymMat=NULL;
+	idx_t  maxRowLen=0;
+	int rbTreeUsed = (symbRowImplID == RBTREE || 
+			  (IDX_RMUL_SYMB_RBTREE && (_COL_PARTS || _OUT_IDXS)) );
 	
 	if ( !(rowLens = malloc(sizeof(*rowLens) * (a->M+1))) ){ 
 		ERRPRINT("SpMM_Symb_ rowLens malloc errd\n");
@@ -329,14 +333,15 @@ idx_t* CAT4(SpMM_Symb_,OUT_IDXS,COL_PARTS,OFF_F)
 	if ( rbTreeUsed ){
 		maxRowLen = reductionMaxSeq(upperBoundedRowsLens, a->M);
 		//rbTrees for index keeping
-		rbRoots 		= malloc(maxThreads * sizeof(*rbRoots));
-		rbNodes			= calloc(maxThreads * maxRowLen, sizeof(*rbNodes));
+		rbRoots = malloc(maxThreads * sizeof(*rbRoots));
+		rbNodes	= calloc(maxThreads * maxRowLen, sizeof(*rbNodes));
 		if( !rbRoots || !rbNodes ){
 			ERRPRINT("SpMM_Symb_ threads' aux rbTree mallocs errd\n");
 			goto _err;
 		}
 		//init roots
-		for (uint i=0; i<maxThreads; i++)	rbRoots[i] = RB_ROOT_CACHED;
+		for (uint i=0; i<maxThreads; i++)
+			rbRoots[i] = RB_ROOT_CACHED;
 	} 
 	if (symbRowImplID == IDXMAP){  //idxMap implementation && not outIdxs via rbtree
 		idxsMapAccs 	= calloc(maxThreads, sizeof(*idxsMapAccs));
@@ -354,7 +359,7 @@ idx_t* CAT4(SpMM_Symb_,OUT_IDXS,COL_PARTS,OFF_F)
 	idx_t  aRowLen,rLen,abCumulLen=0;
 	int tid;
 	rbRoot* tRoot;	rbNode* tNodes; 
-	SPVECT_IDX_DENSE_MAP* tIdxsMapAcc;
+	SPVECT_IDX_DENSE_MAP* tIdxsMapAcc = NULL;
 	#pragma omp parallel for schedule(static) \
 	  private(aRow,aRowLen,rLen, tRoot,tNodes,tid) reduction(+:abCumulLen)
 	for(idx_t r=0; r<a->M; r++){
@@ -530,8 +535,12 @@ idx_t* CAT3(Sp3MM_Symb_,OUT_IDXS,OFF_F)
 	idx_t* aRow;
 	idx_t  aRowLen,rLen,outCumulLen=0;
 	//threads local pointers
-	int tid;	rbRoot* tRoot;	rbNode* tNodes;SPVECT_IDX_DENSE_MAP* tIdxsMapAcc;
+	int tid;
+	rbRoot* tRoot;
+	rbNode* tNodes;
+	SPVECT_IDX_DENSE_MAP* tIdxsMapAcc;
 	idx_t* tABRowJATmp;
+
 	#pragma omp parallel for schedule(static) \
 	private(aRow,aRowLen,rLen, tRoot,tNodes,tid) reduction(+:outCumulLen)
 	for(idx_t r=0; r<a->M; r++){

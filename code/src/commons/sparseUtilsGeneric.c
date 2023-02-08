@@ -47,9 +47,9 @@
  * so free them once from the first thread struct, with the original pointers returned from the alloc
  */
 ACC_DENSE* _initAccVectors_monoalloc(ulong num,ulong size){ //TODO PERF WITH NEXT
-	ACC_DENSE* out	= NULL;
-	double* vAll			= NULL;
-	ulong* vAllNzIdx		 = NULL;
+	ACC_DENSE* out	 = NULL;
+	double* vAll	 = NULL;
+	ulong* vAllNzIdx = NULL;
 	if (!(out = calloc(num,sizeof(*out)))){
 		ERRPRINT("_initAccVectors aux struct alloc failed\n");
 		return NULL;
@@ -63,17 +63,17 @@ ACC_DENSE* _initAccVectors_monoalloc(ulong num,ulong size){ //TODO PERF WITH NEX
 		goto err;
 	}
 	for (ulong i=0; i<num; i++){
-		out[i].vLen		= size; //TODO USELESS INFO?
-		out[i].v		   = vAll	  + i*size;  
-		out[i].nnzIdx	  = vAllNzIdx + i*size;;
+		out[i].vLen	= size; //TODO USELESS INFO?
+		out[i].v	= vAll	  + i*size;  
+		out[i].nnzIdx	= vAllNzIdx + i*size;;
 		out[i].nnzIdxMap.len  = 0;
 	}
 	return out;
 	
 	err:
 	free(out);
-	if (vAll)		free(vAll);
-	if (vAllNzIdx)   free(vAllNzIdx);
+	free(vAll);
+	free(vAllNzIdx);
 	return NULL;
 }
 int allocAccDense(ACC_DENSE* v,ulong size){
@@ -149,12 +149,14 @@ void checkOverallocRowPartsPercent(ulong* forecastedSizes,spmat* AB,
 	assert(abColOffsets);	//partitioning error
 	for (idx_t i=0,rLen,forecast,partId=0; i<AB->M*gridCols; i++,partId++){
 		forecast = forecastedSizes[i];
-		rLen = abColOffsets[ partId+1 ] -abColOffsets[ partId ];
+		rLen = abColOffsets[ partId+1 ] - abColOffsets[ partId ];
 		DEBUGCHECKS	assert(forecast >= rLen);
 	}
 	idx_t extraMatrix = forecastedSizes[AB->M] - AB->NZ;
 	printf("extra forecastedSize of the matrix: \t%lu\t = %lf %% \n",
-	  extraMatrix, 100*extraMatrix /(double) forecastedSizes[AB->M]);
+		extraMatrix, 100*extraMatrix /(double) forecastedSizes[AB->M]);
+
+	free(abColOffsets);
 	
 }
 
@@ -359,14 +361,15 @@ spmat* CAT(colsPartitioningUnifRangesOffsetsAux_,OFF_F)(spmat* A,uint gridCols,
 
 	free(colPartsLens);
 	if (colPartsOffsets)	*colPartsOffsets = colOffsets;	//save for the caller
-	else					free(colPartsOffsets);
+	else			free(colOffsets);
 
 	return colParts;
 	_err:
-	if(*colPartsOffsets)			free(*colPartsOffsets);
+	free(*colPartsOffsets);
 	for (ulong i=0; i<gridCols; i++)   	freeSpmatInternal(colParts+i);
-	if(colParts)				free(colParts);
-	if(colPartsLens)			free(colPartsLens);
+	free(colOffsets);
+	free(colParts);
+	free(colPartsLens);
 	return NULL;
 }
 spmat* CAT(colsPartitioningUnifRanges_,OFF_F)(spmat* A,uint gridCols){

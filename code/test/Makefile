@@ -41,7 +41,7 @@ CWALL+=-Wno-unused-function -Wno-unused-variable       #TODO CLEAN USELESS FUNCT
 CWALL+=-Wno-unused-label -Wfatal-errors
 
 CINCL   = -I$(srcDir)/include/ 
-CFLAGS  = -O2 $(CWALL) $(CINCL) -fopenmp
+CFLAGS  = -O2 $(CWALL) $(CINCL) -fopenmp $(RUNTIME)
 LDFLAGS = -lm
 
 #SYSTEM CONFIGURATION
@@ -51,9 +51,11 @@ MACROS = -DDEBUGPRINT="if(FALSE)" -DDEBUG="if(FALSE)" -DCONSISTENCY_CHECKS="if(F
 MACROSDBG = -DCONSISTENCY_CHECKS="if(TRUE)"  -DDEBUGCHECKS="if(TRUE)" -DVERBOSE="if(TRUE)" -DDEBUG="if(TRUE)"
 UNDEF := $(shell echo $(MACROSDBG) | tr " " "\n" | grep -oe '-D.*=' | tr -d "=" |  sed s/-D/-U/ )
 CFLAGSDBG = -ggdb -O0 #-Og 	#TODO -O0 cause REDUCTION MISWRITE...FAULTY RESOULT (OR SERIAL ERROR)
+#CFLAGSDBG += -fanalyzer
+
 #GATHER ALL DEBUG STUFF IN A VAR
 DBG=$(CFLAGSDBG) $(UNDEF) -UAVG_TIMES_ITERATION -DAVG_TIMES_ITERATION=1 $(MACROSDBG)  
-CONSTS = -DTMPDIR='"$(TMPDIR)"'  -DAVG_TIMES_ITERATION=40  -DDOUBLE_VECT_DIFF_EARLY_EXIT $(RUNTIME) #RUNTIME HAS TO BE AS LAST FOR CORRECT OVERRIDING
+CONSTS = -DTMPDIR='"$(TMPDIR)"'  -DAVG_TIMES_ITERATION=40  -DDOUBLE_VECT_DIFF_EARLY_EXIT  #RUNTIME HAS TO BE AS LAST FOR CORRECT OVERRIDING
 
 objs := $(shell  grep -Eo '^.*\.o:\s' Makefile | grep -v -e '@' -e PHONY -e '\#\#' | awk -F: '{print $1}' | tr '\n:' ' ' )
 #objs := Sp3MM_getFlops.o Sp3MM_getFlops_DBG.o test_Sp3MM.o test_Sp3MM_Stats.o test_Sp3MM_Stats_UB_DYN_ASSIGN.o test_Sp3MM_Stats_IDXFLAG_ARRAY.o test_Sp3MM_Stats_IDXBITMAP_U64.o test_Sp3MM_Stats_IDXBITMAP_INT.o test_Sp3MM_Stats_SYMB_RB_NOCACHED.o test_Sp3MM_DBG_UB_NN_TID_RESERVED.o test_Sp3MM_DBG.o

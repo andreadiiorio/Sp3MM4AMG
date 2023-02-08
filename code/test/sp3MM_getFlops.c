@@ -116,10 +116,12 @@ spmat *spmmRowByRowGustavsonFlops(spmat * A, spmat * B, ulong * flopsN)
 		ERRPRINT("spmmRowByRowGustavsonFlops realloc JA errd\n");
 		goto _free;
 	}
+	AB->JA = tmpJA;
 	if (!(tmpAS = realloc(AB->AS, AB->NZ * sizeof(*AB->AS)))) {
 		ERRPRINT("spmmRowByRowGustavsonFlops realloc AS errd\n");
 		goto _free;
 	}
+	AB->AS = tmpAS;
 
 _free:
 	if (acc)
@@ -224,6 +226,11 @@ int main(int argc, char **argv)
 		end = omp_get_wtime();
 		assert(!oracleOut || !spmatDiff(RACP, oracleOut));
 		times[i] = end - start;
+
+		freeSpmat(RAC);
+		RAC = NULL;
+		freeSpmat(RACP);
+		RACP = NULL;
 	}
 	statsAvgVar(times, AVG_TIMES_ITERATION, deltaTStats);
 	printf("Sp3MM as 2 SpMM\tflop:%lu\telapsedAvg:%lf\telapsedVar:%lf\tMegaflopsAvg:%lf\n",
