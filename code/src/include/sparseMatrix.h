@@ -167,6 +167,12 @@ inline void freeSpmat(spmat* mat){
 	free(mat);
 }
 
+static inline void zeroSpmat(spmat* m) {
+	memset(m->AS, 0, sizeof(*(m->AS)) * m->NZ);
+	memset(m->JA, 0, sizeof(*(m->JA)) * m->NZ);
+	memset(m->IRP, 0, sizeof(*(m->IRP)) * (m->M + 1));
+}
+
 //free max aux structs not NULL pointed
 inline void freeSpAcc(SPACC* r){ 
 	free(r->AS);

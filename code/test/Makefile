@@ -50,7 +50,7 @@ TMPDIR=/run/user/$(shell id -u)/
 MACROS = -DDEBUGPRINT="if(FALSE)" -DDEBUG="if(FALSE)" -DCONSISTENCY_CHECKS="if(FALSE)" -DVERBOSE="if(FALSE)"  -DDEBUGCHECKS="if(FALSE)" 
 MACROSDBG = -DCONSISTENCY_CHECKS="if(TRUE)"  -DDEBUGCHECKS="if(TRUE)" -DVERBOSE="if(TRUE)" -DDEBUG="if(TRUE)"
 UNDEF := $(shell echo $(MACROSDBG) | tr " " "\n" | grep -oe '-D.*=' | tr -d "=" |  sed s/-D/-U/ )
-CFLAGSDBG = -ggdb -O0 #-Og 	#TODO -O0 cause REDUCTION MISWRITE...FAULTY RESOULT (OR SERIAL ERROR)
+CFLAGSDBG = -ggdb #-O0 	#TODO -O0 cause REDUCTION MISWRITE...FAULTY RESOULT (OR SERIAL ERROR)
 #CFLAGSDBG += -fanalyzer
 
 #GATHER ALL DEBUG STUFF IN A VAR
@@ -58,7 +58,7 @@ DBG=$(CFLAGSDBG) $(UNDEF) -UAVG_TIMES_ITERATION -DAVG_TIMES_ITERATION=1 $(MACROS
 CONSTS = -DTMPDIR='"$(TMPDIR)"'  -DAVG_TIMES_ITERATION=40  -DDOUBLE_VECT_DIFF_EARLY_EXIT  #RUNTIME HAS TO BE AS LAST FOR CORRECT OVERRIDING
 
 objs := $(shell  grep -Eo '^.*\.o:\s' Makefile | grep -v -e '@' -e PHONY -e '\#\#' | awk -F: '{print $1}' | tr '\n:' ' ' )
-#objs := Sp3MM_getFlops.o Sp3MM_getFlops_DBG.o test_Sp3MM.o test_Sp3MM_Stats.o test_Sp3MM_Stats_UB_DYN_ASSIGN.o test_Sp3MM_Stats_IDXFLAG_ARRAY.o test_Sp3MM_Stats_IDXBITMAP_U64.o test_Sp3MM_Stats_IDXBITMAP_INT.o test_Sp3MM_Stats_SYMB_RB_NOCACHED.o test_Sp3MM_DBG_UB_NN_TID_RESERVED.o test_Sp3MM_DBG.o
+#objs := Sp3MM_getFlops.o Sp3MM_getFlops_DBG.o test_Sp3MM.o test_Sp3MM_Stats.o test_Sp3MM_Stats_UB_DYN_ASSIGN.o test_Sp3MM_Stats_IDXBITMAP_U64.o test_Sp3MM_Stats_IDXBITMAP_INT.o test_Sp3MM_Stats_SYMB_RB_NOCACHED.o test_Sp3MM_DBG.o
 
 all: $(objs)
 
@@ -78,8 +78,6 @@ test_Sp3MM_Stats.o: $(testSrcs)						#dflts
 	$(CC) -o $@ $(baseCompil)
 test_Sp3MM_Stats_UB_DYN_ASSIGN.o: $(testSrcs)		#UB dynAssign
 	$(CC) -o $@ $(baseCompil) -DSPARSIFY_PRE_PARTITIONING=F -DUB_IMPL_ONLY
-test_Sp3MM_Stats_IDXFLAG_ARRAY.o: $(testSrcs)		#Char array instead of bitmaps limbs
-	$(CC) -o $@ $(baseCompil) -DSPVECT_IDX_BITWISE=F
 test_Sp3MM_Stats_IDXBITMAP_U64.o: $(testSrcs)		#ulong64 vars as bitmaps limbs
 	$(CC) -o $@ $(baseCompil) -DLIMB_T=ulong
 test_Sp3MM_Stats_IDXBITMAP_INT.o: $(testSrcs)		#uint vars as bitmaps limbs
@@ -87,11 +85,7 @@ test_Sp3MM_Stats_IDXBITMAP_INT.o: $(testSrcs)		#uint vars as bitmaps limbs
 test_Sp3MM_Stats_SYMB_RB_NOCACHED.o: $(testSrcs)	#no cached insert in RBtrees
 	$(CC) -o $@ $(baseCompil) -DRB_CACHED_INSERT=F
 
-
 ##DEBUG BUILDS
-test_Sp3MM_DBG_UB_NN_TID_RESERVED.o: $(testSrcs)
-	$(CC) -o $@ $(CFLAGS)   $(filter-out %.h %Generic.c,$^) \
-	$(CONSTS) $(MACROS) $(DBG) -DSPARSIFY_PRE_PARTITIONING=F $(LDFLAGS)
 
 test_Sp3MM_DBG.o: $(testSrcs)
 	$(CC) -o $@ $(CFLAGS) $(filter-out %.h %Generic.c,$^) $(CONSTS) $(MACROS) $(DBG) $(LDFLAGS)
@@ -102,8 +96,11 @@ test_Sp3MM_FORTRAN_INTEGRATE_DBG.o: $(testSrcs)
 ompGetICV.o:	$(srcDir)/commons/ompGetICV.c $(srcInclDir)/ompGetICV.h
 	$(CC) -o $@ $(CFLAGS) $(filter-out %.h %Generic.c,$^) -ggdb -D OMP_GET_ICV_MAIN  $(LDFLAGS)
 
+
+
+testAllBin=test_Sp3MM.o
 testAll:
-	bash testAllMatrixGroups.sh | tee test.log
+	bash testAllMatrixGroups.sh $(testAllBin) | tee $(testAllBin).all.log
 
 clean:
 	rm -i *.elf
@@ -114,7 +111,13 @@ try:
 	echo $(TMPDIR) 
 	echo $(UNDEF)
 	@echo uname:        $(UNAME)
-		
-	
 
 .PHONY: all clean testAll
+
+#####DEPRECATED OPTIONS
+##test_Sp3MM_Stats_IDXFLAG_ARRAY.o: $(testSrcs)		#Char array instead of bitmaps limbs
+##	$(CC) -o $@ $(baseCompil) -DSPVECT_IDX_BITWISE=F
+##	
+##test_Sp3MM_DBG_UB_NN_TID_RESERVED.o: $(testSrcs)
+##	$(CC) -o $@ $(CFLAGS)   $(filter-out %.h %Generic.c,$^) \
+##	$(CONSTS) $(MACROS) $(DBG) -DSPARSIFY_PRE_PARTITIONING=F $(LDFLAGS)

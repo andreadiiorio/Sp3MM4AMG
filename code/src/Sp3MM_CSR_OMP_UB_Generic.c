@@ -306,7 +306,7 @@ spmat* CAT(spmmRowByRow2DBlocks_,OFF_F)(spmat* A,spmat* B, CONFIG* cfg){
 	#endif
 	AUDIT_INTERNAL_TIMES	End=omp_get_wtime();
 	DEBUG				   
-	  checkOverallocRowPartsPercent(rowsPartsSizes,AB,cfg->gridCols,bColOffsets);
+	  CAT(checkOverallocRowPartsPercent_, OFF_F)(rowsPartsSizes, AB, cfg->gridCols, bColOffsets);
 	goto _free;
 
 	_err:
@@ -431,7 +431,7 @@ spmat* CAT(spmmRowByRow2DBlocksAllocated_,OFF_F)(spmat* A,spmat* B, CONFIG* cfg)
 	#endif
 	AUDIT_INTERNAL_TIMES	End=omp_get_wtime();
 	DEBUG				   
-	  checkOverallocRowPartsPercent(rowsPartsSizes,AB,cfg->gridCols,bColOffsets);
+	  CAT(checkOverallocRowPartsPercent_, OFF_F)(rowsPartsSizes,AB,cfg->gridCols,bColOffsets);
 	goto _free;
 
 	_err:
@@ -454,7 +454,7 @@ spmat* CAT(spmmRowByRow2DBlocksAllocated_,OFF_F)(spmat* A,spmat* B, CONFIG* cfg)
 }
 ///SP3MM
 spmat* CAT(sp3mmRowByRowPair_,OFF_F)(spmat* R,spmat* AC,spmat* P,
-	   CONFIG* cfg,SPMM_INTERF spmm){
+	   			     CONFIG* cfg,SPMM_INTERF spmm){
 	
 	double end,start,elapsed,partial,flops;
 	spmat *RAC = NULL, *out = NULL;
@@ -473,7 +473,7 @@ spmat* CAT(sp3mmRowByRowPair_,OFF_F)(spmat* R,spmat* AC,spmat* P,
 	start = omp_get_wtime();
 	/// triple product as a pair of spmm
 	if (!(RAC = spmm(R,AC,cfg)))	goto _free;
-	AUDIT_INTERNAL_TIMES			partial = End - Start;
+	AUDIT_INTERNAL_TIMES		partial = End - Start;
 	if (!(out = spmm(RAC,P,cfg)))	goto _free;
 	//
 	end = omp_get_wtime();
@@ -487,7 +487,8 @@ spmat* CAT(sp3mmRowByRowPair_,OFF_F)(spmat* R,spmat* AC,spmat* P,
 		printf("\n");
 	}
 	_free:
-	if (RAC)	freeSpmat(RAC);
+	zeroSpmat(RAC);
+	freeSpmat(RAC);
 
 	return out;
 }

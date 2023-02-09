@@ -37,10 +37,12 @@
 #define SP3MM_OMP_SYMB
 
 //allocCSRSpMatSymbStep aux function for IRP set by symb step output
-static inline idx_t _setCSR_IRP_1DPartitioing(spmat* m,idx_t* rowSizes){
+static inline idx_t _setCSR_IRP_1DPartitioing(spmat* m, idx_t* rowSizes){
 	idx_t r,cumulSize;
-	for (r=0,cumulSize=0; r<m->M; cumulSize += rowSizes[r++])	m->IRP[r] 	= cumulSize;
-	DEBUGCHECKS		assert(cumulSize == rowSizes[m->M]);
+	for (r=0,cumulSize=0; r<m->M; cumulSize += rowSizes[r++])
+		m->IRP[r] = cumulSize;
+	DEBUGCHECKS	assert(cumulSize == rowSizes[m->M]);
+	m->IRP[m->M] = cumulSize;
 	return cumulSize;
 }
 static inline idx_t _setCSR_IRP_2DPartitioing(spmat* m,idx_t* rowSizes,ushort gridCols){
@@ -55,6 +57,7 @@ static inline idx_t _setCSR_IRP_2DPartitioing(spmat* m,idx_t* rowSizes,ushort gr
 		}
 	}
 	DEBUGCHECKS		assert(cumulSize == rowSizes[m->M*gridCols]);
+	m->IRP[m->M] = cumulSize;
 	return cumulSize;
 }
 /*
@@ -88,7 +91,7 @@ static inline int allocCSRSpMatSymbStep(spmat* m,idx_t* rowSizes,ushort gridCols
 ////////Sp3MM as 2 x SpMM
 ///1D
 spmat* CAT(spmmRowByRow_SymbNum_,OFF_F)(spmat* A,spmat* B, CONFIG* cfg){
-    ACC_DENSE *accVects = NULL,*acc;
+	ACC_DENSE *accVects = NULL,*acc;
 	SPMM_ACC* outAccumul=NULL;
 	idx_t* rowsSizes = NULL;
 	///init AB matrix with SPMM heuristic preallocation
@@ -100,8 +103,9 @@ spmat* CAT(spmmRowByRow_SymbNum_,OFF_F)(spmat* A,spmat* B, CONFIG* cfg){
 		goto _err;
 	}
 	///SYMBOLIC STEP
-	if (!(rowsSizes = CAT(SpMM_Symb___,OFF_F) (cfg->symbMMRowImplID, A,B)))	goto _err;
-	if (allocCSRSpMatSymbStep(AB,rowsSizes,1))			goto _err;
+	if (!(rowsSizes = CAT(SpMM_Symb___,OFF_F) (cfg->symbMMRowImplID, A,B)))
+		goto _err;
+	if (allocCSRSpMatSymbStep(AB,rowsSizes,1))	goto _err;
 	
 	///NUMERIC STEP
 	((CHUNKS_DISTR_INTERF)	cfg->chunkDistrbFunc) (AB->M,AB,cfg);

@@ -230,8 +230,8 @@ inline void freeSpMMAcc(SPMM_ACC* acc){
 static inline void sparsifyDirect(ACC_DENSE* accV,spmat* m,idx_t row){
 	idx_t nnz = accV->nnzIdxMap.len, sparsifyStart = m->IRP[row], sparsifyEnd = m->IRP[row+1];
 	sort_idx_t(accV->nnzIdx,nnz); //sort nnz idx for ordered write
-	DEBUGCHECKS		assertArrNoRepetitions(accV->nnzIdx,nnz);
-	DEBUGCHECKS		assert( nnz == sparsifyEnd - sparsifyStart );
+	DEBUGCHECKS	assertArrNoRepetitions(accV->nnzIdx,nnz);
+	DEBUGCHECKS	assert(nnz <= (sparsifyEnd - sparsifyStart));
 
 	for (idx_t i=0,j;	i < nnz;   i++){
 		j =  accV->nnzIdx[i];

@@ -143,23 +143,6 @@ int initSpVectIdxDenseAcc(idx_t idxMax,SPVECT_IDX_DENSE_MAP* vectIdxsMap){
 	return EXIT_SUCCESS;
 }
 
-void checkOverallocRowPartsPercent(ulong* forecastedSizes,spmat* AB,
-  				   idx_t gridCols,idx_t* bColOffsets){
-	idx_t* abColOffsets = colsOffsetsPartitioningUnifRanges_0(AB,gridCols);
-	assert(abColOffsets);	//partitioning error
-	for (idx_t i=0,rLen,forecast,partId=0; i<AB->M*gridCols; i++,partId++){
-		forecast = forecastedSizes[i];
-		rLen = abColOffsets[ partId+1 ] - abColOffsets[ partId ];
-		DEBUGCHECKS	assert(forecast >= rLen);
-	}
-	idx_t extraMatrix = forecastedSizes[AB->M] - AB->NZ;
-	printf("extra forecastedSize of the matrix: \t%lu\t = %lf %% \n",
-		extraMatrix, 100*extraMatrix /(double) forecastedSizes[AB->M]);
-
-	free(abColOffsets);
-	
-}
-
 void checkOverallocPercent(ulong* forecastedSizes,spmat* AB){
 	for (ulong r=0,rSize,forecastedSize; r < AB->M; r++){
 		forecastedSize = forecastedSizes[r];
@@ -416,6 +399,23 @@ spmat* CAT(colsPartitioningUnifRanges_,OFF_F)(spmat* A,uint gridCols){
 	return NULL;
 }
 
+
+void CAT(checkOverallocRowPartsPercent_,OFF_F)(ulong* forecastedSizes,spmat* AB,
+  				   idx_t gridCols,idx_t* bColOffsets){
+	idx_t* abColOffsets = CAT(colsOffsetsPartitioningUnifRanges_,OFF_F)(AB, gridCols);
+	assert(abColOffsets);	//partitioning error
+	for (idx_t rLen,forecast,partId=0; partId<AB->M*gridCols; partId++){
+		forecast = forecastedSizes[partId];
+		rLen = abColOffsets[partId+1] - abColOffsets[partId];
+		DEBUGCHECKS	assert(forecast >= rLen);
+	}
+	idx_t extraMatrix = forecastedSizes[AB->M] - AB->NZ;
+	printf("extra forecastedSize of the matrix: \t%lu\t = %lf %% \n",
+		extraMatrix, 100*extraMatrix /(double) forecastedSizes[AB->M]);
+
+	free(abColOffsets);
+	
+}
 
 
 #ifdef SPARSEUTILS_MAIN_TEST	///unit test embbeded

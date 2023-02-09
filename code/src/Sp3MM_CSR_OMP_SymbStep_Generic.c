@@ -205,21 +205,21 @@ static inline idx_t CAT4(SpMM_Row_Symb_IdxMap,OUT_IDXS,COL_PARTS,OFF_F)
 	idx_t  gcStartCol = unifRemShareStart(gc,_colBlock,_colBlockRem);
 	idx_t  gcEndCol = unifRemShareEnd(gc,_colBlock,_colBlockRem);
 	#endif
-	#if IDX_RMUL_SYMB_RBTREE == T || _OUT_IDXS == F		///idxs recorded in a aux rbtree
+	#if IDX_RMUL_SYMB_RBTREE == T || _OUT_IDXS == F	///idxs recorded in a aux rbtree
   	for (struct rb_node* n = rb_first(&root->rb_root); n; n = rb_next(n)){
 		k = rb_entry(n,rbNode,rb)->key;
 		#if _OUT_IDXS == T
-		outIdxs[ j++ ] = k;				//record ordered key sotred from aux rbtree
+		outIdxs[ j++ ] = k;	//record ordered key sotred from aux rbtree
 		#endif
-	#else								///idxs recorded in aux append array
+	#else				///idxs recorded in aux append array
 	sort_idx_t(outIdxs,abRowLen);
   	for (; j < abRowLen; j++){
-		k = outIdxs[j];					//(OSS) already ordered in outIndexes arr
+		k = outIdxs[j];		//(OSS) already ordered in outIndexes arr
 	#endif	//IDX_RMUL_SYMB_RBTREE == T
 		#if _COL_PARTS == T
 		while (k >= gcEndCol ){	//see if the idx is in another col partition
-								//	TODO also = since gcEndCol as k is 0based
-			gcEndCol = 	unifRemShareEnd(gc ,_colBlock, _colBlockRem);
+				//	TODO also = since gcEndCol as k is 0based
+			gcEndCol = unifRemShareEnd(gc ,_colBlock, _colBlockRem);
 			gc++;
 			DEBUGCHECKS{ assert( gc < gridCols ); }
 		}
@@ -372,15 +372,15 @@ idx_t* CAT4(SpMM_Symb_,OUT_IDXS,COL_PARTS,OFF_F)
 		tNodes  	= rbNodes + tid * maxRowLen;
 
 		rLen = CAT4(SpMM_Row_Symb_,OUT_IDXS,COL_PARTS,OFF_F)  
-			(
-				symbRowImplID, aRow, aRowLen, b, tRoot,tNodes, tIdxsMapAcc
-   				#if _OUT_IDXS  == TRUE
-				,*outIdxs[r]
-				#endif
-				#if _COL_PARTS == TRUE
-				,gridCols, (*rowColPartsLens) + IDX2D(r,0,gridCols)
-				#endif
-			);
+		(
+			symbRowImplID, aRow, aRowLen, b, tRoot,tNodes, tIdxsMapAcc
+   			#if _OUT_IDXS  == TRUE
+			,*outIdxs[r]
+			#endif
+			#if _COL_PARTS == TRUE
+			,gridCols, (*rowColPartsLens) + IDX2D(r,0,gridCols)
+			#endif
+		);
 		rowLens[r]  = rLen;
 		abCumulLen += rLen;
 		///reset symb idxs keeping aux structs
