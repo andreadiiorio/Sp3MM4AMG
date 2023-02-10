@@ -75,12 +75,12 @@ typedef enum {
 
 #define OFF_F 0
 #include "Sp3MM_CSR_OMP_UB_Generic.h"
-#include "Sp3MM_CSR_OMP_Symb_Generic.h"
+#include "Sp3MM_CSR_OMP_Num_Generic.h"
 #undef OFF_F
 
 #define OFF_F 1
 #include "Sp3MM_CSR_OMP_UB_Generic.h"
-#include "Sp3MM_CSR_OMP_Symb_Generic.h"
+#include "Sp3MM_CSR_OMP_Num_Generic.h"
 #undef OFF_F
 
 

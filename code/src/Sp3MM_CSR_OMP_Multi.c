@@ -56,11 +56,11 @@ double Start,End,Elapsed,ElapsedInternal;
 #define OFF_F 0
 #include "inlineExports_Generic.h"
 #include "Sp3MM_CSR_OMP_UB_Generic.c"
-#include "Sp3MM_CSR_OMP_Symb_Generic.c"
+#include "Sp3MM_CSR_OMP_Num_Generic.c"
 #undef OFF_F
 
 #define OFF_F 1
 #include "inlineExports_Generic.h"
 #include "Sp3MM_CSR_OMP_UB_Generic.c"
-#include "Sp3MM_CSR_OMP_Symb_Generic.c"
+#include "Sp3MM_CSR_OMP_Num_Generic.c"
 #undef OFF_F
