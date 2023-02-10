@@ -30,7 +30,7 @@
 #include "macros.h"
 #include "config.h"
 #include "sparseMatrix.h"
-#include "linuxK_rbtree_minimalized.h"
+#include "rbTreeInterface.h"
 
 #include "Sp3MM_CSR_OMP_SymbStep_Multi.h"
 

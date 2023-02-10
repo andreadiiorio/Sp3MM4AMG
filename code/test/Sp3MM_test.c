@@ -82,7 +82,7 @@ CHUNKS_DISTR_INTERF chunkDistrbFunc=&chunksFairFolded;
 static CONFIG Conf = {
 	.gridRows  = 20,
 	.gridCols  = 2,
-	.symbMMRowImplID = RBTREE,
+	.symbMMRowImplID = IDXMAP,
 };
 
 void print3SPMMCore(spmat* R,spmat* AC,spmat* P,CONFIG* conf){
@@ -376,6 +376,7 @@ int main(int argc, char** argv){
 	#endif	//UB_IMPL_ONLY
 	///SYMB-NUM IMPLEMENTATIONS
 	//symbNum:
+	/* BSD3-CLAUSE ONLY
 	//symbNum_rbtree:
 	VERBOSE	hprintf("CHECKING SYMBOLIC.RBTREE - NUMERIC IMPLEMENTATIONS\n");
 	Conf.symbMMRowImplID = RBTREE;
@@ -388,6 +389,7 @@ int main(int argc, char** argv){
 		if (testSp3MMImplOMP(sp3MM_SymbNum_WrapPair,spMMFunc,oracleOut,R,AC,P))
 			goto _free;
 	}
+	*/
 	//test SP3MM directly as merged two multiplication
 	for (uint f = 0;  f < sp3MM_SymbNum_Direct_FuncsN; f++){
 		sp3MMFunc = sp3MM_SymbNum_Direct_Funcs[f];

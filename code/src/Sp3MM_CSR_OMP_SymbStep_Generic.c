@@ -115,7 +115,7 @@ static inline idx_t CAT4(SpMM_Row_Symb_Rbtree,OUT_IDXS,COL_PARTS,OFF_F)
 	sortRbNode(nodes,abRowLen);
 	#elif	_OUT_IDXS == T || _COL_PARTS == T
 	uint i=0;
-	idx_t k;
+	idx_t k = 0;
 	#if _COL_PARTS == T
 	//colParts aux vars
 	idx_t _colBlock = abRowLen / gridCols, _colBlockRem = abRowLen % gridCols;
@@ -124,7 +124,7 @@ static inline idx_t CAT4(SpMM_Row_Symb_Rbtree,OUT_IDXS,COL_PARTS,OFF_F)
 	idx_t gcEndCol = unifRemShareEnd(gc,_colBlock,_colBlockRem);
 	#endif	//_COL_PARTS == T
   	for (struct rb_node* n = rb_first(&root->rb_root); n; n = rb_next(n)){
-		k = rb_entry(n,rbNode,rb)->key;
+		/*k = rb_entry(n,rbNode,rb)->key; TODO BSD3-ONLY*/
 		#if _OUT_IDXS == T
 		//return the mul.result nnz index inside the rbNodes
 		outIdxs[ i++ ] = k;
@@ -197,7 +197,7 @@ static inline idx_t CAT4(SpMM_Row_Symb_IdxMap,OUT_IDXS,COL_PARTS,OFF_F)
 	abRowLen = idxsMapAcc->len;
 	//gather idxs or their sparsity struct in output row
 	#if	_OUT_IDXS == T || _COL_PARTS == T 
-	idx_t j = 0,k;
+	idx_t j = 0,k = 0;
 	#if _COL_PARTS == T 
 	//colParts aux vars
 	idx_t _colBlock = abRowLen / gridCols, _colBlockRem = abRowLen % gridCols;
@@ -207,7 +207,7 @@ static inline idx_t CAT4(SpMM_Row_Symb_IdxMap,OUT_IDXS,COL_PARTS,OFF_F)
 	#endif
 	#if IDX_RMUL_SYMB_RBTREE == T || _OUT_IDXS == F	///idxs recorded in a aux rbtree
   	for (struct rb_node* n = rb_first(&root->rb_root); n; n = rb_next(n)){
-		k = rb_entry(n,rbNode,rb)->key;
+		/*k = rb_entry(n,rbNode,rb)->key; TODO BSD3-CLAUSE-ONLY*/
 		#if _OUT_IDXS == T
 		outIdxs[ j++ ] = k;	//record ordered key sotred from aux rbtree
 		#endif
@@ -442,7 +442,7 @@ idx_t CAT3(Sp3MM_Row_Symb_,OUT_IDXS,OFF_F)
 	uint i=0;
 	//rbNodeOrderedVisit(n,root)	outIdxs[ i++ ] = rb_entry(n,rbNode,rb)->key;
   	for (struct rb_node* n = rb_first(&root->rb_root); n; n = rb_next(n)){
-		outIdxs[ i++ ] = rb_entry(n,rbNode,rb)->key;
+		/*outIdxs[ i++ ] = rb_entry(n,rbNode,rb)->key; BSD3-CLAUSE-ONLY*/
 	}
 	#else
 	/* return the non zero indexes of the mul.result row

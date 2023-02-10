@@ -61,7 +61,7 @@ typedef enum {
 ///-- commons single implementation stuff
 
 ///includes
-#include "linuxK_rbtree_minimalized.h"
+#include "rbTreeInterface.h"
 #include "Sp3MM_CSR_OMP_SymbStep_Multi.h"
 
 //extern char TRGT_IMPL_START_IDX; //multi implementation switch
